@@ -4,11 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>今日油价查询</title>
-    <!-- 引入 FontAwesome 图标库 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* 全局样式重置与变量 */
         :root {
             --bg-gradient: linear-gradient(180deg, #1e1e2e 0%, #2d2d44 100%);
             --card-bg: #ffffff;
@@ -23,12 +21,7 @@
             --picker-border: rgba(255, 255, 255, 0.15);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -41,15 +34,24 @@
             padding: 20px;
         }
 
-        /* 容器 */
-        .container {
-            width: 100%;
-            max-width: 480px; /* 限制最大宽度，模拟手机App体验 */
-            position: relative;
-            z-index: 1;
+        .container { width: 100%; max-width: 480px; position: relative; z-index: 1; }
+        
+        /* 返回按钮 */
+        .nav-back {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: rgba(255,255,255,0.8);
+            cursor: pointer;
+            z-index: 10;
         }
 
-        /* 背景装饰 */
         .bg-decoration {
             position: fixed;
             top: -50px;
@@ -62,37 +64,13 @@
             pointer-events: none;
         }
 
-        /* 头部 */
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .title { display: block; font-size: 24px; font-weight: 800; margin-bottom: 5px; letter-spacing: 1px; }
+        .subtitle { font-size: 12px; opacity: 0.6; }
 
-        .title {
-            display: block;
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
-        }
-
-        .subtitle {
-            font-size: 12px;
-            opacity: 0.6;
-        }
-
-        /* 选择器区域 */
-        .picker-section {
-            margin-bottom: 20px;
-        }
-
-        .section-label {
-            font-size: 12px;
-            opacity: 0.5;
-            margin-bottom: 8px;
-            padding-left: 5px;
-        }
-
+        .picker-section { margin-bottom: 20px; }
+        .section-label { font-size: 12px; opacity: 0.5; margin-bottom: 8px; padding-left: 5px; }
+        
         .picker-box {
             background: var(--picker-bg);
             backdrop-filter: blur(10px);
@@ -105,30 +83,13 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             cursor: pointer;
             transition: background 0.2s;
-            position: relative; /* 为了让 select 绝对定位 */
+            position: relative;
         }
+        .picker-box:active { background: rgba(255, 255, 255, 0.15); }
+        .picker-text { font-size: 16px; font-weight: 600; }
+        .icon-arrow-down { font-size: 12px; opacity: 0.6; }
 
-        .picker-box:active {
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .picker-text {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .icon-arrow-down {
-            font-size: 12px;
-            opacity: 0.6;
-        }
-
-        /* 油价卡片列表 */
-        .cards-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
+        .cards-container { display: flex; flex-direction: column; gap: 15px; }
         .oil-card {
             background: var(--card-bg);
             border-radius: 16px;
@@ -139,66 +100,22 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             transition: transform 0.1s;
         }
+        .oil-card:active { transform: scale(0.98); }
+        .card-top { display: flex; flex-direction: column; gap: 4px; }
+        .oil-name { font-size: 14px; font-weight: 600; color: var(--text-main); }
+        .update-time { font-size: 10px; color: var(--text-sub); }
+        .price-area { display: flex; align-items: baseline; }
+        .price-symbol { font-size: 12px; margin-right: 2px; }
+        .price-value { font-size: 24px; font-weight: 700; line-height: 1; }
+        .price-unit { font-size: 10px; margin-left: 2px; color: var(--text-sub); }
 
-        .oil-card:active {
-            transform: scale(0.98);
-        }
-
-        .card-top {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .oil-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .update-time {
-            font-size: 10px;
-            color: var(--text-sub);
-        }
-
-        .price-area {
-            display: flex;
-            align-items: baseline;
-        }
-
-        .price-symbol {
-            font-size: 12px;
-            margin-right: 2px;
-        }
-
-        .price-value {
-            font-size: 24px;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        .price-unit {
-            font-size: 10px;
-            margin-left: 2px;
-            color: var(--text-sub);
-        }
-
-        /* 颜色修饰 */
         .card-92 .price-value { color: var(--color-92); }
         .card-95 .price-value { color: var(--color-95); }
         .card-98 .price-value { color: var(--color-98); }
         .card-0 .price-value { color: var(--color-0); }
 
-        /* 底部提示 */
-        .footer-tip {
-            margin-top: 40px;
-            text-align: center;
-            font-size: 10px;
-            opacity: 0.3;
-            line-height: 1.5;
-        }
+        .footer-tip { margin-top: 40px; text-align: center; font-size: 10px; opacity: 0.3; line-height: 1.5; }
 
-        /* Toast 提示 */
         #toast {
             visibility: hidden;
             min-width: 200px;
@@ -216,13 +133,8 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
+        #toast.show { visibility: visible; opacity: 1; }
 
-        #toast.show {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        /* 原生 Select 隐藏但保留功能 */
         #province-select {
             position: absolute;
             top: 0;
@@ -231,7 +143,7 @@
             height: 100%;
             opacity: 0;
             cursor: pointer;
-            appearance: none; /* 移除默认样式 */
+            appearance: none;
         }
     </style>
 </head>
@@ -240,26 +152,26 @@
     <div class="bg-decoration"></div>
 
     <div class="container">
-        <!-- 头部 -->
+        <!-- 返回按钮 -->
+        <a href="index.html" class="nav-back">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+
         <div class="header">
             <span class="title">今日油价查询</span>
             <span class="subtitle">实时更新 · 准确可靠</span>
         </div>
 
-        <!-- 省份选择器 -->
         <div class="picker-section">
             <div class="section-label">选择省份</div>
             <div class="picker-box">
                 <span class="picker-text" id="current-province-text">北京</span>
                 <i class="fa-solid fa-chevron-down icon-arrow-down"></i>
-                <!-- 原生 Select，覆盖在上方 -->
                 <select id="province-select"></select>
             </div>
         </div>
 
-        <!-- 油价卡片 -->
         <div class="cards-container">
-            <!-- 92号 -->
             <div class="oil-card card-92">
                 <div class="card-top">
                     <span class="oil-name">92号汽油</span>
@@ -272,7 +184,6 @@
                 </div>
             </div>
 
-            <!-- 95号 -->
             <div class="oil-card card-95">
                 <div class="card-top">
                     <span class="oil-name">95号汽油</span>
@@ -284,7 +195,6 @@
                 </div>
             </div>
 
-            <!-- 98号 -->
             <div class="oil-card card-98">
                 <div class="card-top">
                     <span class="oil-name">98号汽油</span>
@@ -296,7 +206,6 @@
                 </div>
             </div>
 
-            <!-- 0号 -->
             <div class="oil-card card-0">
                 <div class="card-top">
                     <span class="oil-name">0号柴油</span>
@@ -309,32 +218,27 @@
             </div>
         </div>
 
-        <!-- 底部 -->
         <div class="footer-tip">
-            <!-- <p>数据来源: mxnzp.com</p> -->
-            <p>数据仅供参考，请以当地加油站为准</p>
+            <p>数据来源: mxnzp.com</p>
+            <p>仅供参考，请以当地加油站为准</p>
         </div>
     </div>
 
-    <!-- Toast 提示框 -->
     <div id="toast">提示信息</div>
 
     <script>
-        // 配置
         const CONFIG = {
             appId: 'pm7r0ropjeoqpzjo',
             appSecret: 'klHh9W3BcObU2ZXwzxw1e9qbzvsEPdaU',
             apiBase: 'https://www.mxnzp.com/api'
         };
 
-        // 省份列表
         const PROVINCES = [
             '安徽', '北京', '重庆', '福建', '甘肃', '广东', '广西', '贵州', '海南', '河北', 
             '黑龙江', '河南', '湖北', '湖南', '江苏', '江西', '吉林', '辽宁', '内蒙古', '宁夏', 
             '青海', '陕西', '上海', '山东', '山西', '四川', '天津', '西藏', '新疆', '云南', '浙江'
         ];
 
-        // DOM 元素
         const selectEl = document.getElementById('province-select');
         const provinceTextEl = document.getElementById('current-province-text');
         const priceEls = {
@@ -345,7 +249,6 @@
         };
         const toastEl = document.getElementById('toast');
 
-        // 初始化 Select 选项
         function initSelect() {
             PROVINCES.forEach(prov => {
                 const option = document.createElement('option');
@@ -354,7 +257,6 @@
                 selectEl.appendChild(option);
             });
 
-            // 监听选择变化
             selectEl.addEventListener('change', (e) => {
                 const province = e.target.value;
                 provinceTextEl.textContent = province;
@@ -362,27 +264,20 @@
             });
         }
 
-        // 获取油价数据
         async function fetchOilData(province) {
             showToast('查询中...');
-            
             try {
-                // 构造 URL
                 const url = `${CONFIG.apiBase}/oil/search?app_id=${CONFIG.appId}&app_secret=${CONFIG.appSecret}&province=${encodeURIComponent(province)}`;
-                
                 const response = await fetch(url);
                 const result = await response.json();
 
                 if (result.code === 1) {
                     const data = result.data;
-                    
-                    // 更新 UI
                     priceEls.t92.textContent = data.t92;
                     priceEls.t95.textContent = data.t95;
                     priceEls.t98.textContent = data.t98;
                     priceEls.t0.textContent = data.t0;
 
-                    // 保存到本地存储
                     localStorage.setItem('oil_province', province);
                     localStorage.setItem('oil_data', JSON.stringify(data));
                     
@@ -396,7 +291,6 @@
             }
         }
 
-        // 显示 Toast
         function showToast(message) {
             toastEl.textContent = message;
             toastEl.classList.add('show');
@@ -405,32 +299,26 @@
             }, 2000);
         }
 
-        // 页面初始化
         window.addEventListener('DOMContentLoaded', () => {
             initSelect();
 
-            // 1. 尝试读取本地缓存
             const savedProvince = localStorage.getItem('oil_province');
             const savedData = localStorage.getItem('oil_data');
 
             if (savedProvince && savedData) {
-                // 有缓存，直接显示
                 selectEl.value = savedProvince;
                 provinceTextEl.textContent = savedProvince;
-                
                 const data = JSON.parse(savedData);
                 priceEls.t92.textContent = data.t92;
                 priceEls.t95.textContent = data.t95;
                 priceEls.t98.textContent = data.t98;
                 priceEls.t0.textContent = data.t0;
             } else {
-                // 无缓存，默认请求北京
                 selectEl.value = '北京';
                 provinceTextEl.textContent = '北京';
                 fetchOilData('北京');
             }
         });
-
     </script>
 </body>
 </html>
