@@ -2,20 +2,14 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>3D 水压套圈游戏 (单文件版)</title>
+  <!-- 核心适配：禁止缩放，覆盖刘海屏区域，锁定视口 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>3D 水压套圈 (手机版)</title>
   
-  <!-- 引入 Tailwind CSS (样式库) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- 引入 React 和 ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- 引入 Three.js (3D引擎) -->
   <script crossorigin src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  
-  <!-- 引入 Babel (用于在浏览器中解析 JSX) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
@@ -23,12 +17,17 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background-color: #0f172a; /* slate-900 */
+      background-color: #0f172a;
       font-family: 'Inter', system-ui, sans-serif;
-      touch-action: none; /* 防止手机端下拉刷新 */
+      /* 禁止浏览器默认触摸行为（如滚动、缩放、双击） */
+      touch-action: none;
+      /* 禁止文本选中 */
+      -webkit-user-select: none;
+      user-select: none;
+      /* 移除点击高亮 */
+      -webkit-tap-highlight-color: transparent;
     }
     
-    /* 模拟水流冲击时的机身微颤效果 */
     @keyframes water-shake {
       0% { transform: translate(0, 0) rotate(0deg); }
       25% { transform: translate(0.6px, 0.6px) rotate(0.04deg); }
@@ -48,13 +47,12 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useCallback } = React;
 
-    // --- WaterGame 组件 (3D 逻辑) ---
+    // --- 游戏逻辑 (保持不变) ---
     const WaterGame = ({ leftActive, rightActive, onWin }) => {
       const containerRef = useRef(null);
       const winTriggeredRef = useRef(false);
       const sceneRef = useRef(null);
 
-      // 物理参数配置
       const CONFIG = {
         RING_COUNT: 8,
         GRAVITY: -0.0038,
@@ -73,7 +71,6 @@
       useEffect(() => {
         if (!containerRef.current) return;
 
-        // 初始化 Three.js 场景
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xb3e5fc);
 
@@ -86,14 +83,12 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         containerRef.current.appendChild(renderer.domElement);
 
-        // 灯光
         const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
         scene.add(ambientLight);
         const pointLight = new THREE.PointLight(0xffffff, 1.8);
         pointLight.position.set(5, 10, 15);
         scene.add(pointLight);
 
-        // 创建针座
         const needleGeo = new THREE.CylinderGeometry(CONFIG.NEEDLE_RADIUS, CONFIG.NEEDLE_RADIUS, CONFIG.NEEDLE_HEIGHT, 16);
         const needleMat = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 200 });
         const baseGeo = new THREE.CylinderGeometry(1.0, 1.1, 0.5, 24);
@@ -114,7 +109,6 @@
         scene.add(createNeedle(-2.5));
         scene.add(createNeedle(2.5));
 
-        // 创建圈圈
         const rings = [];
         const ringColors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff, 0x44ffff, 0xffa500, 0x88ffaa];
         
@@ -122,332 +116,188 @@
           const ringGeo = new THREE.TorusGeometry(CONFIG.RING_RADIUS, CONFIG.RING_THICKNESS, 16, 32);
           const ringMat = new THREE.MeshPhongMaterial({ color: ringColors[i % ringColors.length], shininess: 120 });
           const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-          
-          ringMesh.position.set(
-            (Math.random() - 0.5) * 7,
-            -1 + (Math.random() - 0.5) * 4,
-            (Math.random() - 0.5) * 1.5
-          );
+          ringMesh.position.set((Math.random() - 0.5) * 7, -1 + (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 1.5);
           ringMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-          
           scene.add(ringMesh);
           rings.push({
-            mesh: ringMesh,
-            velocity: new THREE.Vector3(),
-            angularVelocity: new THREE.Vector3(
-              (Math.random() - 0.5) * 0.06,
-              (Math.random() - 0.5) * 0.06,
-              (Math.random() - 0.5) * 0.06
-            ),
-            isHooked: false,
-            hookedTo: null
+            mesh: ringMesh, velocity: new THREE.Vector3(), angularVelocity: new THREE.Vector3((Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.06, (Math.random() - 0.5) * 0.06), isHooked: false, hookedTo: null
           });
         }
 
-        // 气泡
         const bubbles = [];
         const bubbleGeo = new THREE.SphereGeometry(1, 8, 8);
-
         sceneRef.current = { scene, camera, renderer, rings, bubbles, leftActive: false, rightActive: false };
 
-        // 动画循环
         let animationId;
         const animate = () => {
           animationId = requestAnimationFrame(animate);
           const state = sceneRef.current;
           if (!state) return;
-
           let hookedCount = 0;
-
-          // 圈圈物理
           state.rings.forEach((ring, idx) => {
-            // 已套中逻辑
             if (ring.isHooked) {
               hookedCount++;
               const targetX = ring.hookedTo === 'left' ? -2.5 : 2.5;
               const baseY = -3.4;
-              
               ring.mesh.position.x += (targetX - ring.mesh.position.x) * 0.2;
               ring.mesh.position.z += (0 - ring.mesh.position.z) * 0.2;
-              
               let floorY = baseY;
               state.rings.forEach((other, otherIdx) => {
                 if (otherIdx !== idx && other.isHooked && other.hookedTo === ring.hookedTo) {
                   const dist = ring.mesh.position.y - other.mesh.position.y;
-                  if (dist > -0.01 && dist < CONFIG.RING_THICKNESS * 2.8) {
-                    floorY = Math.max(floorY, other.mesh.position.y + CONFIG.RING_THICKNESS * 2.2);
-                  }
+                  if (dist > -0.01 && dist < CONFIG.RING_THICKNESS * 2.8) floorY = Math.max(floorY, other.mesh.position.y + CONFIG.RING_THICKNESS * 2.2);
                 }
               });
-
-              if (ring.mesh.position.y > floorY) {
-                ring.mesh.position.y += CONFIG.GRAVITY * 0.5;
-              } else {
-                ring.mesh.position.y = floorY;
-                ring.velocity.set(0, 0, 0);
-              }
-
+              if (ring.mesh.position.y > floorY) ring.mesh.position.y += CONFIG.GRAVITY * 0.5;
+              else { ring.mesh.position.y = floorY; ring.velocity.set(0, 0, 0); }
               ring.mesh.rotation.x += (Math.PI / 2 - ring.mesh.rotation.x) * 0.15;
-              ring.mesh.rotation.y *= 0.8;
-              ring.mesh.rotation.z *= 0.8;
+              ring.mesh.rotation.y *= 0.8; ring.mesh.rotation.z *= 0.8;
               return;
             }
-
-            // 自由移动逻辑
             const force = new THREE.Vector3(0, CONFIG.GRAVITY + CONFIG.BUOYANCY, 0);
-
             if (state.leftActive || state.rightActive) {
               const vortex = new THREE.Vector3();
-              if (state.leftActive) {
-                 vortex.set(ring.mesh.position.y * 0.4, -ring.mesh.position.x * 0.4, 0).normalize().multiplyScalar(CONFIG.PUSH_FORCE);
-              } else {
-                 vortex.set(-ring.mesh.position.y * 0.4, ring.mesh.position.x * 0.4, 0).normalize().multiplyScalar(CONFIG.PUSH_FORCE);
-              }
-              force.add(vortex);
-              force.x += (Math.random() - 0.5) * 0.005;
-              force.y += (Math.random() - 0.5) * 0.005;
-              ring.angularVelocity.x += (Math.random() - 0.5) * 0.012;
-              ring.angularVelocity.y += (Math.random() - 0.5) * 0.012;
+              if (state.leftActive) vortex.set(ring.mesh.position.y * 0.4, -ring.mesh.position.x * 0.4, 0).normalize().multiplyScalar(CONFIG.PUSH_FORCE);
+              else vortex.set(-ring.mesh.position.y * 0.4, ring.mesh.position.x * 0.4, 0).normalize().multiplyScalar(CONFIG.PUSH_FORCE);
+              force.add(vortex); force.x += (Math.random() - 0.5) * 0.005; force.y += (Math.random() - 0.5) * 0.005;
+              ring.angularVelocity.x += (Math.random() - 0.5) * 0.012; ring.angularVelocity.y += (Math.random() - 0.5) * 0.012;
             }
-
-            ring.velocity.add(force);
-            ring.velocity.multiplyScalar(CONFIG.WATER_DRAG);
-            ring.mesh.position.add(ring.velocity);
-
-            ring.angularVelocity.multiplyScalar(CONFIG.ROTATION_DRAG);
-            ring.mesh.rotation.x += ring.angularVelocity.x;
-            ring.mesh.rotation.y += ring.angularVelocity.y;
-            ring.mesh.rotation.z += ring.angularVelocity.z;
-
-            // 碰撞检测
+            ring.velocity.add(force); ring.velocity.multiplyScalar(CONFIG.WATER_DRAG); ring.mesh.position.add(ring.velocity);
+            ring.angularVelocity.multiplyScalar(CONFIG.ROTATION_DRAG); ring.mesh.rotation.x += ring.angularVelocity.x; ring.mesh.rotation.y += ring.angularVelocity.y; ring.mesh.rotation.z += ring.angularVelocity.z;
+            
             for (let j = idx + 1; j < state.rings.length; j++) {
               const other = state.rings[j];
               if (other.isHooked) continue;
               const diff = new THREE.Vector3().subVectors(ring.mesh.position, other.mesh.position);
               const distance = diff.length();
               const minDistance = CONFIG.COLLISION_RADIUS * 1.6;
-
               if (distance < minDistance) {
-                const overlap = minDistance - distance;
-                const pushDir = diff.normalize();
-                const push = pushDir.clone().multiplyScalar(overlap * 0.4);
-                ring.mesh.position.add(push);
-                other.mesh.position.sub(push);
-                const vRel = new THREE.Vector3().subVectors(ring.velocity, other.velocity);
-                const dot = vRel.dot(pushDir);
-                if (dot < 0) {
-                  const impulse = pushDir.multiplyScalar(dot * 0.7);
-                  ring.velocity.sub(impulse);
-                  other.velocity.add(impulse);
-                }
+                const overlap = minDistance - distance; const pushDir = diff.normalize(); const push = pushDir.clone().multiplyScalar(overlap * 0.4);
+                ring.mesh.position.add(push); other.mesh.position.sub(push);
+                const vRel = new THREE.Vector3().subVectors(ring.velocity, other.velocity); const dot = vRel.dot(pushDir);
+                if (dot < 0) { const impulse = pushDir.multiplyScalar(dot * 0.7); ring.velocity.sub(impulse); other.velocity.add(impulse); }
               }
             }
-
-            // 边界反弹
-            const hX = CONFIG.TANK_SIZE / 2 - CONFIG.RING_RADIUS;
-            const hY = CONFIG.TANK_SIZE / 2 - CONFIG.RING_RADIUS;
-            const hZ = 1.3 - CONFIG.RING_THICKNESS;
-
-            if (Math.abs(ring.mesh.position.x) > hX) {
-              ring.mesh.position.x = Math.sign(ring.mesh.position.x) * hX;
-              ring.velocity.x *= -0.5;
-            }
-            if (Math.abs(ring.mesh.position.y) > hY) {
-              ring.mesh.position.y = Math.sign(ring.mesh.position.y) * hY;
-              ring.velocity.y *= -0.5;
-            }
-            if (Math.abs(ring.mesh.position.z) > hZ) {
-              ring.mesh.position.z = Math.sign(ring.mesh.position.z) * hZ;
-              ring.velocity.z *= -0.5;
-            }
-
-            // 判定是否套中
+            const hX = CONFIG.TANK_SIZE / 2 - CONFIG.RING_RADIUS; const hY = CONFIG.TANK_SIZE / 2 - CONFIG.RING_RADIUS; const hZ = 1.3 - CONFIG.RING_THICKNESS;
+            if (Math.abs(ring.mesh.position.x) > hX) { ring.mesh.position.x = Math.sign(ring.mesh.position.x) * hX; ring.velocity.x *= -0.5; }
+            if (Math.abs(ring.mesh.position.y) > hY) { ring.mesh.position.y = Math.sign(ring.mesh.position.y) * hY; ring.velocity.y *= -0.5; }
+            if (Math.abs(ring.mesh.position.z) > hZ) { ring.mesh.position.z = Math.sign(ring.mesh.position.z) * hZ; ring.velocity.z *= -0.5; }
             [-2.5, 2.5].forEach((nx, nidx) => {
-              const side = nidx === 0 ? 'left' : 'right';
-              const dx = ring.mesh.position.x - nx;
-              const dz = ring.mesh.position.z;
-              const distToAxis = Math.sqrt(dx * dx + dz * dz);
-              
-              const isNearAxis = distToAxis < (CONFIG.NEEDLE_RADIUS + CONFIG.RING_RADIUS * 0.5); 
-              const isInYRange = ring.mesh.position.y < 1.6 && ring.mesh.position.y > -3.5;
-              const rotX = Math.abs(ring.mesh.rotation.x % Math.PI);
-              const isThreadableAngle = Math.abs(rotX - Math.PI/2) < 1.3;
-
+              const side = nidx === 0 ? 'left' : 'right'; const dx = ring.mesh.position.x - nx; const dz = ring.mesh.position.z; const distToAxis = Math.sqrt(dx * dx + dz * dz);
+              const isNearAxis = distToAxis < (CONFIG.NEEDLE_RADIUS + CONFIG.RING_RADIUS * 0.5); const isInYRange = ring.mesh.position.y < 1.6 && ring.mesh.position.y > -3.5;
+              const rotX = Math.abs(ring.mesh.rotation.x % Math.PI); const isThreadableAngle = Math.abs(rotX - Math.PI/2) < 1.3;
               if (isNearAxis && isInYRange && isThreadableAngle) {
-                if (ring.velocity.y < 0 || distToAxis < CONFIG.NEEDLE_RADIUS || Math.random() < 0.05) {
-                  ring.isHooked = true;
-                  ring.hookedTo = side;
-                  ring.velocity.set(0, 0, 0);
-                  ring.angularVelocity.set(0, 0, 0);
-                }
+                if (ring.velocity.y < 0 || distToAxis < CONFIG.NEEDLE_RADIUS || Math.random() < 0.05) { ring.isHooked = true; ring.hookedTo = side; ring.velocity.set(0, 0, 0); ring.angularVelocity.set(0, 0, 0); }
               }
             });
           });
-
-          // 胜利回调
-          if (hookedCount === CONFIG.RING_COUNT && !winTriggeredRef.current) {
-            winTriggeredRef.current = true;
-            if (onWin) onWin();
-          }
-
-          // 气泡生成与更新
+          if (hookedCount === CONFIG.RING_COUNT && !winTriggeredRef.current) { winTriggeredRef.current = true; if (onWin) onWin(); }
           if (state.leftActive || state.rightActive) {
             const burstCount = 2;
             for (let k = 0; k < burstCount; k++) {
               const size = 0.05 + Math.random() * 0.12;
               const bMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 + Math.random() * 0.3 });
-              const bMesh = new THREE.Mesh(bubbleGeo, bMat);
-              bMesh.scale.set(size, size, size);
-              const startX = state.leftActive ? -4.2 : 4.2;
-              bMesh.position.set(startX + (Math.random() - 0.5), -4.8, (Math.random() - 0.5) * 3);
-              scene.add(bMesh);
-              state.bubbles.push({
-                mesh: bMesh,
-                velocity: new THREE.Vector3((state.leftActive ? 1 : -1) * (0.02 + Math.random() * 0.04), 0.1 + Math.random() * 0.1, (Math.random() - 0.5) * 0.05),
-                life: 1.0
-              });
+              const bMesh = new THREE.Mesh(bubbleGeo, bMat); bMesh.scale.set(size, size, size);
+              const startX = state.leftActive ? -4.2 : 4.2; bMesh.position.set(startX + (Math.random() - 0.5), -4.8, (Math.random() - 0.5) * 3);
+              scene.add(bMesh); state.bubbles.push({ mesh: bMesh, velocity: new THREE.Vector3((state.leftActive ? 1 : -1) * (0.02 + Math.random() * 0.04), 0.1 + Math.random() * 0.1, (Math.random() - 0.5) * 0.05), life: 1.0 });
             }
           }
-
           for (let i = state.bubbles.length - 1; i >= 0; i--) {
-            const b = state.bubbles[i];
-            b.mesh.position.add(b.velocity);
-            b.velocity.y += 0.002;
-            b.mesh.position.x += Math.sin(Date.now() * 0.01 + i) * 0.02;
-            b.life -= 0.01;
-            if (b.mesh.position.y > 6 || b.life <= 0) {
-              scene.remove(b.mesh);
-              b.mesh.geometry.dispose();
-              b.mesh.material.dispose();
-              state.bubbles.splice(i, 1);
-            }
+            const b = state.bubbles[i]; b.mesh.position.add(b.velocity); b.velocity.y += 0.002; b.mesh.position.x += Math.sin(Date.now() * 0.01 + i) * 0.02; b.life -= 0.01;
+            if (b.mesh.position.y > 6 || b.life <= 0) { scene.remove(b.mesh); b.mesh.geometry.dispose(); b.mesh.material.dispose(); state.bubbles.splice(i, 1); }
           }
-
           renderer.render(scene, camera);
         };
         animate();
-
-        return () => {
-          cancelAnimationFrame(animationId);
-          if (containerRef.current) containerRef.current.removeChild(renderer.domElement);
-          renderer.dispose();
-        };
+        return () => { cancelAnimationFrame(animationId); if (containerRef.current) containerRef.current.removeChild(renderer.domElement); renderer.dispose(); };
       }, [onWin]);
-
-      // 响应按键状态变化
-      useEffect(() => {
-        if (sceneRef.current) {
-          sceneRef.current.leftActive = leftActive;
-          sceneRef.current.rightActive = rightActive;
-        }
-      }, [leftActive, rightActive]);
-
+      useEffect(() => { if (sceneRef.current) { sceneRef.current.leftActive = leftActive; sceneRef.current.rightActive = rightActive; } }, [leftActive, rightActive]);
       return <div ref={containerRef} className="w-full h-full cursor-pointer" />;
     };
 
-    // --- App 组件 (UI 逻辑) ---
+    // --- UI 组件 (适配版) ---
     const App = () => {
       const [leftPressed, setLeftPressed] = useState(false);
       const [rightPressed, setRightPressed] = useState(false);
       const [gameWon, setGameWon] = useState(false);
       const [gameKey, setGameKey] = useState(0);
 
-      const handleReset = useCallback(() => {
-        setGameWon(false);
-        setGameKey(prev => prev + 1);
-      }, []);
+      const handleReset = useCallback(() => { setGameWon(false); setGameKey(prev => prev + 1); }, []);
+      const handleWin = useCallback(() => { setGameWon(true); }, []);
 
-      const handleWin = useCallback(() => {
-        setGameWon(true);
-      }, []);
-
-      // 震动反馈
       useEffect(() => {
         let vibrationInterval = null;
-        const isAnyButtonPressed = leftPressed || rightPressed;
-        if (isAnyButtonPressed && "vibrate" in navigator) {
+        if ((leftPressed || rightPressed) && "vibrate" in navigator) {
           vibrationInterval = setInterval(() => { navigator.vibrate(15); }, 50);
         }
-        return () => {
-          if (vibrationInterval) clearInterval(vibrationInterval);
-          if ("vibrate" in navigator) navigator.vibrate(0);
-        };
+        return () => { if (vibrationInterval) clearInterval(vibrationInterval); if ("vibrate" in navigator) navigator.vibrate(0); };
       }, [leftPressed, rightPressed]);
 
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 select-none overflow-hidden">
-          {/* 游戏机主体 */}
-          <div className={`relative bg-gradient-to-b from-blue-400 to-blue-600 p-6 rounded-[3rem] shadow-2xl border-8 border-blue-300 w-full max-w-[500px] flex flex-col items-center transition-all duration-75 ${(leftPressed || rightPressed) ? 'shaking scale-[1.002]' : ''}`}>
+        // 关键改动：h-[100dvh] 确保在手机浏览器中占满高度，touch-none 禁止滚动
+        <div className="flex flex-col items-center justify-center h-[100dvh] w-screen bg-slate-900 overflow-hidden touch-none select-none">
+          
+          {/* 游戏机身：宽度调整为 92vw，最大宽度稍微减小以适配窄屏 */}
+          <div className={`relative bg-gradient-to-b from-blue-400 to-blue-600 p-4 sm:p-6 rounded-[2.5rem] sm:rounded-[3rem] shadow-2xl border-4 sm:border-8 border-blue-300 w-[92vw] max-w-[420px] flex flex-col items-center transition-all duration-75 box-border ${(leftPressed || rightPressed) ? 'shaking scale-[1.002]' : ''}`}>
             
-            <div className="mb-4 text-white font-bold text-3xl tracking-widest drop-shadow-md">水压套圈</div>
+            {/* 标题字体大小适配 */}
+            <div className="mb-2 sm:mb-4 text-white font-bold text-2xl sm:text-3xl tracking-widest drop-shadow-md">水压套圈</div>
 
             {/* 屏幕区域 */}
             <div className="relative aspect-square w-full bg-blue-100 rounded-2xl overflow-hidden border-4 border-blue-700/30 shadow-inner">
-              <WaterGame 
-                key={gameKey}
-                leftActive={leftPressed} 
-                rightActive={rightPressed} 
-                onWin={handleWin}
-              />
+              <WaterGame key={gameKey} leftActive={leftPressed} rightActive={rightPressed} onWin={handleWin} />
 
-              {/* 胜利弹窗 */}
+              {/* 弹窗适配 */}
               {gameWon && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity">
-                  <div className="bg-white p-8 rounded-3xl shadow-2xl text-center transform scale-110 animate-bounce">
-                    <h2 className="text-4xl font-black text-blue-600 mb-4">太棒了!</h2>
-                    <p className="text-slate-600 mb-6">你成功的套中了所有的圈圈！</p>
-                    <button onClick={handleReset} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-transform active:scale-95">重新开始</button>
+                  <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl text-center transform scale-110 animate-bounce w-[85%]">
+                    <h2 className="text-3xl sm:text-4xl font-black text-blue-600 mb-4">太棒了!</h2>
+                    <p className="text-slate-600 mb-6 text-sm sm:text-base">你成功的套中了所有的圈圈！</p>
+                    <button onClick={handleReset} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 sm:px-8 rounded-full shadow-lg transition-transform active:scale-95 text-sm sm:text-base">重新开始</button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* 控制区 */}
-            <div className="mt-8 flex justify-between w-full px-6 pb-4">
-              <div className="flex flex-col items-center gap-2">
+            {/* 控制区适配：减小间距 */}
+            <div className="mt-4 sm:mt-8 flex justify-between w-full px-2 sm:px-6 pb-2 sm:pb-4">
+              <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <button
-                  onMouseDown={() => setLeftPressed(true)}
-                  onMouseUp={() => setLeftPressed(false)}
-                  onMouseLeave={() => setLeftPressed(false)}
-                  onTouchStart={(e) => { e.preventDefault(); setLeftPressed(true); }}
-                  onTouchEnd={(e) => { e.preventDefault(); setLeftPressed(false); }}
-                  className={`w-20 h-20 rounded-full bg-red-500 border-b-8 border-red-700 active:border-b-0 active:translate-y-2 transition-all shadow-lg flex items-center justify-center ${leftPressed ? 'bg-red-400 ring-4 ring-red-200/50' : ''}`}
+                  onMouseDown={() => setLeftPressed(true)} onMouseUp={() => setLeftPressed(false)} onMouseLeave={() => setLeftPressed(false)}
+                  onTouchStart={(e) => { e.preventDefault(); setLeftPressed(true); }} onTouchEnd={(e) => { e.preventDefault(); setLeftPressed(false); }}
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-500 border-b-4 sm:border-b-8 border-red-700 active:border-b-0 active:translate-y-2 transition-all shadow-lg flex items-center justify-center ${leftPressed ? 'bg-red-400 ring-4 ring-red-200/50' : ''}`}
                 >
-                  <div className="w-12 h-12 rounded-full border-4 border-red-300 opacity-50" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-red-300 opacity-50" />
                 </button>
-                <span className="text-white font-bold text-sm tracking-wider opacity-80 uppercase">PUSH</span>
+                <span className="text-white font-bold text-xs sm:text-sm tracking-wider opacity-80 uppercase">左喷射</span>
               </div>
 
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-1 sm:gap-2">
                 <button
-                  onMouseDown={() => setRightPressed(true)}
-                  onMouseUp={() => setRightPressed(false)}
-                  onMouseLeave={() => setRightPressed(false)}
-                  onTouchStart={(e) => { e.preventDefault(); setRightPressed(true); }}
-                  onTouchEnd={(e) => { e.preventDefault(); setRightPressed(false); }}
-                  className={`w-20 h-20 rounded-full bg-yellow-500 border-b-8 border-yellow-700 active:border-b-0 active:translate-y-2 transition-all shadow-lg flex items-center justify-center ${rightPressed ? 'bg-yellow-400 ring-4 ring-yellow-200/50' : ''}`}
+                  onMouseDown={() => setRightPressed(true)} onMouseUp={() => setRightPressed(false)} onMouseLeave={() => setRightPressed(false)}
+                  onTouchStart={(e) => { e.preventDefault(); setRightPressed(true); }} onTouchEnd={(e) => { e.preventDefault(); setRightPressed(false); }}
+                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-yellow-500 border-b-4 sm:border-b-8 border-yellow-700 active:border-b-0 active:translate-y-2 transition-all shadow-lg flex items-center justify-center ${rightPressed ? 'bg-yellow-400 ring-4 ring-yellow-200/50' : ''}`}
                 >
-                  <div className="w-12 h-12 rounded-full border-4 border-yellow-300 opacity-50" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-4 border-yellow-300 opacity-50" />
                 </button>
-                <span className="text-white font-bold text-sm tracking-wider opacity-80 uppercase">PUSH</span>
+                <span className="text-white font-bold text-xs sm:text-sm tracking-wider opacity-80 uppercase">右喷射</span>
               </div>
             </div>
 
-            {/* 扬声器孔装饰 */}
-            <div className="mt-2 flex gap-1">
-              {[...Array(5)].map((_, i) => <div key={i} className="w-1.5 h-1.5 bg-blue-800/30 rounded-full" />)}
+            <div className="mt-1 sm:mt-2 flex gap-1">
+              {[...Array(5)].map((_, i) => <div key={i} className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-blue-800/30 rounded-full" />)}
             </div>
           </div>
-
-          <div className="mt-8 text-slate-400 text-center max-w-md px-4">
-            <p className="font-semibold text-white mb-2 underline">游玩指南</p>
-            <p className="text-sm">使用两侧的按钮喷射水流，调整重力和圈圈的动态。尽量让所有圈圈落入细针吧！</p>
+          
+           {/* 在超小屏幕上隐藏说明，避免挤压游戏机身 */}
+          <div className="mt-4 sm:mt-8 text-slate-400 text-center max-w-md px-4 hidden xs:block">
+            <p className="font-semibold text-white mb-1 sm:mb-2 underline text-xs sm:text-base">游玩指南</p>
+            <p className="text-xs sm:text-sm">使用两侧按钮喷射水流。</p>
           </div>
         </div>
       );
     };
 
-    // 挂载应用
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
