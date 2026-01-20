@@ -36,12 +36,7 @@
       75% { transform: translate(0.6px, -0.6px) rotate(0.04deg); }
       100% { transform: translate(0, 0) rotate(0deg); }
     }
-    .pt-safe {
-      padding-top: env(safe-area-inset-top);
-    }
-    .pb-safe {
-      padding-bottom: env(safe-area-inset-bottom);
-    }
+    
     .shaking {
       animation: water-shake 0.07s infinite linear;
     }
@@ -87,16 +82,7 @@
         camera.position.z = 25;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        const resizeRenderer = () => {
-          const width = containerRef.current.clientWidth;
-          const height = containerRef.current.clientHeight;
-          renderer.setSize(width, height, false);
-          camera.aspect = width / height;
-          camera.updateProjectionMatrix();
-        };
-
-        resizeRenderer();
-        window.addEventListener("resize", resizeRenderer);
+        renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientWidth);
         renderer.setPixelRatio(window.devicePixelRatio);
         containerRef.current.appendChild(renderer.domElement);
 
@@ -396,7 +382,7 @@
             <div className="mb-4 text-white font-bold text-3xl tracking-widest drop-shadow-md">水压套圈</div>
 
             {/* 屏幕区域 */}
-            <div className="relative w-full aspect-[4/5] max-h-[65vh] bg-blue-100 rounded-2xl overflow-hidden border-4 border-blue-700/30 shadow-inner">
+            <div className="relative aspect-square w-full bg-blue-100 rounded-2xl overflow-hidden border-4 border-blue-700/30 shadow-inner">
               <WaterGame 
                 key={gameKey}
                 leftActive={leftPressed} 
