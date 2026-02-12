@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOGIC MATRIX</title>
+
+<style>
+body{
+    margin:0;
+    width: 100vw;
+    height: 100vh;
+    font-family: "Segoe UI", monospace;
+    background: radial-gradient(circle at top,#1a2a3a,#0d1117) 100%;
+    color:#fff;
+}
+
+.header{
+    text-align:center;
+    padding:20px 10px;
+}
+
+.title{
+    font-size:24px;
+    color:#00e0ff;
+}
+
+.stability{
+    font-size:36px;
+}
+
+.level{
+    color:#aaa;
+}
+
+.progress{
+    width:80%;
+    margin:10px auto;
+    height:8px;
+    background:#222;
+    border-radius:10px;
+    overflow:hidden;
+}
+.bar{
+    height:100%;
+    width:0%;
+    background:#00ffaa;
+    transition:0.3s;
+}
+
+.grid{
+    display:grid;
+    gap:20px;
+    margin:30px auto;
+    max-width:800px;
+    grid-template-columns:repeat(auto-fit,minmax(70px,1fr));
+}
+
+.switch{
+    text-align:center;
+    cursor:pointer;
+}
+
+.circle{
+    width:65px;
+    height:65px;
+    border-radius:50%;
+    margin:auto;
+    transition:0.2s;
+}
+
+.on{
+    background:#00ffaa;
+    box-shadow:0 0 20px #00ffaa;
+}
+
+.off{
+    background:#333;
+}
+
+.switch:active .circle{
+    transform:scale(0.9);
+}
+
+.label{
+    margin-top:6px;
+}
+
+.rules{
+    max-width:800px;
+    margin:20px 20px;
+    background:rgba(255,255,255,0.05);
+    padding:15px;
+    border-radius:10px;
+}
+
+.rule{
+    padding:5px 0;
+    font-size:14px;
+    color:#00ffaa;
+}
+
+button{
+    background:#00e0ff;
+    border:none;
+    padding:8px 14px;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.7);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    display:none;
+}
+
+.modal-content{
+    background:#111;
+    padding:30px;
+    border-radius:10px;
+    text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<div class="title">LOGIC MATRIX</div>
+<div class="stability" id="stability">0%</div>
+<div class="level">Level <span id="level">1</span></div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="rules">
+<div id="ruleList"></div>
+</div>
+
+<div class="modal" id="modal">
+<div class="modal-content">
+<h2>关卡完成</h2>
+<button onclick="nextLevel()">下一关</button>
+</div>
+</div>
+
+<script>
+
+let level=1;
+let switches={};
+let solution={};
+let rules=[];
+let ruleText=[];
+let gameFinished=false;
+
+/* ===== 固定前5关 ===== */
+
+function loadFixedLevel(){
+
+    if(level===1){
+        switches={A:false,B:false,C:false};
+        solution={A:true,B:false,C:true};
+        rules=[
+            s=>s.A===true,
+            s=>s.C===true,
+            s=>s.B===false
+        ];
+        ruleText=[
+            "A 必须开启",
+            "C 必须开启",
+            "B 必须关闭"
+        ];
+    }
+
+    if(level===2){
+        switches={A:false,B:false,C:false,D:false};
+        solution={A:true,B:true,C:false,D:false};
+        rules=[
+            s=>s.A===s.B,
+            s=>s.C===false,
+            s=>s.D===false
+        ];
+        ruleText=[
+            "A 与 B 必须相同",
+            "C 必须关闭",
+            "D 必须关闭"
+        ];
+    }
+
+    if(level===3){
+        switches={A:false,B:false,C:false,D:false};
+        solution={A:true,B:false,C:true,D:false};
+        rules=[
+            s=>s.A!==s.B,
+            s=>s.C===true,
+            s=>s.D===false
+        ];
+        ruleText=[
+            "A 与 B 必须相反",
+            "C 必须开启",
+            "D 必须关闭"
+        ];
+    }
+
+    if(level===4){
+        switches={A:false,B:false,C:false,D:false,E:false};
+        solution={A:true,B:true,C:false,D:true,E:false};
+        rules=[
+            s=>!s.A || s.D===true,
+            s=>s.B===true,
+            s=>s.C===false,
+            s=>s.E===false
+        ];
+        ruleText=[
+            "如果 A 开启，则 D 必须开启",
+            "B 必须开启",
+            "C 必须关闭",
+            "E 必须关闭"
+        ];
+    }
+
+    if(level===5){
+        switches={A:false,B:false,C:false,D:false,E:false,F:false};
+        solution={A:true,B:false,C:true,D:false,E:true,F:false};
+        rules=[
+            s=>Object.values(s).filter(v=>v).length===3,
+            s=>s.A===true,
+            s=>s.C===true,
+            s=>s.E===true
+        ];
+        ruleText=[
+            "必须恰好有 3 个开启",
+            "A 必须开启",
+            "C 必须开启",
+            "E 必须开启"
+        ];
+    }
+}
+
+/* ===== 随机 8 开关模式 ===== */
+
+function generateRandomLevel(){
+
+    const letters="ABCDEFGH".split("");
+
+    let attempts=0;
+    let success=false;
+
+    while(attempts<400 && !success){
+
+        attempts++;
+        switches={};
+        solution={};
+        rules=[];
+        ruleText=[];
+
+        letters.forEach(l=>{
+            switches[l]=false;
+            solution[l]=Math.random()>0.5;
+        });
+
+        let keys=letters;
+
+        let targetRuleCount=6+Math.floor(level/3);
+
+        while(rules.length<targetRuleCount){
+
+            let type=Math.floor(Math.random()*4);
+
+            if(type===0){
+                let k=randomKey(keys);
+                let val=solution[k];
+                rules.push(s=>s[k]===val);
+                ruleText.push(k+" 必须"+(val?"开启":"关闭"));
+            }
+
+            if(type===1){
+                let [a,b]=randomPair(keys);
+                let same=solution[a]===solution[b];
+                rules.push(s=>(s[a]===s[b])===same);
+                ruleText.push(a+" 与 "+b+" 必须"+(same?"相同":"相反"));
+            }
+
+            if(type===2){
+                let [a,b]=randomPair(keys);
+                let val=solution[b];
+                rules.push(s=>!s[a]||s[b]===val);
+                ruleText.push("如果 "+a+" 开启，则 "+b+" 必须"+(val?"开启":"关闭"));
+            }
+
+            if(type===3){
+                let need=Object.values(solution).filter(v=>v).length;
+                rules.push(s=>Object.values(s).filter(v=>v).length===need);
+                ruleText.push("必须恰好有 "+need+" 个开启");
+            }
+        }
+
+        success=uniqueCheck();
+    }
+}
+
+/* 唯一解 */
+function uniqueCheck(){
+    let keys=Object.keys(switches);
+    let total=1<<keys.length;
+    let count=0;
+
+    for(let i=0;i<total;i++){
+        let test={};
+        keys.forEach((k,index)=>{
+            test[k]=Boolean(i&(1<<index));
+        });
+        if(rules.every(r=>r(test))) count++;
+        if(count>1) return false;
+    }
+    return count===1;
+}
+
+function randomKey(arr){
+    return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function randomPair(arr){
+    let a=randomKey(arr);
+    let b=arr.filter(x=>x!==a)[Math.floor(Math.random()*(arr.length-1))];
+    return [a,b];
+}
+
+/* UI */
+function render(){
+    const grid=document.getElementById("grid");
+    grid.innerHTML="";
+
+    for(let key in switches){
+        let div=document.createElement("div");
+        div.className="switch";
+        div.onclick=()=>{
+            if(gameFinished) return;
+            switches[key]=!switches[key];
+            update();
+        };
+
+        let circle=document.createElement("div");
+        circle.className="circle "+(switches[key]?"on":"off");
+
+        let label=document.createElement("div");
+        label.className="label";
+        label.innerText=key;
+
+        div.appendChild(circle);
+        div.appendChild(label);
+        grid.appendChild(div);
+    }
+
+    renderRules();
+}
+
+function renderRules(){
+    const list=document.getElementById("ruleList");
+    list.innerHTML="";
+    ruleText.forEach(text=>{
+        let div=document.createElement("div");
+        div.className="rule";
+        div.innerText=text;
+        list.appendChild(div);
+    });
+}
+
+function update(){
+    let ok=rules.filter(r=>r(switches)).length;
+    let percent=Math.floor(ok/rules.length*100);
+
+    document.getElementById("stability").innerText=percent+"%";
+    document.getElementById("bar").style.width=percent+"%";
+
+    if(percent===100 && !gameFinished){
+        gameFinished=true;
+        document.getElementById("modal").style.display="flex";
+    }
+
+    render();
+}
+
+function nextLevel(){
+    level++;
+    document.getElementById("level").innerText=level;
+    document.getElementById("modal").style.display="none";
+    gameFinished=false;
+
+    if(level<=5){
+        loadFixedLevel();
+    }else{
+        generateRandomLevel();
+    }
+
+    resetUI();
+    render();
+}
+
+function resetUI(){
+    document.getElementById("stability").innerText="0%";
+    document.getElementById("bar").style.width="0%";
+}
+
+/* 启动 */
+loadFixedLevel();
+render();
+
+</script>
+
+</body>
+</html>
