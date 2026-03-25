@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>霓虹光轮·极速穿梭</title>
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff00de;
+            --neon-orange: #ffaa00;
+            --text-color: #ffffff;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: 'PingFang SC', "Microsoft YaHei", sans-serif;
+            color: var(--text-color);
+            user-select: none;
+        }
+
+        /* 背景画布 - 用于粒子和纸屑 */
+        #bgCanvas, #confettiCanvas {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+        }
+        
+        #bgCanvas { z-index: 1; }
+        #confettiCanvas { z-index: 210; } /* 在结果层之上 */
+
+        /* 顶部指示针 */
+        .pointer {
+            position: absolute; top: 12%; left: 50%;
+            transform: translateX(-50%);
+            width: 4px; height: 40px;
+            background: var(--neon-pink);
+            box-shadow: 0 0 20px var(--neon-pink);
+            z-index: 10;
+            border-radius: 2px;
+        }
+        /* 三角形指示针 */
+        .pointer-tri {
+            position: absolute; 
+            top: calc(50% - 210px); /* 紧贴转盘外沿 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid var(--neon-pink);
+            filter: drop-shadow(0 0 10px var(--neon-pink));
+            z-index: 20;
+        }
+
+        .stage {
+            position: relative; width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 5;
+        }
+
+        /* 旋转大圆环 */
+        .wheel-container {
+            position: relative; width: 350px; height: 350px;
+            display: flex; justify-content: center; align-items: center;
+            transform-style: preserve-3d;
+        }
+
+        .food-item {
+            position: absolute;
+            /* 增大文字容器，允许两行显示 */
+            width: 120px; height: 60px;
+            display: flex; justify-content: center; align-items: center;
+            text-align: center;
+        }
+
+        /* 文字包装层：处理正直显示和霓虹效果 */
+        .text-wrapper {
+            display: inline-block;
+            font-weight: 400; 
+            font-size: 14px; /* 调整后的文字大小 */
+            line-height: 1.2;
+            color: #fff;
+            text-shadow: 
+                0 0 5px #fff,
+                0 0 10px var(--neon-blue),
+                0 0 20px var(--neon-blue);
+            white-space: pre-wrap; /* 允许换行 */
+            will-change: transform; /* 性能优化 */
+        }
+
+        .start-btn {
+            position: absolute; z-index: 100;
+            width: 100px; height: 100px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 3px solid var(--neon-blue);
+            border-radius: 50%;
+            color: var(--neon-blue);
+            font-weight: 900; font-size: 24px; cursor: pointer;
+            box-shadow: 0 0 25px var(--neon-blue);
+            backdrop-filter: blur(5px);
+            animation: pulse 2s infinite;
+            transition: opacity 0.3s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 50px var(--neon-blue); }
+        }
+
+        /* 结果遮罩层 */
+        .result-overlay {
+            position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.9);
+            display: none; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 200;
+            backdrop-filter: blur(10px);
+        }
+        
+        .result-title {
+            color: #aaa; font-size: 18px; margin-bottom: 15px; letter-spacing: 2px;
+        }
+
+        .result-text { 
+            font-size: 64px; font-weight: 900; 
+            color: var(--neon-pink); 
+            text-shadow: 0 0 25px var(--neon-pink), 0 0 50px var(--neon-pink);
+            transform: scale(0);
+            animation: popIn 0.6s cubic-bezier(0.17, 0.67, 0.83, 1.67) forwards;
+            max-width: 90%; text-align: center;
+        }
+
+        @keyframes popIn { to { transform: scale(1); } }
+
+        .retry-btn {
+            margin-top: 60px; background: transparent; 
+            border: 2px solid #555; color: #888; padding: 12px 30px;
+            border-radius: 30px; font-size: 16px; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<canvas id="confettiCanvas"></canvas>
+
+<div class="pointer-tri"></div>
+
+<div class="stage">
+    <button class="start-btn" id="startBtn">GO!</button>
+    <div class="wheel-container" id="wheel"></div>
+</div>
+
+<div class="result-overlay" id="resultOverlay">
+    <div class="result-title">今晚就吃</div>
+    <div class="result-text" id="winnerName">---</div>
+    <button class="retry-btn" onclick="location.reload()">再抽一次</button>
+</div>
+
+<script>
+    // 菜单配置，支持换行符 \n
+    const foods = ["麻辣烫", "和牛烧肉", "波奇饭", "地锅鸡", "螺蛳粉", "萨莉亚", "减脂沙拉", "热干面"];
+    
+    const wheel = document.getElementById('wheel');
+    const startBtn = document.getElementById('startBtn');
+    
+    const items = [];
+
+    // --- 初始化 UI ---
+    function init() {
+        resizeCanvases();
+        initParticles();
+        animateBg();
+
+        const radius = 145; // 稍微加大半径
+        foods.forEach((name, i) => {
+            // 初始分布：让第0项在-90度（正上方）
+            const angle = (i / foods.length) * Math.PI * 2 - Math.PI/2; 
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            
+            const el = document.createElement('div');
+            el.className = 'food-item';
+            el.style.transform = `translate(${x}px, ${y}px)`;
+            el.innerHTML = `<div class="text-wrapper">${name}</div>`;
+            
+            wheel.appendChild(el);
+            items.push({ wrapper: el.querySelector('.text-wrapper') });
+        });
+        updateTextOrientation(0); // 初始正直显示
+    }
+
+    // 文字反向补偿旋转，保持正直
+    function updateTextOrientation(rotation) {
+        items.forEach(item => {
+            item.wrapper.style.transform = `rotate(${-rotation}deg)`;
+        });
+    }
+
+    // --- 核心抽取逻辑 ---
+    let isRunning = false;
+    startBtn.onclick = () => {
+        if (isRunning) return;
+        isRunning = true;
+        startBtn.style.opacity = '0';
+        
+        // 1. 随机中奖项
+        const winnerIndex = Math.floor(Math.random() * foods.length);
+        
+        // 2. 计算目标角度 (确保停在正上方)
+        const stepAngle = 360 / foods.length;
+        // 基础圈数(8-12圈) + 抵消该项角度
+        const baseSpins = (8 + Math.floor(Math.random() * 5)) * 360; 
+        const targetRotation = baseSpins - (winnerIndex * stepAngle);
+        
+        const startTime = performance.now();
+        const duration = 4500; // 动画时长
+
+        function animate(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // 超缓出曲线 (easeOutQuart)
+            const easeOut = 1 - Math.pow(1 - progress, 4);
+            const nowRotation = targetRotation * easeOut;
+            
+            wheel.style.transform = `rotate(${nowRotation}deg)`;
+            updateTextOrientation(nowRotation);
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // 3. 动画结束，高光时刻
+                showResult(foods[winnerIndex]);
+            }
+        }
+
+        requestAnimationFrame(animate);
+    };
+
+    function showResult(name) {
+        isRunning = false;
+        document.getElementById('winnerName').innerText = name.replace('\n', '');
+        
+        setTimeout(() => {
+            document.getElementById('resultOverlay').style.display = 'flex';
+            // 触发纸屑爆炸
+            confetti.burst();
+        }, 300);
+    }
+
+
+    // ====== 背景粒子与纸屑特效引擎 ======
+    const bgCtx = document.getElementById('bgCanvas').getContext('2d');
+    const cfCtx = document.getElementById('confettiCanvas').getContext('2d');
+    let width, height;
+    
+    let particles = [];
+    const colors = ['#00f2ff', '#ff00de', '#ffaa00', '#ffffff'];
+
+    function resizeCanvases() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        document.getElementById('bgCanvas').width = width;
+        document.getElementById('bgCanvas').height = height;
+        document.getElementById('confettiCanvas').width = width;
+        document.getElementById('confettiCanvas').height = height;
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    // --- 背景漂浮粒子 ---
+    function initParticles() {
+        particles = [];
+        for (let i = 0; i < 60; i++) {
+            particles.push({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                size: Math.random() * 2,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speedX: (Math.random() - 0.5) * 0.5,
+                speedY: (Math.random() - 0.5) * 0.5,
+                alpha: Math.random() * 0.5
+            });
+        }
+    }
+
+    function animateBg() {
+        bgCtx.clearRect(0, 0, width, height);
+        particles.forEach(p => {
+            p.x += p.speedX;
+            p.y += p.speedY;
+            if (p.x < 0 || p.x > width) p.speedX *= -1;
+            if (p.y < 0 || p.y > height) p.speedY *= -1;
+            
+            bgCtx.globalAlpha = p.alpha;
+            bgCtx.fillStyle = p.color;
+            bgCtx.beginPath();
+            bgCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            bgCtx.fill();
+        });
+        requestAnimationFrame(animateBg);
+    }
+
+    // --- “五彩纸屑”爆炸动效 ---
+    const confetti = {
+        pool: [],
+        active: false,
+        
+        burst: function() {
+            this.pool = [];
+            const count = 150; // 纸屑数量
+            for (let i = 0; i < count; i++) {
+                this.pool.push({
+                    x: width / 2, // 从屏幕中心爆炸
+                    y: height / 2,
+                    w: Math.random() * 10 + 5,
+                    h: Math.random() * 6 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    // 初始爆发速度 (弧度)
+                    vx: (Math.random() - 0.5) * 20,
+                    vy: -(Math.random()) * 25-10,
+                    gravity: 0.6,
+                    friction: 0.96,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: (Math.random() - 0.5) * 10,
+                    life: 200 + Math.random() * 50
+                });
+            }
+            if (!this.active) {
+                this.active = true;
+                this.animate();
+            }
+        },
+
+        animate: function() {
+            if (this.pool.length === 0) {
+                this.active = false;
+                cfCtx.clearRect(0, 0, width, height);
+                return;
+            }
+            cfCtx.clearRect(0, 0, width, height);
+            
+            for (let i = this.pool.length - 1; i >= 0; i--) {
+                const p = this.pool[i];
+                // 物理计算
+                p.vx *= p.friction;
+                p.vy += p.gravity;
+                p.vy *= p.friction;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.rotation += p.rotationSpeed;
+                p.life--;
+
+                // 绘制
+                cfCtx.save();
+                cfCtx.translate(p.x, p.y);
+                cfCtx.rotate(p.rotation * Math.PI / 180);
+                cfCtx.fillStyle = p.color;
+                cfCtx.globalAlpha = p.life / 150; // 逐渐淡出
+                cfCtx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+                cfCtx.restore();
+
+                // 移除死亡粒子或掉出屏幕的粒子
+                if (p.life <= 0 || p.y > height) {
+                    this.pool.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(() => this.animate());
+        }
+    };
+
+    init();
+</script>
+</body>
+</html>

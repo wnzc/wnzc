@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Particle Random Selector - Fluid Gather</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #030308;
+      font-family: Arial
+    }
+
+    /* ===== 左上角返回按钮 ===== */
+    #backBtn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-size: 50px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(12px);
+      transition: background 0.2s;
+      z-index: 100;
+    }
+
+    #backBtn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* ===== 右上角选项图标 ===== */
+    #optionsIcon {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-size: 50px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(12px);
+      transition: background 0.2s;
+      z-index: 100;
+    }
+
+    #optionsIcon:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* ===== 底部开始按钮 ===== */
+    #btn {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 32px 80px;
+      border-radius: 150px;
+      cursor: pointer;
+      font-size: 56px;
+      background: rgba(255, 255, 255, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      backdrop-filter: blur(12px)
+    }
+
+    /* ===== 选项管理弹窗 ===== */
+    #optionsModal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #optionsModal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: rgba(20, 20, 35, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 50px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .modal-header h3 {
+      color: white;
+      margin: 0;
+      font-size: 30px;
+    }
+
+    .modal-close {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: white;
+      font-size: 38px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* ===== 选项列表 ===== */
+    .options-list {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 30px;
+      max-height: 400px;
+    }
+
+    .option-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 30px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .option-item span {
+      color: white;
+      font-size: 28px;
+      min-width: 40px;
+    }
+
+    .option-item .delete-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 100, 100, 0.3);
+      border: none;
+      color: #ff6b6b;
+      font-size: 26px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .option-item .delete-btn:hover {
+      background: rgba(255, 100, 100, 0.5);
+    }
+
+    /* ===== 添加选项输入区 ===== */
+    .add-option-box {
+      display: flex;
+      gap: 15px;
+    }
+
+    .add-option-box input {
+      flex: 1;
+      padding: 20px 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 26px;
+      outline: none;
+    }
+
+    .add-option-box input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .add-option-box input:focus {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .add-option-box button {
+      padding: 20px 30px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(100, 200, 100, 0.6);
+      color: white;
+      font-size: 26px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .add-option-box button:hover {
+      background: rgba(100, 200, 100, 0.8);
+    }
+
+    /* ===== 重置按钮 ===== */
+    #resetBtn {
+      padding: 20px 34px !important;
+      font-size: 26px !important;
+      margin-top: 20px !important;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="c"></canvas>
+
+  <!-- 返回按钮 -->
+  <div id="backBtn">←</div>
+
+  <!-- 选项图标 -->
+  <div id="optionsIcon">⚙</div>
+
+  <!-- 开始按钮 -->
+  <div id="btn">开始</div>
+
+  <!-- 选项管理弹窗 -->
+  <div id="optionsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>随机选项管理</h3>
+        <button class="modal-close" id="modalClose">×</button>
+      </div>
+      <div class="options-list" id="optionsList"></div>
+      <div class="add-option-box">
+        <input type="text" id="newOptionInput" placeholder="输入新选项" maxlength="10" />
+        <button id="addOptionBtn">添加</button>
+      </div>
+      <!-- 👇 新增重置按钮 -->
+      <div style="margin-top: 15px; text-align: center;">
+        <button id="resetBtn" style="
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        background: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+      ">重置为默认选项</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ================== 画布初始化 ==================
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    // 画布尺寸 = 屏幕
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+
+    // 汇聚中心点（可以改位置）
+    const center = {
+      x: canvas.width / 2,
+      y: canvas.height / 2 - 40
+    };
+
+    // ================== 全局状态 ==================
+    let particles = [];
+
+    // 基础粒子数量（影响整体密度）
+    const BASE_COUNT = 900;
+
+    // 汇聚时额外从屏幕外生成的粒子数量
+    const GATHER_EXTRA = 600;
+
+    let state = 'idle'; // idle | gather | result | explode
+    let result = '';
+    let resultScale = 0; // 结果放大动画
+    let opacity = 1;
+    let shocks = []; // 冲击波
+
+    // 随机选项
+    const defaultOptions = ['A', 'B', 'C', 'D', 'E', '✨', '?'];
+
+    // 👇 从 localStorage 读取选项，如果没有则使用默认值
+    let options = JSON.parse(localStorage.getItem('randomOptions')) || [...defaultOptions];
+
+    // 👇 保存选项到 localStorage
+    function saveOptions() {
+      localStorage.setItem('randomOptions', JSON.stringify(options));
+    }
+
+    // 缓动函数（让动画更顺）
+    const ease = t => 1 - Math.pow(1 - t, 3);
+
+    // ================== 选项管理功能 ==================
+    const optionsModal = document.getElementById('optionsModal');
+    const optionsList = document.getElementById('optionsList');
+    const newOptionInput = document.getElementById('newOptionInput');
+    const addOptionBtn = document.getElementById('addOptionBtn');
+    const modalClose = document.getElementById('modalClose');
+    const optionsIcon = document.getElementById('optionsIcon');
+
+    // 渲染选项列表
+    function renderOptionsList() {
+      optionsList.innerHTML = '';
+      options.forEach((opt, index) => {
+        const item = document.createElement('div');
+        item.className = 'option-item';
+        item.innerHTML = `
+          <span>${opt}</span>
+          <button class="delete-btn" data-index="${index}">×</button>
+        `;
+        optionsList.appendChild(item);
+      });
+
+      // 绑定删除事件
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          if (options.length > 2) {
+            options.splice(idx, 1);
+            renderOptionsList();
+          } else {
+            alert('至少保留 2 个选项！');
+          }
+        });
+      });
+    }
+
+    // 打开弹窗
+    function openOptionsModal() {
+      renderOptionsList();
+      optionsModal.classList.add('show');
+    }
+
+    // 关闭弹窗
+    function closeOptionsModal() {
+      optionsModal.classList.remove('show');
+      newOptionInput.value = '';
+    }
+
+    // 添加选项
+    function addOption() {
+      const value = newOptionInput.value.trim();
+      if (value) {
+        options.push(value);
+        saveOptions();  // 👇 保存修改
+        renderOptionsList();
+        newOptionInput.value = '';
+      }
+    }
+    // 重置为默认选项
+    function resetToDefault() {
+      if (confirm('确定要重置为默认选项吗？')) {
+        options = [...defaultOptions];
+        saveOptions();
+        renderOptionsList();
+      }
+    }
+
+    // 事件绑定
+    optionsIcon.addEventListener('click', openOptionsModal);
+    modalClose.addEventListener('click', closeOptionsModal);
+    addOptionBtn.addEventListener('click', addOption);
+    newOptionInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addOption();
+    });
+
+    // 点击弹窗背景关闭
+    optionsModal.addEventListener('click', (e) => {
+      if (e.target === optionsModal) closeOptionsModal();
+    });
+
+    // ================== 返回按钮 ==================
+    document.getElementById('backBtn').addEventListener('click', () => {
+      // 这里可以添加返回逻辑，比如跳转页面或提示
+      if (confirm('确定要返回吗？')) {
+        // 可根据实际需求修改，例如：
+        // window.history.back();
+        // 或 window.location.href = 'previous-page.html';
+        console.log('返回操作');
+      }
+    });
+
+
+    // ================== 粒子类 ==================
+    class P {
+      constructor(x, y) {
+
+        // 初始位置（可传入 or 随机）
+        this.x = x ?? (Math.random() * canvas.width);
+        this.y = y ?? (Math.random() * canvas.height);
+
+        // 初始速度（idle 状态用）
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+
+        // 粒子大小（可以调视觉密度）
+        this.size = Math.random() * 2 + 0.5;
+
+        // 拖尾历史（越大拖尾越长）
+        this.history = [];
+
+        // 初始色相（蓝→紫）
+        this.hue = 220 + Math.random() * 60;
+      }
+
+      update() {
+        let dx = center.x - this.x;
+        let dy = center.y - this.y;
+
+        // ===== idle 或 result：随机漂浮 =====
+        if (state === 'idle' || state === 'result') {
+          this.x += this.vx;
+          this.y += this.vy;
+        }
+
+        // ===== gather：向中心吸附 =====
+        if (state === 'gather') {
+
+          // 👉 吸引力（越大越快）
+          this.vx += dx * 0.0016;
+          this.vy += dy * 0.0016;
+
+          // 👉 阻尼（越小越"冲"）
+          this.vx *= 0.94;
+          this.vy *= 0.94;
+
+          this.x += this.vx;
+          this.y += this.vy;
+        }
+
+        // ===== 拖尾记录 =====
+        this.history.push({ x: this.x, y: this.y });
+
+        // 👉 拖尾长度（可改）
+        if (this.history.length > 8) this.history.shift();
+      }
+
+      draw() {
+
+        // ===== 根据距离计算颜色 =====
+        let dx = this.x - center.x;
+        let dy = this.y - center.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+
+        // 👉 距离映射（控制颜色变化范围）
+        let t = Math.max(0, Math.min(1, 1 - dist / 300));
+        // t 越大 → 越靠近中心 → 越白
+
+        // 蓝紫 → 白
+        let r = Math.floor(120 + 135 * t);
+        let g = Math.floor(150 + 105 * t);
+        let b = 255;
+
+        // ===== 拖尾（流体感关键）=====
+        for (let i = 0; i < this.history.length; i++) {
+          let p = this.history[i];
+          let alpha = i / this.history.length;
+
+          ctx.fillStyle = `rgba(${r},${g},${b},${alpha * 0.35})`;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, this.size * 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // ===== 粒子主体（发光）=====
+        const gRad = ctx.createRadialGradient(
+          this.x, this.y, 0,
+          this.x, this.y, this.size * 8
+        );
+
+        // 👉 中心白光（汇聚效果核心）
+        gRad.addColorStop(0, `rgba(255,255,255,${0.9 * t})`);
+
+        // 👉 过渡色
+        gRad.addColorStop(0.4, `rgba(${r},${g},${b},0.8)`);
+
+        gRad.addColorStop(1, 'rgba(0,0,0,0)');
+
+        ctx.fillStyle = gRad;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+
+    // ================== 屏幕外生成粒子 ==================
+    function spawnOffscreen() {
+
+      // 随机从四个边生成
+      const side = Math.floor(Math.random() * 4);
+      const m = 200; // 离屏距离（越大越"突然出现"）
+
+      let x, y;
+
+      if (side === 0) { x = Math.random() * canvas.width; y = -m }
+      if (side === 1) { x = canvas.width + m; y = Math.random() * canvas.height }
+      if (side === 2) { x = Math.random() * canvas.width; y = canvas.height + m }
+      if (side === 3) { x = -m; y = Math.random() * canvas.height }
+
+      return new P(x, y);
+    }
+
+
+    // ================== 初始化 ==================
+    function init() {
+      particles = [];
+
+      for (let i = 0; i < BASE_COUNT; i++) {
+        particles.push(new P());
+      }
+    }
+    init();
+
+
+    // ================== 爆炸效果 ==================
+    function explode() {
+      particles = [];
+
+      for (let i = 0; i < BASE_COUNT; i++) {
+
+        const p = new P(center.x, center.y);
+
+        // 随机方向爆开
+        const a = Math.random() * Math.PI * 2;
+
+        // 👉 爆炸力度（可调）
+        const s = Math.random() * 3 + 1;
+
+        p.vx = Math.cos(a) * s;
+        p.vy = Math.sin(a) * s;
+
+        particles.push(p);
+      }
+    }
+
+
+    // ================== 冲击波 ==================
+    function spawnShockwaves() {
+      shocks = [];
+
+      for (let i = 0; i < 3; i++) {
+        shocks.push({ r: 0, delay: i * 10 });
+      }
+    }
+
+    function drawShockwaves() {
+      shocks.forEach(s => {
+
+        if (s.delay > 0) {
+          s.delay--;
+          return;
+        }
+
+        s.r += 3;
+
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, s.r, 0, Math.PI * 2);
+
+        ctx.strokeStyle = `rgba(255,255,255,${1 - s.r / 300})`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+    }
+
+
+    // ================== 判断是否汇聚完成 ==================
+    function isGathered() {
+
+      let count = 0;
+
+      particles.forEach(p => {
+        let dx = p.x - center.x;
+        let dy = p.y - center.y;
+
+        // 👉 判定半径（越小越严格）
+        if (Math.sqrt(dx * dx + dy * dy) < 20) count++;
+      });
+
+      // 👉 比例（越大越慢结束）
+      return count > particles.length * 0.85;
+    }
+
+
+    // ================== 绘制结果 ==================
+    function drawResult() {
+
+      if (state === 'result') {
+
+        // 👉 放大速度（越小越慢）
+        resultScale += 0.02;
+
+        let s = ease(Math.min(resultScale, 1));
+
+        ctx.save();
+
+        ctx.translate(center.x, center.y);
+
+        ctx.scale(0.6 + s * 0.6, 0.6 + s * 0.6);
+
+        // 光圈
+        const g = ctx.createRadialGradient(0, 0, 20, 0, 0, 190);
+        g.addColorStop(0, 'rgba(255,255,255,1)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(0, 0, 150, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 文字
+        ctx.fillStyle = 'black';
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.globalAlpha = opacity;
+        ctx.fillText(result, 0, 2);
+
+        ctx.restore();
+      }
+    }
+
+
+    // ================== 主动画循环 ==================
+    function animate() {
+
+      // 半透明背景 → 形成拖影残留
+      ctx.fillStyle = 'rgba(3,3,8,0.2)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // ===== 持续从屏外吸入粒子 =====
+      if (state === 'gather' && particles.length < BASE_COUNT + GATHER_EXTRA) {
+
+        // 👉 每帧生成数量（越大越密）
+        for (let i = 0; i < 6; i++) {
+          particles.push(spawnOffscreen());
+        }
+      }
+
+      // 更新 + 绘制粒子
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      if (state === 'gather' && isGathered()) {
+
+        state = 'result';
+
+        result = options[Math.floor(Math.random() * options.length)];
+
+        spawnShockwaves();
+
+        resultScale = 0;
+        opacity = 1;
+        // 💥 粒子立即消失
+        particles = [];
+
+        // 🌱 重新生成一批"待机粒子"（背景漂浮）
+        setTimeout(() => {
+          init();
+        }, 200);
+      }
+
+      drawShockwaves();
+      drawResult();
+
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+
+    // ================== 点击交互 ==================
+    function start() {
+
+      // ===== 第一次点击 =====
+      if (state === 'idle') {
+        state = 'gather';
+      }
+
+      // ===== 有结果时再次点击 =====
+      else if (state === 'result') {
+
+        let t = 0;
+
+        const fade = setInterval(() => {
+
+          t += 0.03;
+
+          // 🌫️ 结果淡出
+          opacity = 1 - t;
+
+          if (t >= 1) {
+            clearInterval(fade);
+
+            // 🔄 清空粒子 → 重新开始
+            particles = [];
+            init();
+
+            state = 'gather'; // ⚠️ 直接进入下一轮
+            opacity = 1;
+          }
+
+        }, 16);
+      }
+    }
+
+    document.getElementById('btn').onclick = start;
+
+
+    // ================== 自适应窗口 ==================
+    onresize = () => {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight;
+
+      center.x = canvas.width / 2;
+      center.y = canvas.height / 2 - 40;
+    };
+  </script>
+</body>
+
+</html>
