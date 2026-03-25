@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>今日油价查询</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         :root {
             --bg-gradient: linear-gradient(180deg, #1e1e2e 0%, #2d2d44 100%);
@@ -21,7 +22,12 @@
             --picker-border: rgba(255, 255, 255, 0.15);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -34,8 +40,13 @@
             padding: 20px;
         }
 
-        .container { width: 100%; max-width: 480px; position: relative; z-index: 1; }
-        
+        .container {
+            width: 100%;
+            max-width: 480px;
+            position: relative;
+            z-index: 1;
+        }
+
         /* 返回按钮 */
         .nav-back {
             position: absolute;
@@ -47,7 +58,7 @@
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             cursor: pointer;
             z-index: 10;
         }
@@ -64,13 +75,35 @@
             pointer-events: none;
         }
 
-        .header { text-align: center; margin-bottom: 30px; }
-        .title { display: block; font-size: 24px; font-weight: 800; margin-bottom: 5px; letter-spacing: 1px; }
-        .subtitle { font-size: 12px; opacity: 0.6; }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-        .picker-section { margin-bottom: 20px; }
-        .section-label { font-size: 12px; opacity: 0.5; margin-bottom: 8px; padding-left: 5px; }
-        
+        .title {
+            display: block;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .picker-section {
+            margin-bottom: 20px;
+        }
+
+        .section-label {
+            font-size: 12px;
+            opacity: 0.5;
+            margin-bottom: 8px;
+            padding-left: 5px;
+        }
+
         .picker-box {
             background: var(--picker-bg);
             backdrop-filter: blur(10px);
@@ -85,11 +118,27 @@
             transition: background 0.2s;
             position: relative;
         }
-        .picker-box:active { background: rgba(255, 255, 255, 0.15); }
-        .picker-text { font-size: 16px; font-weight: 600; }
-        .icon-arrow-down { font-size: 12px; opacity: 0.6; }
 
-        .cards-container { display: flex; flex-direction: column; gap: 15px; }
+        .picker-box:active {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .picker-text {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .icon-arrow-down {
+            font-size: 12px;
+            opacity: 0.6;
+        }
+
+        .cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
         .oil-card {
             background: var(--card-bg);
             border-radius: 16px;
@@ -100,21 +149,73 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             transition: transform 0.1s;
         }
-        .oil-card:active { transform: scale(0.98); }
-        .card-top { display: flex; flex-direction: column; gap: 4px; }
-        .oil-name { font-size: 14px; font-weight: 600; color: var(--text-main); }
-        .update-time { font-size: 10px; color: var(--text-sub); }
-        .price-area { display: flex; align-items: baseline; }
-        .price-symbol { font-size: 12px; margin-right: 2px; }
-        .price-value { font-size: 24px; font-weight: 700; line-height: 1; }
-        .price-unit { font-size: 10px; margin-left: 2px; color: var(--text-sub); }
 
-        .card-92 .price-value { color: var(--color-92); }
-        .card-95 .price-value { color: var(--color-95); }
-        .card-98 .price-value { color: var(--color-98); }
-        .card-0 .price-value { color: var(--color-0); }
+        .oil-card:active {
+            transform: scale(0.98);
+        }
 
-        .footer-tip { margin-top: 40px; text-align: center; font-size: 10px; opacity: 0.3; line-height: 1.5; }
+        .card-top {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .oil-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .update-time {
+            font-size: 10px;
+            color: var(--text-sub);
+        }
+
+        .price-area {
+            display: flex;
+            align-items: baseline;
+        }
+
+        .price-symbol {
+            font-size: 12px;
+            margin-right: 2px;
+        }
+
+        .price-value {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .price-unit {
+            font-size: 10px;
+            margin-left: 2px;
+            color: var(--text-sub);
+        }
+
+        .card-92 .price-value {
+            color: var(--color-92);
+        }
+
+        .card-95 .price-value {
+            color: var(--color-95);
+        }
+
+        .card-98 .price-value {
+            color: var(--color-98);
+        }
+
+        .card-0 .price-value {
+            color: var(--color-0);
+        }
+
+        .footer-tip {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 10px;
+            opacity: 0.3;
+            line-height: 1.5;
+        }
 
         #toast {
             visibility: hidden;
@@ -133,7 +234,11 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-        #toast.show { visibility: visible; opacity: 1; }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
 
         #province-select {
             position: absolute;
@@ -145,8 +250,36 @@
             cursor: pointer;
             appearance: none;
         }
+
+        /* 刷新按钮 */
+        .nav-refresh {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.3s;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
+
 <body>
 
     <div class="bg-decoration"></div>
@@ -156,7 +289,10 @@
         <a href="index.html" class="nav-back">
             <i class="fa-solid fa-angle-left"></i>
         </a>
-
+        <!-- 刷新按钮 -->
+        <div class="nav-refresh" id="refresh-btn">
+            <i class="fa-solid fa-rotate-right"></i>
+        </div>
         <div class="header">
             <span class="title">今日油价查询</span>
             <span class="subtitle">实时更新 · 准确可靠</span>
@@ -234,8 +370,8 @@
         };
 
         const PROVINCES = [
-            '安徽', '北京', '重庆', '福建', '甘肃', '广东', '广西', '贵州', '海南', '河北', 
-            '黑龙江', '河南', '湖北', '湖南', '江苏', '江西', '吉林', '辽宁', '内蒙古', '宁夏', 
+            '安徽', '北京', '重庆', '福建', '甘肃', '广东', '广西', '贵州', '海南', '河北',
+            '黑龙江', '河南', '湖北', '湖南', '江苏', '江西', '吉林', '辽宁', '内蒙古', '宁夏',
             '青海', '陕西', '上海', '山东', '山西', '四川', '天津', '西藏', '新疆', '云南', '浙江'
         ];
 
@@ -248,7 +384,12 @@
             t0: document.getElementById('price-0')
         };
         const toastEl = document.getElementById('toast');
+        const refreshBtn = document.getElementById('refresh-btn');
 
+        refreshBtn.addEventListener('click', () => {
+            const province = provinceTextEl.textContent;
+            fetchOilData(province)
+        });
         function initSelect() {
             PROVINCES.forEach(prov => {
                 const option = document.createElement('option');
@@ -280,7 +421,7 @@
 
                     localStorage.setItem('oil_province', province);
                     localStorage.setItem('oil_data', JSON.stringify(data));
-                    
+
                     showToast('更新成功');
                 } else {
                     showToast(result.msg || '获取数据失败');
@@ -321,4 +462,5 @@
         });
     </script>
 </body>
+
 </html>
