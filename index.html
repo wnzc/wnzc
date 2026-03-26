@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -53,7 +54,7 @@
             border-radius: 20px;
             margin-bottom: 15px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .title {
@@ -149,76 +150,105 @@
         .item-arrow i {
             font-size: 14px;
         }
+
+        /* 嵌入网页容器 */
+        .embed-section {
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        .embed-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            overflow: hidden;
+            height: 300px;
+        }
+
+        .embed-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff;
+        }
     </style>
 </head>
+
 <body>
-<div class="container">
-    <!-- 头部：Logo + 标题 -->
-    <div class="header">
-        <img src="logo_toolbox.png" alt="工具箱Logo" class="logo-img" onerror="this.style.display='none'">
-        <h1 class="title">工具箱</h1>
-        <p class="subtitle">实用工具 · 一触即达</p>
+    <div class="container">
+
+        <!-- ✅ 嵌入网页区域 -->
+        <div class="embed-section" id="embed-section">
+            <div class="embed-container">
+                <iframe class="embed-frame" id="embed-frame" src="https://teojs.github.io/clock-dashboard/"></iframe>
+            </div>
+        </div>
+        <!-- 头部：Logo + 标题 -->
+        <div class="header">
+            <img src="logo_toolbox.png" alt="工具箱Logo" class="logo-img" onerror="this.style.display='none'">
+            <h1 class="title">工具箱</h1>
+            <p class="subtitle">实用工具 · 一触即达</p>
+        </div>
+
+        <!-- 工具列表 -->
+        <div class="tools-list" id="toolsList">
+            <!-- 动态内容将通过JavaScript生成 -->
+        </div>
     </div>
 
-    <!-- 工具列表 -->
-    <div class="tools-list" id="toolsList">
-        <!-- 动态内容将通过JavaScript生成 -->
-    </div>
-</div>
+    <script>
+        // 工具数据结构
+        const toolsData = [
+            { title: "最热新闻", desc: "全网热搜", icon: "https://newsnow.busiyi.world/icon.svg", link: "https://newsnow.busiyi.world" },
+            { title: "时钟天气", desc: "实时时钟天气", icon: "https://teojs.github.io/clock-dashboard/favicon/favicon.ico", link: "https://teojs.github.io/clock-dashboard/" },
+            { title: "今日油价", desc: "全国实时油价查询", icon: "images/icon_oil.png", link: "src/oil-price.html" },
+            { title: "五子棋", desc: "五子棋游戏", icon: "images/gomoku.png", link: "src/gobang-game.html" },
+            { title: "数独", desc: "神秘数字谜题", icon: "images/Sudoku.png", link: "src/sudoku.html" },
+            { title: "开关灯", desc: "益智游戏-开关灯", icon: "images/lightsOut.png", link: "src/switch.html" },
+            { title: "扫雷", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/minesweeper.html" },
+            { title: "水压套圈", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/RetroWaterRingToss.html" },
+            { title: "兽棋", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/AnimalChess.html" },
+            { title: "随机选择", desc: "随机选择", icon: "images/minesweeper.png", link: "src/selector.html" },
+            { title: "随机选择", desc: "随机选择", icon: "images/minesweeper.png", link: "src/randomSelector.html" },
+            { title: "全景故宫", desc: "故宫博物院VR实景项目", icon: "https://pano.dpm.org.cn/resource/favicon.ico", link: "https://pano.dpm.org.cn" },
+            { title: "故宫博物院数字文物库", desc: "高清数字影像", icon: "https://zm-digicol.dpm.org.cn/images/logo_center_v1.png", link: "https://zm-digicol.dpm.org.cn" },
+            { title: "陕西博物馆数字展厅", desc: "虚拟游览馆藏珍品", icon: "https://www.sxhm.com/favicon.ico", link: "https://www.sxhm.com/online.html" },
+            { title: "观沧海", desc: "知识地图共享平台", icon: "https://ageeye-media.oss-cn-hangzhou.aliyuncs.com/logo/ageeye-large.png", link: "https://ageeye.app.ditushu.com" },
+            { title: "煎蛋", desc: "地球上没有的新鲜事", icon: "https://jandan.net/wp-content/themes/jandan2025/images/logo2025.png", link: "https://jandan.net" },
+            { title: "FUUN", desc: "奇趣网站收藏家", icon: "https://fuun.fun/favicon-32x32.png", link: "https://fuun.fun/" },
+            { title: "中国科普博览", desc: "中国科普博览", icon: "http://www.kepu.net.cn/images/ico.jpg", link: "http://www.kepu.net.cn" },
+            { title: "全历史", desc: "用现代化方式展示历史的网站", icon: "https://m2.allhistory.com/favicon.ico", link: "https://m2.allhistory.com" },
+            { title: "TestTubeGames", desc: "多款基于真实物理、数学和生命科学原理的互动小游戏", icon: "https://www.testtubegames.com/favicon.ico", link: "https://www.testtubegames.com" },
+            { title: "CrazyGames", desc: "各类游戏合集", icon: "https://www.crazygames.com/images/logo/logo-ziggy.svg", link: "https://www.crazygames.com" },
+            { title: "wikiHow", desc: "你可以信赖的万事指南", icon: "https://zh.wikihow.com/skins/owl/images/wikihow_logo_intl.png", link: "https://zh.wikihow.com" },
+            { title: "FC在线模拟器", desc: "模拟FC游戏", icon: "https://fc.wan1234.com/favicon.ico", link: "https://fc.wan1234.com" },
+            { title: "贪吃蛇", desc: "贪吃蛇游戏", icon: "https://slither.io/s/favicon.png", link: "https://slither.io" },
+            { title: "orber", desc: "一个将数字序列和寻路结合的益智小游戏", icon: "https://slither.io/s/favicon.png", link: "https://orber.im" },
+            { title: "FamilyFunHub", desc: "趣味教育游戏平台", icon: "https://familyfunhub.com/favicon.ico", link: "https://familyfunhub.com/zh" },
+            { title: "便便计算器", desc: "了解你的如厕习惯", icon: "https://familyfunhub.com/favicon.ico", link: "https://thunderous-trifle-3dd05e.netlify.app" },
+            { title: "穷游", desc: "很多超详细的旅游攻略", icon: "https://www.qyer.com/favicon.ico", link: "https://www.qyer.com" },
+            { title: "protobot", desc: "随机无厘头任务挑战", icon: "https://www.qyer.com/favicon.ico", link: "https://protobot.org/#zh" },
+            { title: "爱折纸", desc: "折纸大全图解", icon: "https://www.aizhezhi.com/favicon.ico", link: "https://www.aizhezhi.com/index.html" },
+            { title: "全国地铁", desc: "全国地铁可视化", icon: "https://subway.cuvii.dev/favicon.ico", link: "https://subway.cuvii.dev" },
+            { title: "免费派对游戏", desc: "免费派对游戏合集", icon: "https://subway.cuvii.dev/favicon.ico", link: "https://www.bestpartygames.net/zh" },
+            { title: "猜电影", desc: "猜电影的游戏", icon: "https://moviegame.top/favicon.ico", link: "https://moviegame.top" },
+            { title: "文字游戏", desc: "摸鱼文字游戏", icon: "http://tinywaste.maougame.com/favicon.ico", link: "http://tinywaste.maougame.com" },
+            { title: "益智小游戏", desc: "益智小游戏", icon: "https://gridspech.baublejar.com/assets/favicon-C29Vu5tQ.png", link: "https://gridspech.baublejar.com" },
+            { title: "涂色小游戏", desc: "涂色小游戏", icon: "https://www.coloringwell.com/logo.svg", link: "https://www.coloringwell.com" },
+            { title: "更多", desc: "腾讯帮小忙在线工具箱", icon: "images/icon_bangxiaomang.png", link: "https://tool.browser.qq.com" }
+        ];
 
-<script>
-    // 工具数据结构
-    const toolsData = [
-        { title: "最热新闻", desc: "全网热搜",icon: "https://newsnow.busiyi.world/icon.svg", link: "https://newsnow.busiyi.world"},
-        { title: "时钟天气", desc: "实时时钟天气", icon: "https://teojs.github.io/clock-dashboard/favicon/favicon.ico", link: "https://teojs.github.io/clock-dashboard/" },
-        { title: "今日油价", desc: "全国实时油价查询", icon: "images/icon_oil.png", link: "src/oil-price.html" },
-        { title: "五子棋", desc: "五子棋游戏", icon: "images/gomoku.png", link: "src/gobang-game.html" },
-        { title: "数独", desc: "神秘数字谜题", icon: "images/Sudoku.png", link: "src/sudoku.html" },
-        { title: "开关灯", desc: "益智游戏-开关灯", icon: "images/lightsOut.png", link: "src/switch.html" },
-        { title: "扫雷", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/minesweeper.html" },
-        { title: "水压套圈", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/RetroWaterRingToss.html" },
-        { title: "兽棋", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/AnimalChess.html" },
-        { title: "随机选择", desc: "随机选择", icon: "images/minesweeper.png", link: "src/selector.html" },
-        { title: "随机选择", desc: "随机选择", icon: "images/minesweeper.png", link: "src/randomSelector.html" },
-        { title: "全景故宫", desc: "故宫博物院VR实景项目", icon: "https://pano.dpm.org.cn/resource/favicon.ico", link: "https://pano.dpm.org.cn" },
-        { title: "故宫博物院数字文物库", desc: "高清数字影像", icon: "https://zm-digicol.dpm.org.cn/images/logo_center_v1.png", link: "https://zm-digicol.dpm.org.cn" },
-        { title: "陕西博物馆数字展厅", desc: "虚拟游览馆藏珍品", icon: "https://www.sxhm.com/favicon.ico", link: "https://www.sxhm.com/online.html" },
-        { title: "观沧海", desc: "知识地图共享平台", icon: "https://ageeye-media.oss-cn-hangzhou.aliyuncs.com/logo/ageeye-large.png", link: "https://ageeye.app.ditushu.com" },
-        { title: "煎蛋", desc: "地球上没有的新鲜事", icon: "https://jandan.net/wp-content/themes/jandan2025/images/logo2025.png", link: "https://jandan.net" },
-        { title: "FUUN", desc: "奇趣网站收藏家", icon: "https://fuun.fun/favicon-32x32.png", link: "https://fuun.fun/" },
-        { title: "中国科普博览", desc: "中国科普博览", icon: "http://www.kepu.net.cn/images/ico.jpg", link: "http://www.kepu.net.cn" },
-        { title: "全历史", desc: "用现代化方式展示历史的网站", icon: "https://m2.allhistory.com/favicon.ico", link: "https://m2.allhistory.com" },
-        { title: "TestTubeGames", desc: "多款基于真实物理、数学和生命科学原理的互动小游戏", icon: "https://www.testtubegames.com/favicon.ico", link: "https://www.testtubegames.com" },
-        { title: "CrazyGames", desc: "各类游戏合集", icon: "https://www.crazygames.com/images/logo/logo-ziggy.svg", link: "https://www.crazygames.com" },
-        { title: "wikiHow", desc: "你可以信赖的万事指南", icon: "https://zh.wikihow.com/skins/owl/images/wikihow_logo_intl.png", link: "https://zh.wikihow.com" },
-        { title: "FC在线模拟器", desc: "模拟FC游戏", icon: "https://fc.wan1234.com/favicon.ico", link: "https://fc.wan1234.com" },
-        { title: "贪吃蛇", desc: "贪吃蛇游戏", icon: "https://slither.io/s/favicon.png", link: "https://slither.io" },
-        { title: "orber", desc: "一个将数字序列和寻路结合的益智小游戏", icon: "https://slither.io/s/favicon.png", link: "https://orber.im" },
-        { title: "FamilyFunHub", desc: "趣味教育游戏平台", icon: "https://familyfunhub.com/favicon.ico", link: "https://familyfunhub.com/zh" },
-        { title: "便便计算器", desc: "了解你的如厕习惯", icon: "https://familyfunhub.com/favicon.ico", link: "https://thunderous-trifle-3dd05e.netlify.app" },
-        { title: "穷游", desc: "很多超详细的旅游攻略", icon: "https://www.qyer.com/favicon.ico", link: "https://www.qyer.com" },
-        { title: "protobot", desc: "随机无厘头任务挑战", icon: "https://www.qyer.com/favicon.ico", link: "https://protobot.org/#zh" },
-        { title: "爱折纸", desc: "折纸大全图解", icon: "https://www.aizhezhi.com/favicon.ico", link: "https://www.aizhezhi.com/index.html" },
-        { title: "全国地铁", desc: "全国地铁可视化", icon: "https://subway.cuvii.dev/favicon.ico", link: "https://subway.cuvii.dev" },
-        { title: "免费派对游戏", desc: "免费派对游戏合集", icon: "https://subway.cuvii.dev/favicon.ico", link: "https://www.bestpartygames.net/zh" },
-        { title: "猜电影", desc: "猜电影的游戏", icon: "https://moviegame.top/favicon.ico", link: "https://moviegame.top" },
-        { title: "文字游戏", desc: "摸鱼文字游戏", icon: "http://tinywaste.maougame.com/favicon.ico", link: "http://tinywaste.maougame.com" },
-        { title: "益智小游戏", desc: "益智小游戏", icon: "https://gridspech.baublejar.com/assets/favicon-C29Vu5tQ.png", link: "https://gridspech.baublejar.com" },
-        { title: "涂色小游戏", desc: "涂色小游戏", icon: "https://www.coloringwell.com/logo.svg", link: "https://www.coloringwell.com" },
-        { title: "更多", desc: "腾讯帮小忙在线工具箱", icon: "images/icon_bangxiaomang.png", link: "https://tool.browser.qq.com" }
-    ];
+        // 渲染工具列表
+        function renderToolsList() {
+            const toolsContainer = document.getElementById('toolsList');
 
-    // 渲染工具列表
-    function renderToolsList() {
-        const toolsContainer = document.getElementById('toolsList');
+            toolsData.forEach(tool => {
+                const toolElement = document.createElement('a');
+                toolElement.href = tool.link;
+                toolElement.className = 'tool-item';
 
-        toolsData.forEach(tool => {
-            const toolElement = document.createElement('a');
-            toolElement.href = tool.link;
-            toolElement.className = 'tool-item';
-
-            // 使用模板字符串构建HTML
-            toolElement.innerHTML = `
+                // 使用模板字符串构建HTML
+                toolElement.innerHTML = `
                 <div class="item-icon">
                     <img src="${tool.icon}" alt="${tool.title}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50?text=Icon';">
                 </div>
@@ -231,12 +261,13 @@
                 </div>
             `;
 
-            toolsContainer.appendChild(toolElement);
-        });
-    }
+                toolsContainer.appendChild(toolElement);
+            });
+        }
 
-    // 页面加载完成后渲染列表
-    document.addEventListener('DOMContentLoaded', renderToolsList);
-</script>
+        // 页面加载完成后渲染列表
+        document.addEventListener('DOMContentLoaded', renderToolsList);
+    </script>
 </body>
+
 </html>
