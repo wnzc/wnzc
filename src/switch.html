@@ -1,478 +1,528 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOGIC MATRIX</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGIC MATRIX</title>
 
-<style>
-/* ===== 全局 ===== */
-body{
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    font-family:"Orbitron", "Segoe UI", monospace;
-    background:linear-gradient(160deg,#0a0f18,#0d1117 40%,#070b12);
-    color:#d7faff;
-    display:flex;
-    flex-direction:column;
-}
+    <style>
+        /* ===== 全局 ===== */
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: "Orbitron", "Segoe UI", monospace;
+            background: linear-gradient(160deg, #0a0f18, #0d1117 40%, #070b12);
+            color: #d7faff;
+            display: flex;
+            flex-direction: column;
+        }
 
-/* 背景科技网格 */
-body::before{
-    content:"";
-    position:fixed;
-    inset:0;
-    background:
-        linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px);
-    background-size:40px 40px;
-    pointer-events:none;
-}
+        /* 背景科技网格 */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
 
-/* ===== 顶部面板 ===== */
+        /* ===== 返回按钮 ===== */
 
-.header{
-    padding:15px;
-    text-align:center;
-    border-bottom:1px solid rgba(0,255,255,0.2);
-    background:rgba(0,20,30,0.6);
-    backdrop-filter:blur(6px);
-    box-shadow:0 0 20px rgba(0,255,255,0.1);
-}
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 30, 40, 0.5);
+            backdrop-filter: blur(6px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.25s;
+            color: #00f7ff;
+            font-size: 18px;
+        }
 
-.title{
-    font-size:22px;
-    letter-spacing:2px;
-    color:#00f7ff;
-    text-shadow:0 0 10px #00f7ff;
-}
+        .back-btn:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            border-color: #00f7ff;
+        }
 
-.stability{
-    font-size:34px;
-    margin-top:6px;
-    color:#00ffaa;
-    text-shadow:0 0 12px #00ffaa;
-}
+        .back-btn:active {
+            transform: scale(0.95);
+        }
 
-.level{
-    font-size:14px;
-    color:#89f7ff;
-    margin-top:4px;
-}
+        /* ===== 顶部面板 ===== */
 
-/* 进度条 */
-.progress{
-    width:70%;
-    margin:10px auto 0;
-    height:6px;
-    background:#0b1a22;
-    border-radius:10px;
-    border:1px solid rgba(0,255,255,0.2);
-    overflow:hidden;
-}
+        .header {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            background: rgba(0, 20, 30, 0.6);
+            backdrop-filter: blur(6px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        }
 
-.bar{
-    height:100%;
-    width:0%;
-    background:linear-gradient(90deg,#00ffaa,#00f7ff);
-    box-shadow:0 0 10px #00ffaa;
-    transition:0.3s;
-}
+        .title {
+            font-size: 22px;
+            letter-spacing: 2px;
+            color: #00f7ff;
+            text-shadow: 0 0 10px #00f7ff;
+        }
 
-/* ===== 开关区域 ===== */
+        .stability {
+            font-size: 34px;
+            margin-top: 6px;
+            color: #00ffaa;
+            text-shadow: 0 0 12px #00ffaa;
+        }
 
-.grid{
-    flex:1;
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:22px;
-    padding:30px;
-    align-content:center;
-}
+        .level {
+            font-size: 14px;
+            color: #89f7ff;
+            margin-top: 4px;
+        }
 
-/* 开关卡片 */
-.switch{
-    text-align:center;
-    cursor:pointer;
-    padding:clamp(8px,2vw,18px);
-    border:1px solid rgba(0,255,255,0.2);
-    border-radius:12px;
-    background:rgba(0,30,40,0.5);
-    backdrop-filter:blur(8px);
-    transition:0.25s;
-    position:relative;
-}
+        /* 进度条 */
+        .progress {
+            width: 70%;
+            margin: 10px auto 0;
+            height: 6px;
+            background: #0b1a22;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            overflow: hidden;
+        }
 
-/* 赛博边框效果 */
-.switch::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    border-radius:12px;
-    padding:1px;
-    background:linear-gradient(45deg,#00ffaa,#00f7ff,#0088ff);
-    -webkit-mask:
-        linear-gradient(#000 0 0) content-box,
-        linear-gradient(#000 0 0);
-    -webkit-mask-composite:xor;
-    mask-composite:exclude;
-    pointer-events:none;
-    opacity:0.2;
-}
+        .bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ffaa, #00f7ff);
+            box-shadow: 0 0 10px #00ffaa;
+            transition: 0.3s;
+        }
 
-.switch:hover{
-    box-shadow:0 0 15px rgba(0,255,255,0.3);
-}
+        /* ===== 开关区域 ===== */
 
-/* 开关圆 */
-.circle{
-    width:clamp(50px,12vw,90px);
-    height:clamp(50px,12vw,90px);
-    border-radius:50%;
-    margin:auto;
-    transition:0.25s;
-}
+        .grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 22px;
+            padding: 30px;
+            align-content: center;
+        }
 
-.on{
-    background:radial-gradient(circle,#00ffaa,#007777);
-    box-shadow:0 0 18px #00ffaa;
-}
+        /* 开关卡片 */
+        .switch {
+            text-align: center;
+            cursor: pointer;
+            padding: clamp(8px, 2vw, 18px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(0, 30, 40, 0.5);
+            backdrop-filter: blur(8px);
+            transition: 0.25s;
+            position: relative;
+        }
 
-.off{
-    background:#1a1f25;
-    border:1px solid #333;
-}
+        /* 赛博边框效果 */
+        .switch::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            padding: 1px;
+            background: linear-gradient(45deg, #00ffaa, #00f7ff, #0088ff);
+            -webkit-mask:
+                linear-gradient(#000 0 0) content-box,
+                linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.2;
+        }
 
-.switch:active .circle{
-    transform:scale(0.9);
-}
+        .switch:hover {
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
 
-.label{
-    margin-top:8px;
-    font-size:clamp(12px,2.5vw,16px);
-    letter-spacing:1px;
-    color:#00f7ff;
-}
+        /* 开关圆 */
+        .circle {
+            width: clamp(50px, 12vw, 90px);
+            height: clamp(50px, 12vw, 90px);
+            border-radius: 50%;
+            margin: auto;
+            transition: 0.25s;
+        }
 
-/* ===== 规则面板 ===== */
+        .on {
+            background: radial-gradient(circle, #00ffaa, #007777);
+            box-shadow: 0 0 18px #00ffaa;
+        }
 
-.rules{
-    margin:10px 20px 20px;
-    padding:15px;
-    border-radius:12px;
-    background:rgba(0,20,30,0.6);
-    backdrop-filter:blur(10px);
-    border:1px solid rgba(0,255,255,0.2);
-    max-height:28vh;
-    overflow:auto;
-}
+        .off {
+            background: #1a1f25;
+            border: 1px solid #333;
+        }
 
-.rule{
-    padding:4px 0;
-    font-size:13px;
-    color:#00ffaa;
-    text-shadow:0 0 5px rgba(0,255,170,0.4);
-}
+        .switch:active .circle {
+            transform: scale(0.9);
+        }
 
-/* ===== 弹窗 ===== */
+        .label {
+            margin-top: 8px;
+            font-size: clamp(12px, 2.5vw, 16px);
+            letter-spacing: 1px;
+            color: #00f7ff;
+        }
 
-.modal{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.8);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    display:none;
-}
+        /* ===== 规则面板 ===== */
 
-.modal-content{
-    padding:30px 40px;
-    border-radius:14px;
-    background:rgba(0,20,30,0.9);
-    border:1px solid rgba(0,255,255,0.3);
-    box-shadow:0 0 30px rgba(0,255,255,0.2);
-    text-align:center;
-}
+        .rules {
+            margin: 10px 20px 20px;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(0, 20, 30, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            max-height: 28vh;
+            overflow: auto;
+        }
 
-.modal-content h2{
-    color:#00ffaa;
-    text-shadow:0 0 12px #00ffaa;
-}
+        .rule {
+            padding: 4px 0;
+            font-size: 13px;
+            color: #00ffaa;
+            text-shadow: 0 0 5px rgba(0, 255, 170, 0.4);
+        }
 
-button{
-    margin-top:15px;
-    padding:10px 20px;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    background:linear-gradient(90deg,#00ffaa,#00f7ff);
-    color:#000;
-    font-weight:bold;
-    letter-spacing:1px;
-    transition:0.2s;
-}
+        /* ===== 弹窗 ===== */
 
-button:hover{
-    box-shadow:0 0 12px #00ffaa;
-}
-</style>
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            display: none;
+        }
+
+        .modal-content {
+            padding: 30px 40px;
+            border-radius: 14px;
+            background: rgba(0, 20, 30, 0.9);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            color: #00ffaa;
+            text-shadow: 0 0 12px #00ffaa;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(90deg, #00ffaa, #00f7ff);
+            color: #000;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            box-shadow: 0 0 12px #00ffaa;
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="header">
-<div class="title">LOGIC MATRIX</div>
-<div class="stability" id="stability">0%</div>
-<div class="level">Level <span id="level">1</span></div>
-<div class="progress"><div class="bar" id="bar"></div></div>
-</div>
+    <div class="header">
+        <button class="back-btn" id="backBtn" title="返回">&#8592;</button>
+        <div class="title">LOGIC MATRIX</div>
+        <div class="stability" id="stability">0%</div>
+        <div class="level">Level <span id="level">1</span></div>
+        <div class="progress">
+            <div class="bar" id="bar"></div>
+        </div>
+    </div>
 
-<div class="grid" id="grid"></div>
+    <div class="grid" id="grid"></div>
 
-<div class="rules">
-<div id="ruleList"></div>
-</div>
+    <div class="rules">
+        <div id="ruleList"></div>
+    </div>
 
-<div class="modal" id="modal">
-<div class="modal-content">
-<h2>关卡完成</h2>
-<button onclick="nextLevel()">下一关</button>
-</div>
-</div>
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2>关卡完成</h2>
+            <button onclick="nextLevel()">下一关</button>
+        </div>
+    </div>
 
-<script>
+    <script>
 
-let level=1;
-let switches={};
-let rules=[];
-let ruleText=[];
-let gameFinished=false;
+        let level = 1;
+        let switches = {};
+        let rules = [];
+        let ruleText = [];
+        let gameFinished = false;
 
-/* ========= 缓存机制 ========= */
+        /* ========= 缓存机制 ========= */
 
-function saveLevel(){
-    localStorage.setItem("logic_level", level);
-}
-
-function loadLevel(){
-    let saved=localStorage.getItem("logic_level");
-    if(saved){
-        level=parseInt(saved);
-    }else{
-        level=1;
-    }
-    document.getElementById("level").innerText=level;
-}
-
-/* ========= 生成关卡 ========= */
-
-function generateLevel(){
-
-    let switchCount, ruleCount, difficulty;
-
-    if(level<=2){
-        switchCount=4;
-        ruleCount=4;
-        difficulty="basic";
-    }
-    else if(level<=5){
-        switchCount=6;
-        ruleCount=6;
-        difficulty="inverse";
-    }
-    else if(level<=10){
-        switchCount=6;
-        ruleCount=6;
-        difficulty="mixed";
-    }
-    else{
-        switchCount=8;
-        ruleCount=8;
-        difficulty="hard";
-    }
-
-    const letters="ABCDEFGH".split("").slice(0,switchCount);
-
-    let attempts=0;
-
-    while(attempts<500){
-
-        attempts++;
-
-        switches={};
-        rules=[];
-        ruleText=[];
-
-        let solution={};
-
-        letters.forEach(l=>{
-            switches[l]=false;
-            solution[l]=Math.random()>0.5;
-        });
-
-        while(rules.length<ruleCount){
-
-            let type;
-
-            if(difficulty==="basic"){
-                type=Math.random()<0.7?0:4;
-            }
-            else if(difficulty==="inverse"){
-                type=Math.random()<0.5?1:0;
-            }
-            else{
-                type=Math.floor(Math.random()*5);
-            }
-
-            if(type===0){
-                let k=randomKey(letters);
-                let val=solution[k];
-                rules.push(s=>s[k]===val);
-                ruleText.push(k+" 必须"+(val?"开启":"关闭"));
-            }
-
-            if(type===1){
-                let [a,b]=randomPair(letters);
-                rules.push(s=>s[a]!==s[b]);
-                ruleText.push(a+" 与 "+b+" 必须相反");
-            }
-
-            if(type===2){
-                let [a,b]=randomPair(letters);
-                rules.push(s=>s[a]===s[b]);
-                ruleText.push(a+" 与 "+b+" 必须相同");
-            }
-
-            if(type===3){
-                let [a,b]=randomPair(letters);
-                let val=solution[b];
-                rules.push(s=>!s[a]||s[b]===val);
-                ruleText.push("如果 "+a+" 开启，则 "+b+" 必须"+(val?"开启":"关闭"));
-            }
-
-            if(type===4){
-                let need=Object.values(solution).filter(v=>v).length;
-                rules.push(s=>Object.values(s).filter(v=>v).length===need);
-                ruleText.push("必须恰好有 "+need+" 个开启");
-            }
+        function saveLevel() {
+            localStorage.setItem("logic_level", level);
         }
 
-        if(uniqueCheck()) return;
-    }
+        function loadLevel() {
+            let saved = localStorage.getItem("logic_level");
+            if (saved) {
+                level = parseInt(saved);
+            } else {
+                level = 1;
+            }
+            document.getElementById("level").innerText = level;
+        }
 
-    generateLevel();
-}
+        /* ========= 生成关卡 ========= */
 
-function uniqueCheck(){
-    let keys=Object.keys(switches);
-    let total=1<<keys.length;
-    let count=0;
+        function generateLevel() {
 
-    for(let i=0;i<total;i++){
-        let test={};
-        keys.forEach((k,index)=>{
-            test[k]=Boolean(i&(1<<index));
+            let switchCount, ruleCount, difficulty;
+
+            if (level <= 2) {
+                switchCount = 4;
+                ruleCount = 4;
+                difficulty = "basic";
+            }
+            else if (level <= 5) {
+                switchCount = 6;
+                ruleCount = 6;
+                difficulty = "inverse";
+            }
+            else if (level <= 10) {
+                switchCount = 6;
+                ruleCount = 6;
+                difficulty = "mixed";
+            }
+            else {
+                switchCount = 8;
+                ruleCount = 8;
+                difficulty = "hard";
+            }
+
+            const letters = "ABCDEFGH".split("").slice(0, switchCount);
+
+            let attempts = 0;
+
+            while (attempts < 500) {
+
+                attempts++;
+
+                switches = {};
+                rules = [];
+                ruleText = [];
+
+                let solution = {};
+
+                letters.forEach(l => {
+                    switches[l] = false;
+                    solution[l] = Math.random() > 0.5;
+                });
+
+                while (rules.length < ruleCount) {
+
+                    let type;
+
+                    if (difficulty === "basic") {
+                        type = Math.random() < 0.7 ? 0 : 4;
+                    }
+                    else if (difficulty === "inverse") {
+                        type = Math.random() < 0.5 ? 1 : 0;
+                    }
+                    else {
+                        type = Math.floor(Math.random() * 5);
+                    }
+
+                    if (type === 0) {
+                        let k = randomKey(letters);
+                        let val = solution[k];
+                        rules.push(s => s[k] === val);
+                        ruleText.push(k + " 必须" + (val ? "开启" : "关闭"));
+                    }
+
+                    if (type === 1) {
+                        let [a, b] = randomPair(letters);
+                        rules.push(s => s[a] !== s[b]);
+                        ruleText.push(a + " 与 " + b + " 必须相反");
+                    }
+
+                    if (type === 2) {
+                        let [a, b] = randomPair(letters);
+                        rules.push(s => s[a] === s[b]);
+                        ruleText.push(a + " 与 " + b + " 必须相同");
+                    }
+
+                    if (type === 3) {
+                        let [a, b] = randomPair(letters);
+                        let val = solution[b];
+                        rules.push(s => !s[a] || s[b] === val);
+                        ruleText.push("如果 " + a + " 开启，则 " + b + " 必须" + (val ? "开启" : "关闭"));
+                    }
+
+                    if (type === 4) {
+                        let need = Object.values(solution).filter(v => v).length;
+                        rules.push(s => Object.values(s).filter(v => v).length === need);
+                        ruleText.push("必须恰好有 " + need + " 个开启");
+                    }
+                }
+
+                if (uniqueCheck()) return;
+            }
+
+            generateLevel();
+        }
+
+        function uniqueCheck() {
+            let keys = Object.keys(switches);
+            let total = 1 << keys.length;
+            let count = 0;
+
+            for (let i = 0; i < total; i++) {
+                let test = {};
+                keys.forEach((k, index) => {
+                    test[k] = Boolean(i & (1 << index));
+                });
+                if (rules.every(r => r(test))) count++;
+                if (count > 1) return false;
+            }
+            return count === 1;
+        }
+
+        function randomKey(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function randomPair(arr) {
+            let a = randomKey(arr);
+            let b = arr.filter(x => x !== a)[Math.floor(Math.random() * (arr.length - 1))];
+            return [a, b];
+        }
+
+        /* ========= UI ========= */
+
+        function render() {
+            const grid = document.getElementById("grid");
+            grid.innerHTML = "";
+
+            for (let key in switches) {
+
+                let div = document.createElement("div");
+                div.className = "switch";
+
+                div.onclick = () => {
+                    if (gameFinished) return;
+                    switches[key] = !switches[key];
+                    update();
+                };
+
+                let circle = document.createElement("div");
+                circle.className = "circle " + (switches[key] ? "on" : "off");
+
+                let label = document.createElement("div");
+                label.className = "label";
+                label.innerText = key;
+
+                div.appendChild(circle);
+                div.appendChild(label);
+                grid.appendChild(div);
+            }
+
+            renderRules();
+        }
+
+        function renderRules() {
+            const list = document.getElementById("ruleList");
+            list.innerHTML = "";
+            ruleText.forEach(text => {
+                let div = document.createElement("div");
+                div.className = "rule";
+                div.innerText = text;
+                list.appendChild(div);
+            });
+        }
+
+        function update() {
+            let ok = rules.filter(r => r(switches)).length;
+            let percent = Math.floor(ok / rules.length * 100);
+
+            document.getElementById("stability").innerText = percent + "%";
+            document.getElementById("bar").style.width = percent + "%";
+
+            if (percent === 100 && !gameFinished) {
+                gameFinished = true;
+                document.getElementById("modal").style.display = "flex";
+            }
+
+            render();
+        }
+
+        function nextLevel() {
+            level++;
+            saveLevel();   // 保存当前进度
+            document.getElementById("level").innerText = level;
+            document.getElementById("modal").style.display = "none";
+            gameFinished = false;
+            generateLevel();
+            resetUI();
+            render();
+        }
+
+        function resetUI() {
+            document.getElementById("stability").innerText = "0%";
+            document.getElementById("bar").style.width = "0%";
+        }
+
+        /* ========= 返回按钮 ========= */
+
+        document.getElementById("backBtn").addEventListener("click", () => {
+            if (gameFinished || confirm("确定要退出当前关卡吗？进度将不会保存。")) {
+                gameFinished = false;
+                // 返回上一页或首页
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = "../index.html";
+                }
+            }
         });
-        if(rules.every(r=>r(test))) count++;
-        if(count>1) return false;
-    }
-    return count===1;
-}
 
-function randomKey(arr){
-    return arr[Math.floor(Math.random()*arr.length)];
-}
+        /* ========= 启动 ========= */
 
-function randomPair(arr){
-    let a=randomKey(arr);
-    let b=arr.filter(x=>x!==a)[Math.floor(Math.random()*(arr.length-1))];
-    return [a,b];
-}
+        loadLevel();      // 读取缓存
+        generateLevel();  // 根据缓存关卡随机生成规则
+        render();
 
-/* ========= UI ========= */
-
-function render(){
-    const grid=document.getElementById("grid");
-    grid.innerHTML="";
-
-    for(let key in switches){
-
-        let div=document.createElement("div");
-        div.className="switch";
-
-        div.onclick=()=>{
-            if(gameFinished) return;
-            switches[key]=!switches[key];
-            update();
-        };
-
-        let circle=document.createElement("div");
-        circle.className="circle "+(switches[key]?"on":"off");
-
-        let label=document.createElement("div");
-        label.className="label";
-        label.innerText=key;
-
-        div.appendChild(circle);
-        div.appendChild(label);
-        grid.appendChild(div);
-    }
-
-    renderRules();
-}
-
-function renderRules(){
-    const list=document.getElementById("ruleList");
-    list.innerHTML="";
-    ruleText.forEach(text=>{
-        let div=document.createElement("div");
-        div.className="rule";
-        div.innerText=text;
-        list.appendChild(div);
-    });
-}
-
-function update(){
-    let ok=rules.filter(r=>r(switches)).length;
-    let percent=Math.floor(ok/rules.length*100);
-
-    document.getElementById("stability").innerText=percent+"%";
-    document.getElementById("bar").style.width=percent+"%";
-
-    if(percent===100 && !gameFinished){
-        gameFinished=true;
-        document.getElementById("modal").style.display="flex";
-    }
-
-    render();
-}
-
-function nextLevel(){
-    level++;
-    saveLevel();   // 保存当前进度
-    document.getElementById("level").innerText=level;
-    document.getElementById("modal").style.display="none";
-    gameFinished=false;
-    generateLevel();
-    resetUI();
-    render();
-}
-
-function resetUI(){
-    document.getElementById("stability").innerText="0%";
-    document.getElementById("bar").style.width="0%";
-}
-
-/* ========= 启动 ========= */
-
-loadLevel();      // 读取缓存
-generateLevel();  // 根据缓存关卡随机生成规则
-render();
-
-</script>
+    </script>
 </body>
+
 </html>
