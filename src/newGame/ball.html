@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>弹球躲避 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.8; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(255,255,255,0.2); }
+        #gameCanvas {
+            background: #0a0a1a;
+            border-radius: 8px;
+            touch-action: none;
+        }
+        .game-over {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over h2 { color: #FF6B6B; font-size: 1.5rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>🏓 弹球躲避</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">得分</div>
+            <div class="value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">生命</div>
+            <div class="value" id="lives">❤️❤️❤️</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="startGame()">重新开始</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="game-over hidden" id="gameOver">
+        <h2>游戏结束</h2>
+        <p style="color:#fff;margin-bottom:15px">得分: <span id="finalScore">0</span></p>
+        <button onclick="startGame()">再来一局</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let PADDLE_W, PADDLE_H, BALL_R;
+        function initSize() {
+            const w = Math.min(window.innerWidth - 20, 320);
+            canvas.width = w;
+            canvas.height = Math.min(window.innerHeight - 140, 420);
+            PADDLE_W = w * 0.22;
+            PADDLE_H = 12;
+            BALL_R = Math.min(w * 0.035, 10);
+        }
+        
+        let paddle, balls, score, lives, high = parseInt(localStorage.getItem('dodgeHigh') || '0');
+        let gameRunning, animationId, spawnTimer;
+        
+        document.getElementById('high').textContent = high;
+        
+        const BALL_COLORS = ['#FF6B6B', '#4ECDC4', '#FFD93D', '#9B59B6', '#2ECC71', '#E74C3C', '#3498DB'];
+        
+        function startGame() {
+            document.getElementById('gameOver').classList.add('hidden');
+            initSize();
+            paddle = { x: canvas.width / 2 - PADDLE_W / 2, y: canvas.height - PADDLE_H - 5 };
+            balls = [];
+            score = 0;
+            lives = 3;
+            gameRunning = true;
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = '❤️'.repeat(lives);
+            
+            cancelAnimationFrame(animationId);
+            clearTimeout(spawnTimer);
+            gameLoop();
+        }
+        
+        function spawnBall() {
+            if (!gameRunning) return;
+            const ball = {
+                x: BALL_R + Math.random() * (canvas.width - BALL_R * 2),
+                y: -BALL_R,
+                vx: (Math.random() - 0.5) * 4,
+                vy: 2 + Math.random() * 2,
+                color: BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)],
+                size: BALL_R * (0.8 + Math.random() * 0.4)
+            };
+            balls.push(ball);
+            
+            if (gameRunning) {
+                const delay = Math.max(400, 1000 - score / 5);
+                spawnTimer = setTimeout(spawnBall, delay);
+            }
+        }
+        
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制挡板
+            ctx.fillStyle = '#4ECDC4';
+            ctx.beginPath();
+            ctx.roundRect(paddle.x, paddle.y, PADDLE_W, PADDLE_H, 6);
+            ctx.fill();
+            
+            // 更新球
+            for (let i = balls.length - 1; i >= 0; i--) {
+                const ball = balls[i];
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                
+                // 边界反弹
+                if (ball.x - ball.size < 0 || ball.x + ball.size > canvas.width) {
+                    ball.vx *= -1;
+                }
+                
+                // 绘制球
+                ctx.fillStyle = ball.color;
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 球出界
+                if (ball.y > canvas.height + ball.size) {
+                    balls.splice(i, 1);
+                    continue;
+                }
+                
+                // 检测碰撞挡板
+                if (ball.y + ball.size > paddle.y && ball.y - ball.size < paddle.y + PADDLE_H) {
+                    if (ball.x > paddle.x && ball.x < paddle.x + PADDLE_W) {
+                        balls.splice(i, 1);
+                        score += 10;
+                        document.getElementById('score').textContent = score;
+                        if (score > high) {
+                            high = score;
+                            localStorage.setItem('dodgeHigh', high);
+                            document.getElementById('high').textContent = high;
+                        }
+                    }
+                }
+                
+                // 检测碰到玩家
+                if (ball.y > paddle.y - ball.size) {
+                    balls.splice(i, 1);
+                    lives--;
+                    document.getElementById('lives').textContent = '❤️'.repeat(Math.max(0, lives));
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').classList.remove('hidden');
+        }
+        
+        // 触屏/鼠标控制
+        let isDragging = false;
+        canvas.addEventListener('mousedown', () => isDragging = true);
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mousemove', e => {
+            if (!gameRunning) return;
+            const rect = canvas.getBoundingClientRect();
+            paddle.x = e.clientX - rect.left - PADDLE_W / 2;
+            paddle.x = Math.max(0, Math.min(canvas.width - PADDLE_W, paddle.x));
+        });
+        
+        canvas.addEventListener('touchstart', e => {
+            isDragging = true;
+        }, { passive: true });
+        
+        canvas.addEventListener('touchend', () => {
+            isDragging = false;
+        }, { passive: true });
+        
+        canvas.addEventListener('touchmove', e => {
+            if (!gameRunning) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            paddle.x = e.touches[0].clientX - rect.left - PADDLE_W / 2;
+            paddle.x = Math.max(0, Math.min(canvas.width - PADDLE_W, paddle.x));
+        }, { passive: false });
+        
+        startGame();
+        spawnBall();
+    </script>
+</body>
+</html>

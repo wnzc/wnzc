@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>熄灯游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            touch-action: manipulation;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 280px;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .cell.on {
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.5);
+        }
+        .cell.off {
+            background: rgba(255,255,255,0.2);
+        }
+        .cell:active { transform: scale(0.9); }
+        .status {
+            color: #f1c40f;
+            font-size: 1.1rem;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            background: #f1c40f;
+            color: #333;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        .btn:active { transform: scale(0.95); }
+        .win-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .win-modal.show { display: flex; }
+        .win-modal h1 { font-size: 2rem; margin-bottom: 20px; color: #f1c40f; }
+        .win-modal p { font-size: 1.2rem; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>🎯 点击: <span id="moves">0</span></span>
+        <span>💡 亮灯: <span id="lights">0</span></span>
+    </div>
+    
+    <div class="grid" id="grid"></div>
+    
+    <div class="status" id="status">让所有灯都熄灭! 💡</div>
+    
+    <div>
+        <button class="btn" onclick="newGame()">新游戏</button>
+        <button class="btn" onclick="hint()">提示</button>
+    </div>
+    
+    <div class="win-modal" id="winModal">
+        <h1>🎉 恭喜!</h1>
+        <p>用了 <span id="finalMoves">0</span> 步</p>
+        <button class="btn" onclick="newGame()">再来一局</button>
+    </div>
+
+    <script>
+        const grid = document.getElementById('grid');
+        let lights = [], moves = 0;
+
+        function newGame() {
+            document.getElementById('winModal').classList.remove('show');
+            moves = 0;
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('status').textContent = '让所有灯都熄灭! 💡';
+            
+            // Initialize random pattern
+            lights = Array(25).fill(0).map(() => Math.random() < 0.5 ? 1 : 0);
+            
+            // Ensure not already solved
+            if (lights.every(l => l === 0)) {
+                lights[Math.floor(Math.random() * 25)] = 1;
+            }
+            
+            render();
+            updateLightsCount();
+        }
+
+        function render() {
+            grid.innerHTML = '';
+            for (let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell ' + (lights[i] ? 'on' : 'off');
+                cell.innerHTML = lights[i] ? '💡' : '';
+                cell.onclick = () => toggle(i);
+                grid.appendChild(cell);
+            }
+        }
+
+        function toggle(index) {
+            const row = Math.floor(index / 5);
+            const col = index % 5;
+            
+            // Toggle self and adjacent
+            const toToggle = [index];
+            if (row > 0) toToggle.push(index - 5);
+            if (row < 4) toToggle.push(index + 5);
+            if (col > 0) toToggle.push(index - 1);
+            if (col < 4) toToggle.push(index + 1);
+            
+            toToggle.forEach(i => lights[i] = lights[i] ? 0 : 1);
+            
+            moves++;
+            document.getElementById('moves').textContent = moves;
+            
+            render();
+            updateLightsCount();
+            
+            // Check win
+            if (lights.every(l => l === 0)) {
+                setTimeout(() => {
+                    document.getElementById('finalMoves').textContent = moves;
+                    document.getElementById('winModal').classList.add('show');
+                }, 500);
+            }
+        }
+
+        function updateLightsCount() {
+            const count = lights.filter(l => l === 1).length;
+            document.getElementById('lights').textContent = count;
+        }
+
+        function hint() {
+            // Find a good move
+            const onLights = lights.map((l, i) => l ? i : -1).filter(i => i >= 0);
+            if (onLights.length === 0) return;
+            
+            // Suggest toggling one on light
+            const suggested = onLights[Math.floor(Math.random() * onLights.length)];
+            const row = Math.floor(suggested / 5);
+            const col = suggested % 5;
+            
+            const toToggle = [suggested];
+            if (row > 0) toToggle.push(suggested - 5);
+            if (row < 4) toToggle.push(suggested + 5);
+            if (col > 0) toToggle.push(suggested - 1);
+            if (col < 4) toToggle.push(suggested + 1);
+            
+            // Highlight
+            const cells = document.querySelectorAll('.cell');
+            toToggle.forEach(i => {
+                cells[i].style.transform = 'scale(1.2)';
+                setTimeout(() => cells[i].style.transform = '', 500);
+            });
+        }
+
+        newGame();
+    </script>
+</body>
+</html>

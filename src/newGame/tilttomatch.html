@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>滑动配对 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+        }
+        .card {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none;
+        }
+        .card:active { transform: scale(0.95); }
+        .card.matched {
+            background: #4ECDC4;
+            cursor: default;
+            animation: matchPulse 0.5s;
+        }
+        .card.selected {
+            background: #FFD93D;
+            transform: scale(1.05);
+        }
+        @keyframes matchPulse {
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .timer-bar {
+            width: 100%;
+            max-width: 280px;
+            height: 6px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            background: #FFD93D;
+            transition: width 0.1s linear;
+        }
+        .win-message {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .win-message h2 { font-size: 1.8rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+        @media (max-width: 320px) {
+            .card { width: 50px; height: 50px; font-size: 1.6rem; }
+            .game-board { gap: 6px; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🃏 滑动配对</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">配对</div>
+            <div class="value" id="pairs">0/8</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">用时</div>
+            <div class="value" id="time">0s</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button onclick="location.href='index.html'">← 返回</button>
+        <button onclick="initGame()">重新开始</button>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer"></div></div>
+    <div class="game-board" id="board"></div>
+
+    <div class="win-message hidden" id="winMsg">
+        <h2>🎉 全部配对成功！</h2>
+        <p style="margin-bottom:15px">用时: <span id="finalTime">0</span>秒</p>
+        <button onclick="initGame()">再来一局</button>
+    </div>
+
+    <script>
+        const EMOJIS = ['🍎', '🍊', '🍋', '🍇', '🍓', '🍒', '🥝', '🍑'];
+        const board = document.getElementById('board');
+        
+        let cards = [];
+        let selected = null;
+        let matched = 0;
+        let startTime;
+        let timerInterval;
+        let canSelect = true;
+        
+        function initGame() {
+            document.getElementById('winMsg').classList.add('hidden');
+            selected = null;
+            matched = 0;
+            canSelect = true;
+            document.getElementById('pairs').textContent = `0/${EMOJIS.length}`;
+            
+            clearInterval(timerInterval);
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('time').textContent = elapsed + 's';
+            }, 1000);
+            
+            cards = [...EMOJIS, ...EMOJIS];
+            shuffle(cards);
+            render();
+        }
+        
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+        
+        function render() {
+            board.innerHTML = '';
+            cards.forEach((emoji, idx) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.textContent = emoji;
+                card.dataset.idx = idx;
+                card.onclick = () => selectCard(idx);
+                board.appendChild(card);
+            });
+        }
+        
+        function selectCard(idx) {
+            if (!canSelect) return;
+            
+            const cardEls = board.querySelectorAll('.card');
+            const card = cardEls[idx];
+            
+            if (card.classList.contains('matched')) return;
+            if (card.classList.contains('selected')) return;
+            
+            card.classList.add('selected');
+            
+            if (!selected) {
+                selected = idx;
+            } else {
+                if (cards[selected] === cards[idx]) {
+                    // 匹配成功
+                    cardEls[selected].classList.add('matched');
+                    cardEls[selected].classList.remove('selected');
+                    card.classList.add('matched');
+                    matched++;
+                    document.getElementById('pairs').textContent = `${matched}/${EMOJIS.length}`;
+                    
+                    if (matched === EMOJIS.length) {
+                        clearInterval(timerInterval);
+                        document.getElementById('finalTime').textContent = 
+                            Math.floor((Date.now() - startTime) / 1000);
+                        document.getElementById('winMsg').classList.remove('hidden');
+                    }
+                } else {
+                    // 不匹配
+                    canSelect = false;
+                    setTimeout(() => {
+                        cardEls[selected].classList.remove('selected');
+                        card.classList.remove('selected');
+                        selected = null;
+                        canSelect = true;
+                    }, 500);
+                    selected = null;
+                    return;
+                }
+                selected = null;
+            }
+        }
+        
+        initGame();
+    </script>
+</body>
+</html>

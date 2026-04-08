@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>打字练习</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            touch-action: none;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 350px;
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        .input-area {
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 20px;
+        }
+        .current-word {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .current-word span {
+            padding: 5px 15px;
+            border-radius: 8px;
+        }
+        .current-word span.highlight {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+        }
+        .key {
+            padding: 15px 10px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .key:active { transform: scale(0.9); background: #f0f0f0; }
+        .btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background: white;
+            color: #11998e;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .result {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .result.show { display: flex; }
+        .result h1 { font-size: 2rem; margin-bottom: 20px; }
+        .result .stat { font-size: 1.3rem; margin: 10px 0; }
+        .result .stat span { color: #38ef7d; }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>💯 <span id="score">0</span>分</span>
+        <span>⏱️ <span id="time">60</span>s</span>
+    </div>
+    
+    <div class="input-area">
+        <div class="current-word" id="word"></div>
+        <div class="keyboard" id="keyboard"></div>
+    </div>
+    
+    <div class="result" id="result">
+        <h1>🎉 时间到!</h1>
+        <div class="stat">得分: <span id="finalScore">0</span></div>
+        <div class="stat">正确字数: <span id="correctCount">0</span></div>
+        <div class="stat">正确率: <span id="accuracy">0</span>%</div>
+        <button class="btn" onclick="startGame()">再来一次</button>
+    </div>
+
+    <script>
+        const words = [
+            '苹果','香蕉','橙子','葡萄','西瓜','草莓','芒果','菠萝','樱桃','柠檬',
+            '猫咪','狗狗','兔子','小鸟','小鱼','小猪','小马','小鹿','小熊','小猴',
+            '汽车','火车','飞机','轮船','自行车','摩托车','公交车','出租车','地铁','卡车',
+            '大树','小花','小草','白云','蓝天','太阳','月亮','星星','雨伞','雨滴',
+            '书本','铅笔','橡皮','尺子','书包','椅子','桌子','窗户','门','地板',
+            '红色','蓝色','绿色','黄色','紫色','橙色','粉色','白色','黑色','彩色'
+        ];
+        
+        let currentWord = '', inputIndex = 0, score = 0, timeLeft = 60;
+        let correctCount = 0, totalInput = 0, timer = null, isPlaying = false;
+
+        function startGame() {
+            document.getElementById('result').classList.remove('show');
+            score = 0;
+            correctCount = 0;
+            totalInput = 0;
+            timeLeft = 60;
+            isPlaying = true;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('time').textContent = '60';
+            createKeyboard();
+            nextWord();
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time').textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function createKeyboard() {
+            const keys = ['的一是在不了有和人这中大为上个国说我','们相互','么她就么那你要婆罗蜜多心经'];
+            const allKeys = '的一是在不了有和人这中大为上个国说我互她它么那你要看就来到时说很对着知出过'.
+                split('').filter((v,i,a) => a.indexOf(v) === i).join('');
+            
+            const kb = document.getElementById('keyboard');
+            kb.innerHTML = '';
+            for (const char of currentWord) {
+                const btn = document.createElement('button');
+                btn.className = 'key';
+                btn.textContent = char;
+                btn.onclick = () => input(char);
+                kb.appendChild(btn);
+            }
+            // Add some distractors
+            const extraChars = '婆罗蜜多心经abcdefghijklmnopqrstuvwxyz'.split('');
+            const needed = 15 - currentWord.length;
+            for (let i = 0; i < needed && i < extraChars.length; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'key';
+                btn.textContent = extraChars[i];
+                btn.onclick = () => input(extraChars[i]);
+                kb.appendChild(btn);
+            }
+            // Shuffle
+            const keys2 = Array.from(kb.children);
+            keys2.sort(() => Math.random() - 0.5);
+            keys2.forEach(k => kb.appendChild(k));
+        }
+
+        function nextWord() {
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            inputIndex = 0;
+            renderWord();
+            createKeyboard();
+        }
+
+        function renderWord() {
+            const wordEl = document.getElementById('word');
+            let html = '';
+            for (let i = 0; i < currentWord.length; i++) {
+                const char = currentWord[i];
+                if (i < inputIndex) {
+                    html += `<span style="color:#27ae60">${char}</span>`;
+                } else if (i === inputIndex) {
+                    html += `<span class="highlight">${char}</span>`;
+                } else {
+                    html += char;
+                }
+            }
+            wordEl.innerHTML = html;
+        }
+
+        function input(char) {
+            if (!isPlaying) return;
+            
+            totalInput++;
+            if (char === currentWord[inputIndex]) {
+                inputIndex++;
+                if (inputIndex === currentWord.length) {
+                    score += currentWord.length * 2;
+                    correctCount += currentWord.length;
+                    document.getElementById('score').textContent = score;
+                    nextWord();
+                    return;
+                }
+            } else {
+                score = Math.max(0, score - 1);
+                document.getElementById('score').textContent = score;
+            }
+            renderWord();
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timer);
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('correctCount').textContent = correctCount;
+            document.getElementById('accuracy').textContent = totalInput > 0 ? Math.round(correctCount / totalInput * 100) : 0;
+            document.getElementById('result').classList.add('show');
+        }
+
+        startGame();
+    </script>
+</body>
+</html>

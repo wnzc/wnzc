@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>反应速度 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #232526, #414345);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.8; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(255,255,255,0.2); }
+        #gameArea {
+            width: 280px;
+            height: 350px;
+            background: #1a1a1a;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: background 0.3s;
+            border: 3px solid #333;
+        }
+        #gameArea.wait {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        #gameArea.ready {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        #gameArea.click {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+        #gameArea.tooEarly {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+        }
+        .message {
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 10px;
+        }
+        .time-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .hint {
+            margin-top: 8px;
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+        .result-list {
+            margin-top: 10px;
+            font-size: 0.75rem;
+            opacity: 0.9;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚡ 反应速度</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">平均</div>
+            <div class="value" id="avg">--ms</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最快</div>
+            <div class="value" id="best">--ms</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">次数</div>
+            <div class="value" id="count">0</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="reset()">重置</button>
+    </div>
+    <div id="gameArea">
+        <div class="message" id="message">点击开始测试</div>
+        <div class="time-display" id="timeDisplay"></div>
+    </div>
+    <p class="hint">屏幕变绿时尽快点击，测测你的反应速度！</p>
+    <div class="result-list" id="resultList"></div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const message = document.getElementById('message');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const avgDisplay = document.getElementById('avg');
+        const bestDisplay = document.getElementById('best');
+        const countDisplay = document.getElementById('count');
+        const resultList = document.getElementById('resultList');
+        
+        let state = 'idle'; // idle, waiting, ready, clicked
+        let startTime, timeoutId;
+        let results = [];
+        
+        function setState(newState) {
+            state = newState;
+            gameArea.className = newState === 'idle' ? '' : newState;
+        }
+        
+        function start() {
+            setState('wait');
+            message.textContent = '等待变绿...';
+            timeDisplay.textContent = '';
+            
+            const delay = 1500 + Math.random() * 3500;
+            timeoutId = setTimeout(() => {
+                setState('ready');
+                startTime = Date.now();
+                message.textContent = '点！';
+            }, delay);
+        }
+        
+        function handleClick() {
+            if (state === 'idle' || state === 'wait') {
+                // 太早点击
+                clearTimeout(timeoutId);
+                setState('tooEarly');
+                message.textContent = '太早了！';
+                timeDisplay.textContent = '请重试';
+                
+                setTimeout(() => {
+                    setState('idle');
+                    message.textContent = '点击开始测试';
+                }, 1000);
+            } else if (state === 'ready') {
+                // 成功点击
+                const reactionTime = Date.now() - startTime;
+                setState('click');
+                message.textContent = reactionTime + 'ms';
+                timeDisplay.textContent = reactionTime < 250 ? '🔥 神速！' : 
+                                          reactionTime < 350 ? '👍 很快！' : '继续努力';
+                
+                results.push(reactionTime);
+                updateStats();
+                
+                setTimeout(() => {
+                    setState('idle');
+                    message.textContent = '点击继续';
+                }, 1500);
+            }
+        }
+        
+        function updateStats() {
+            countDisplay.textContent = results.length;
+            
+            if (results.length > 0) {
+                const avg = Math.round(results.reduce((a, b) => a + b, 0) / results.length);
+                const best = Math.min(...results);
+                avgDisplay.textContent = avg + 'ms';
+                bestDisplay.textContent = best + 'ms';
+                
+                // 显示最近5次
+                const recent = results.slice(-5).reverse();
+                resultList.innerHTML = '最近: ' + recent.map(t => t + 'ms').join(' | ');
+            }
+        }
+        
+        function reset() {
+            results = [];
+            avgDisplay.textContent = '--ms';
+            bestDisplay.textContent = '--ms';
+            countDisplay.textContent = '0';
+            resultList.innerHTML = '';
+            setState('idle');
+            message.textContent = '点击开始测试';
+            timeDisplay.textContent = '';
+        }
+        
+        gameArea.addEventListener('click', handleClick);
+        gameArea.addEventListener('touchstart', e => {
+            e.preventDefault();
+            handleClick();
+        }, { passive: false });
+    </script>
+</body>
+</html>

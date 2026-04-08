@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>疯狂点击 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.25);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1.1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .timer-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 6px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            background: #fff;
+            transition: width 0.1s linear;
+        }
+        #clickArea {
+            width: 280px;
+            height: 280px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            border: 4px solid rgba(255,255,255,0.4);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        #clickArea:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.25);
+        }
+        #clickArea h2 {
+            font-size: 3rem;
+            margin-bottom: 5px;
+        }
+        #clickArea p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .tap-effect {
+            position: fixed;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #FFD93D;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.5); }
+        }
+        .game-over {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over h2 { font-size: 1.6rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>👆 疯狂点击</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">点击数</div>
+            <div class="value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">0</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button onclick="location.href='index.html'">← 返回</button>
+        <button onclick="startGame()">重新开始</button>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer"></div></div>
+    <div id="clickArea" onclick="handleClick(event)">
+        <h2>👆</h2>
+        <p>点击这里！</p>
+    </div>
+
+    <div class="game-over hidden" id="gameOver">
+        <h2>🎉 时间到！</h2>
+        <p style="font-size:2rem;margin:10px 0">得分: <span id="finalScore">0</span></p>
+        <p style="margin-bottom:15px;opacity:0.8">最高纪录: <span id="record">0</span></p>
+        <button onclick="startGame()">再来一局</button>
+    </div>
+
+    <script>
+        const GAME_TIME = 10;
+        const clickArea = document.getElementById('clickArea');
+        const scoreDisplay = document.getElementById('score');
+        const highDisplay = document.getElementById('high');
+        
+        let score, timeLeft, gameRunning, timerInterval;
+        let high = parseInt(localStorage.getItem('tapHigh') || '0');
+        
+        highDisplay.textContent = high;
+        
+        function startGame() {
+            document.getElementById('gameOver').classList.add('hidden');
+            score = 0;
+            timeLeft = GAME_TIME;
+            gameRunning = true;
+            scoreDisplay.textContent = score;
+            document.getElementById('timer').style.width = '100%';
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').style.width = (timeLeft / GAME_TIME * 100) + '%';
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+        
+        function handleClick(e) {
+            if (!gameRunning) return;
+            
+            score++;
+            scoreDisplay.textContent = score;
+            
+            // 显示点击效果
+            const effect = document.createElement('div');
+            effect.className = 'tap-effect';
+            effect.textContent = '+1';
+            effect.style.left = (e.clientX - 15) + 'px';
+            effect.style.top = (e.clientY - 10) + 'px';
+            document.body.appendChild(effect);
+            setTimeout(() => effect.remove(), 800);
+            
+            // 点击震动效果
+            clickArea.style.transform = 'scale(0.92)';
+            setTimeout(() => clickArea.style.transform = '', 50);
+        }
+        
+        function endGame() {
+            gameRunning = false;
+            clearInterval(timerInterval);
+            
+            if (score > high) {
+                high = score;
+                localStorage.setItem('tapHigh', high);
+                highDisplay.textContent = high;
+            }
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('record').textContent = high;
+            document.getElementById('gameOver').classList.remove('hidden');
+        }
+        
+        startGame();
+    </script>
+</body>
+</html>

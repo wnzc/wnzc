@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>猜数字 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .start-btn { background: linear-gradient(135deg, #FF6B6B, #FF8E53); }
+        .game-area {
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 280px;
+        }
+        .range {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-bottom: 15px;
+        }
+        .hint-box {
+            background: #4ECDC4;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .guess-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.5rem;
+            text-align: center;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .guess-input:focus { outline: 3px solid #FFD93D; }
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            background: linear-gradient(135deg, #4ECDC4, #2ECC71);
+            margin-bottom: 10px;
+        }
+        .attempts {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 10px;
+        }
+        .win-box {
+            background: linear-gradient(135deg, #FFD93D, #FF8E53);
+            color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .win-box h2 { font-size: 1.5rem; margin-bottom: 10px; }
+        .win-box p { font-size: 0.9rem; margin-bottom: 15px; }
+        .hidden { display: none !important; }
+        .difficulty {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .diff-btn { padding: 4px 10px; font-size: 0.7rem; }
+        .diff-btn.active { background: #4ECDC4 !important; }
+    </style>
+</head>
+<body>
+    <h1>🔢 猜数字</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">尝试次数</div>
+            <div class="value" id="attempts">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">-</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button onclick="location.href='index.html'">← 返回</button>
+        <button class="start-btn" onclick="initGame()">新游戏</button>
+    </div>
+    <div class="difficulty">
+        <button class="diff-btn" onclick="setDifficulty(10)">1-10</button>
+        <button class="diff-btn active" onclick="setDifficulty(100)">1-100</button>
+        <button class="diff-btn" onclick="setDifficulty(1000)">1-1000</button>
+    </div>
+    <div class="game-area">
+        <div class="range" id="range">1 - 100</div>
+        <div class="hint-box" id="hintBox">🎯 开始猜吧！</div>
+        <input type="number" class="guess-input" id="guessInput" placeholder="输入数字" min="1">
+        <button class="submit-btn" onclick="makeGuess()">猜！</button>
+        <div class="attempts" id="attemptsText">已尝试: 无</div>
+    </div>
+    <div class="win-box hidden" id="winBox">
+        <h2>🎉 猜对了！</h2>
+        <p>你用了 <span id="winAttempts">0</span> 次猜中答案</p>
+        <button onclick="initGame()">再来一局</button>
+    </div>
+
+    <script>
+        let answer, minNum, maxNum, attempts, guessHistory;
+        let difficulty = 100;
+        let high = JSON.parse(localStorage.getItem('guessHigh') || '{}');
+        
+        document.getElementById('high').textContent = high[difficulty] || '-';
+        
+        function setDifficulty(diff) {
+            difficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', [10, 100, 1000][i] === diff);
+            });
+            document.getElementById('high').textContent = high[diff] || '-';
+            initGame();
+        }
+        
+        function initGame() {
+            document.getElementById('winBox').classList.add('hidden');
+            minNum = 1;
+            maxNum = difficulty;
+            answer = Math.floor(Math.random() * maxNum) + 1;
+            attempts = 0;
+            guessHistory = [];
+            
+            document.getElementById('range').textContent = `${minNum} - ${maxNum}`;
+            document.getElementById('hintBox').textContent = '🎯 开始猜吧！';
+            document.getElementById('attempts').textContent = attempts;
+            document.getElementById('attemptsText').textContent = '已尝试: 无';
+            document.getElementById('guessInput').value = '';
+            document.getElementById('guessInput').max = maxNum;
+            document.getElementById('guessInput').placeholder = `1 - ${maxNum}`;
+        }
+        
+        function makeGuess() {
+            const guess = parseInt(document.getElementById('guessInput').value);
+            if (isNaN(guess) || guess < minNum || guess > maxNum) {
+                document.getElementById('hintBox').textContent = `请输入 ${minNum}-${maxNum} 之间的数字`;
+                return;
+            }
+            
+            attempts++;
+            guessHistory.push(guess);
+            document.getElementById('attempts').textContent = attempts;
+            document.getElementById('attemptsText').textContent = '已尝试: ' + guessHistory.join(', ');
+            document.getElementById('guessInput').value = '';
+            
+            if (guess === answer) {
+                document.getElementById('hintBox').textContent = '🎉 正确！';
+                document.getElementById('winAttempts').textContent = attempts;
+                document.getElementById('winBox').classList.remove('hidden');
+                
+                if (!high[difficulty] || attempts < high[difficulty]) {
+                    high[difficulty] = attempts;
+                    localStorage.setItem('guessHigh', JSON.stringify(high));
+                    document.getElementById('high').textContent = high[difficulty];
+                }
+            } else if (guess < answer) {
+                document.getElementById('hintBox').innerHTML = `⬆️ 大了！提示: ${guess} < 答案`;
+            } else {
+                document.getElementById('hintBox').innerHTML = `⬇️ 小了！提示: ${guess} > 答案`;
+            }
+        }
+        
+        document.getElementById('guessInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') makeGuess();
+        });
+        
+        initGame();
+    </script>
+</body>
+</html>

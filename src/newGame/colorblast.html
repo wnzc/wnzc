@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>彩虹消消乐</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            touch-action: none;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 320px;
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            padding: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+        }
+        .cell {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: transform 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .cell:active { transform: scale(0.85); }
+        .cell.selected {
+            outline: 3px solid white;
+            transform: scale(1.1);
+        }
+        .cell.pop {
+            animation: pop 0.3s forwards;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(0); }
+        }
+        .btn {
+            margin-top: 15px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            background: white;
+            color: #ee0979;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .win-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .win-modal.show { display: flex; }
+        .win-modal h2 { font-size: 2rem; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>💯 <span id="score">0</span></span>
+        <span>🎯 <span id="moves">0</span>步</span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <button class="btn" onclick="init()">重新开始</button>
+    
+    <div class="win-modal" id="winModal">
+        <h2>🎉 全部消除!</h2>
+        <p>用了 <span id="finalMoves">0</span> 步</p>
+        <button class="btn" onclick="init()">再玩一次</button>
+    </div>
+
+    <script>
+        const colors = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣'];
+        let grid = [], selected = null, score = 0, moves = 0;
+
+        function init() {
+            grid = [];
+            selected = null;
+            score = 0;
+            moves = 0;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('moves').textContent = '0';
+            document.getElementById('winModal').classList.remove('show');
+            
+            for (let i = 0; i < 36; i++) {
+                grid.push(colors[Math.floor(Math.random() * colors.length)]);
+            }
+            render();
+        }
+
+        function render() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = grid.map((c, i) => `
+                <div class="cell" data-i="${i}" onclick="tap(${i})">${c}</div>
+            `).join('');
+        }
+
+        function tap(i) {
+            if (grid[i] === null) return;
+            
+            if (selected === null) {
+                selected = i;
+                document.querySelectorAll('.cell')[i].classList.add('selected');
+            } else if (selected === i) {
+                document.querySelectorAll('.cell')[i].classList.remove('selected');
+                selected = null;
+            } else {
+                const dx = Math.abs(i % 6 - selected % 6);
+                const dy = Math.abs(Math.floor(i / 6) - Math.floor(selected / 6));
+                
+                if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                    if (grid[selected] === grid[i]) {
+                        moves++;
+                        document.getElementById('moves').textContent = moves;
+                        score += 20;
+                        document.getElementById('score').textContent = score;
+
+                        const cells = document.querySelectorAll('.cell');
+                        cells[selected].classList.remove('selected');
+                        cells[selected].classList.add('pop');
+                        cells[i].classList.add('pop');
+                        
+                        setTimeout(() => {
+                            grid[selected] = null;
+                            grid[i] = null;
+                            render();
+                            dropDown();
+                        }, 300);
+                        
+                        selected = null;
+                    } else {
+                        document.querySelectorAll('.cell')[selected].classList.remove('selected');
+                        selected = i;
+                        document.querySelectorAll('.cell')[i].classList.add('selected');
+                    }
+                } else {
+                    document.querySelectorAll('.cell')[selected].classList.remove('selected');
+                    selected = i;
+                    document.querySelectorAll('.cell')[i].classList.add('selected');
+                }
+            }
+        }
+
+        function dropDown() {
+            for (let c = 0; c < 6; c++) {
+                let empty = [];
+                for (let r = 5; r >= 0; r--) {
+                    if (grid[r * 6 + c] === null) {
+                        empty.push(r * 6 + c);
+                    } else if (empty.length > 0) {
+                        grid[empty.shift()] = grid[r * 6 + c];
+                        grid[r * 6 + c] = null;
+                        empty.push(r * 6 + c);
+                    }
+                }
+                while (empty.length > 0) {
+                    grid[empty.shift()] = colors[Math.floor(Math.random() * colors.length)];
+                }
+            }
+            render();
+            
+            if (grid.every(c => c === null)) {
+                setTimeout(() => {
+                    document.getElementById('finalMoves').textContent = moves;
+                    document.getElementById('winModal').classList.add('show');
+                }, 500);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

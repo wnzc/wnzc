@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>数字华容道 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .difficulty {
+            display: flex;
+            gap: 5px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(255,255,255,0.2); }
+        .diff-btn.active { background: #4ECDC4 !important; }
+        .board {
+            display: grid;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+        }
+        .tile {
+            width: 65px;
+            height: 65px;
+            background: linear-gradient(135deg, #FFD93D, #FF8E53);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: #333;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .tile:active { transform: scale(0.95); }
+        .tile.empty {
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+        .hint {
+            margin-top: 8px;
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+        .win-message {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .win-message h2 { font-size: 1.8rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+        @media (max-width: 340px) {
+            .tile { width: 55px; height: 55px; font-size: 1.5rem; }
+            .board { gap: 5px; padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🔢 数字华容道</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">步数</div>
+            <div class="value" id="moves">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">用时</div>
+            <div class="value" id="time">0s</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="initGame()">重置</button>
+        <div class="difficulty">
+            <button class="diff-btn" onclick="setSize(3)">3×3</button>
+            <button class="diff-btn active" onclick="setSize(4)">4×4</button>
+            <button class="diff-btn" onclick="setSize(5)">5×5</button>
+        </div>
+    </div>
+    <div class="board" id="board"></div>
+    <p class="hint">点击数字滑动到空白处，按顺序排列</p>
+    <div class="win-message hidden" id="winMsg">
+        <h2>🎉 恭喜通关！</h2>
+        <p style="margin-bottom:10px">用时: <span id="finalTime">0</span>秒</p>
+        <p style="margin-bottom:15px">步数: <span id="finalMoves">0</span></p>
+        <button onclick="initGame()">再来一局</button>
+    </div>
+
+    <script>
+        const boardEl = document.getElementById('board');
+        let size = 4;
+        let tiles = [];
+        let emptyIdx;
+        let moves = 0;
+        let startTime, timerInterval;
+        let gameStarted = false;
+        
+        function setSize(s) {
+            size = s;
+            document.querySelectorAll('.diff-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', [3,4,5][i] === s);
+            });
+            initGame();
+        }
+        
+        function initGame() {
+            document.getElementById('winMsg').classList.add('hidden');
+            moves = 0;
+            gameStarted = false;
+            document.getElementById('moves').textContent = 0;
+            document.getElementById('time').textContent = '0s';
+            clearInterval(timerInterval);
+            
+            // 生成已解决的拼图
+            tiles = [];
+            for (let i = 0; i < size * size; i++) {
+                tiles.push(i);
+            }
+            tiles[size * size - 1] = 0;
+            tiles[0] = size * size - 1;
+            emptyIdx = 0;
+            
+            // 随机打乱
+            for (let i = 0; i < size * size * 20; i++) {
+                const neighbors = getNeighbors(emptyIdx);
+                const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                [tiles[emptyIdx], tiles[randomNeighbor]] = [tiles[randomNeighbor], tiles[emptyIdx]];
+                emptyIdx = randomNeighbor;
+            }
+            
+            render();
+        }
+        
+        function getNeighbors(idx) {
+            const neighbors = [];
+            const row = Math.floor(idx / size);
+            const col = idx % size;
+            
+            if (row > 0) neighbors.push(idx - size);
+            if (row < size - 1) neighbors.push(idx + size);
+            if (col > 0) neighbors.push(idx - 1);
+            if (col < size - 1) neighbors.push(idx + 1);
+            
+            return neighbors;
+        }
+        
+        function render() {
+            boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            boardEl.innerHTML = '';
+            
+            tiles.forEach((tile, idx) => {
+                const div = document.createElement('div');
+                div.className = 'tile' + (tile === 0 ? ' empty' : '');
+                div.textContent = tile === 0 ? '' : tile;
+                if (tile !== 0) {
+                    div.onclick = () => clickTile(idx);
+                }
+                boardEl.appendChild(div);
+            });
+        }
+        
+        function clickTile(idx) {
+            if (getNeighbors(emptyIdx).includes(idx)) {
+                if (!gameStarted) {
+                    gameStarted = true;
+                    startTime = Date.now();
+                    timerInterval = setInterval(() => {
+                        document.getElementById('time').textContent = 
+                            Math.floor((Date.now() - startTime) / 1000) + 's';
+                    }, 1000);
+                }
+                
+                [tiles[emptyIdx], tiles[idx]] = [tiles[idx], tiles[emptyIdx]];
+                emptyIdx = idx;
+                moves++;
+                document.getElementById('moves').textContent = moves;
+                render();
+                
+                // 检查胜利
+                if (checkWin()) {
+                    clearInterval(timerInterval);
+                    document.getElementById('finalTime').textContent = 
+                        Math.floor((Date.now() - startTime) / 1000);
+                    document.getElementById('finalMoves').textContent = moves;
+                    document.getElementById('winMsg').classList.remove('hidden');
+                }
+            }
+        }
+        
+        function checkWin() {
+            for (let i = 0; i < size * size - 1; i++) {
+                if (tiles[i] !== i + 1) return false;
+            }
+            return tiles[size * size - 1] === 0;
+        }
+        
+        initGame();
+    </script>
+</body>
+</html>

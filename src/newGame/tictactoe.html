@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>井字棋</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        h1 {
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .status {
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: rgba(255,255,255,0.3);
+            padding: 8px;
+            border-radius: 16px;
+        }
+        .cell {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 2.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .cell:active { transform: scale(0.95); }
+        .cell:disabled { cursor: default; }
+        .cell.winner { background: #55efc4; animation: win 0.5s; }
+        @keyframes win {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background: white;
+            color: #fc4a1a;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn:active { transform: scale(0.95); }
+        .scores {
+            display: flex;
+            gap: 30px;
+            margin-top: 15px;
+            color: white;
+            font-size: 1rem;
+        }
+        .score-box {
+            text-align: center;
+        }
+        .score-box .value { font-size: 1.5rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>⭕❌ 井字棋</h1>
+    <div class="status" id="status">你的回合 (⭕)</div>
+    <div class="board" id="board"></div>
+    <div class="scores">
+        <div class="score-box">
+            <div>你</div>
+            <div class="value" id="playerScore">0</div>
+        </div>
+        <div class="score-box">
+            <div>平局</div>
+            <div class="value" id="drawScore">0</div>
+        </div>
+        <div class="score-box">
+            <div>电脑</div>
+            <div class="value" id="aiScore">0</div>
+        </div>
+    </div>
+    <button class="btn" onclick="reset()">重新开始</button>
+
+    <script>
+        let board = Array(9).fill('');
+        let current = '⭕';
+        let playerScore = 0, aiScore = 0, drawScore = 0;
+        let gameOver = false;
+
+        const winPatterns = [
+            [0,1,2],[3,4,5],[6,7,8],
+            [0,3,6],[1,4,7],[2,5,8],
+            [0,4,8],[2,4,6]
+        ];
+
+        function checkWinner(b, player) {
+            for (const p of winPatterns) {
+                if (p.every(i => b[i] === player)) return p;
+            }
+            return null;
+        }
+
+        function render() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = board.map((cell, i) => {
+                const winner = checkWinner(board, '⭕') || checkWinner(board, '❌');
+                const isWinnerCell = winner && winner.includes(i);
+                return `<button class="cell${isWinnerCell ? ' winner' : ''}" onclick="playerMove(${i})" ${cell || gameOver ? 'disabled' : ''}>${cell}</button>`;
+            }).join('');
+        }
+
+        function playerMove(i) {
+            if (board[i] || gameOver) return;
+            board[i] = current;
+            const winner = checkWinner(board, current);
+            if (winner) {
+                endGame(current === '⭕' ? '你赢了!' : '电脑赢了!');
+                return;
+            }
+            if (board.every(c => c)) {
+                endGame('平局!');
+                return;
+            }
+            current = '❌';
+            document.getElementById('status').textContent = '电脑思考中...';
+            render();
+            setTimeout(aiMove, 500);
+        }
+
+        function aiMove() {
+            let move = -1;
+            
+            // Try to win
+            for (let i = 0; i < 9; i++) {
+                if (!board[i]) {
+                    board[i] = '❌';
+                    if (checkWinner(board, '❌')) { move = i; board[i] = ''; break; }
+                    board[i] = '';
+                }
+            }
+            
+            // Block player
+            if (move === -1) {
+                for (let i = 0; i < 9; i++) {
+                    if (!board[i]) {
+                        board[i] = '⭕';
+                        if (checkWinner(board, '⭕')) { move = i; board[i] = ''; break; }
+                        board[i] = '';
+                    }
+                }
+            }
+            
+            if (move === -1 && !board[4]) move = 4;
+            
+            if (move === -1) {
+                const corners = [0,2,6,8].filter(i => !board[i]);
+                if (corners.length) move = corners[Math.floor(Math.random() * corners.length)];
+            }
+            
+            if (move === -1) {
+                const empty = board.map((c,i) => c ? -1 : i).filter(i => i >= 0);
+                if (empty.length) move = empty[Math.floor(Math.random() * empty.length)];
+            }
+
+            if (move >= 0) {
+                board[move] = '❌';
+                const winner = checkWinner(board, '❌');
+                if (winner) {
+                    endGame('电脑赢了!');
+                    return;
+                }
+                if (board.every(c => c)) {
+                    endGame('平局!');
+                    return;
+                }
+                current = '⭕';
+                document.getElementById('status').textContent = '你的回合 (⭕)';
+            }
+            render();
+        }
+
+        function endGame(msg) {
+            gameOver = true;
+            document.getElementById('status').textContent = msg;
+            if (msg === '你赢了!') playerScore++;
+            else if (msg === '电脑赢了!') aiScore++;
+            else drawScore++;
+            document.getElementById('playerScore').textContent = playerScore;
+            document.getElementById('aiScore').textContent = aiScore;
+            document.getElementById('drawScore').textContent = drawScore;
+            render();
+        }
+
+        function reset() {
+            board = Array(9).fill('');
+            current = '⭕';
+            gameOver = false;
+            document.getElementById('status').textContent = '你的回合 (⭕)';
+            render();
+        }
+
+        render();
+    </script>
+</body>
+</html>

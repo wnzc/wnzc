@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>摇骰子 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.8; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(255,255,255,0.2); }
+        .dice-container {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .dice {
+            width: 80px;
+            height: 80px;
+            background: #fff;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+        }
+        .dice.rolling {
+            animation: shake 0.1s infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg) scale(1.05); }
+            75% { transform: rotate(-10deg) scale(1.05); }
+        }
+        .game-area {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 280px;
+        }
+        .target {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        .result {
+            font-size: 1.5rem;
+            margin: 15px 0;
+            min-height: 40px;
+        }
+        .result.win { color: #4ECDC4; }
+        .result.lose { color: #FF6B6B; }
+        .roll-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            background: linear-gradient(135deg, #FFD93D, #FF8E53);
+            color: #333;
+        }
+        .score-history {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        .difficulty {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .diff-btn { padding: 4px 10px; font-size: 0.7rem; }
+        .diff-btn.active { background: #4ECDC4 !important; }
+    </style>
+</head>
+<body>
+    <h1>🎲 摇骰子</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">胜场</div>
+            <div class="value" id="wins">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">败场</div>
+            <div class="value" id="losses">0</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="resetStats()">重置</button>
+    </div>
+    <div class="difficulty">
+        <button class="diff-btn active" onclick="setDifficulty('easy')">简单</button>
+        <button class="diff-btn" onclick="setDifficulty('medium')">中等</button>
+        <button class="diff-btn" onclick="setDifficulty('hard')">困难</button>
+    </div>
+    <div class="game-area">
+        <div class="target" id="target">目标: 7-12 (简单模式)</div>
+        <div class="dice-container">
+            <div class="dice" id="dice1">?</div>
+            <div class="dice" id="dice2">?</div>
+        </div>
+        <div class="result" id="result">选择难度后开始</div>
+        <button class="roll-btn" id="rollBtn" onclick="rollDice()">🎲 掷骰子</button>
+        <div class="score-history" id="history"></div>
+    </div>
+
+    <script>
+        let difficulty = 'easy';
+        let wins = 0, losses = 0;
+        let canRoll = true;
+        
+        const DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        const RULES = {
+            easy: { target: '7-12', min: 7, max: 12, hint: '简单模式' },
+            medium: { target: '6-10', min: 6, max: 10, hint: '中等模式' },
+            hard: { target: '8', min: 8, max: 8, hint: '困难模式' }
+        };
+        
+        function setDifficulty(diff) {
+            difficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', ['easy', 'medium', 'hard'][i] === diff);
+            });
+            const rule = RULES[difficulty];
+            document.getElementById('target').textContent = 
+                `目标: ${rule.target} (${rule.hint})`;
+            document.getElementById('result').textContent = '🎲 点击按钮掷骰子';
+            document.getElementById('result').className = 'result';
+            canRoll = true;
+        }
+        
+        function rollDice() {
+            if (!canRoll) return;
+            canRoll = false;
+            
+            const dice1 = document.getElementById('dice1');
+            const dice2 = document.getElementById('dice2');
+            const result = document.getElementById('result');
+            const history = document.getElementById('history');
+            
+            dice1.classList.add('rolling');
+            dice2.classList.add('rolling');
+            result.textContent = '摇啊摇...';
+            result.className = 'result';
+            
+            let rolls = 0;
+            const rollInterval = setInterval(() => {
+                dice1.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
+                dice2.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
+                rolls++;
+                if (rolls > 10) {
+                    clearInterval(rollInterval);
+                    
+                    const value1 = Math.floor(Math.random() * 6) + 1;
+                    const value2 = Math.floor(Math.random() * 6) + 1;
+                    const total = value1 + value2;
+                    
+                    dice1.textContent = DICE_FACES[value1 - 1];
+                    dice2.textContent = DICE_FACES[value2 - 1];
+                    dice1.classList.remove('rolling');
+                    dice2.classList.remove('rolling');
+                    
+                    const rule = RULES[difficulty];
+                    const isWin = total >= rule.min && total <= rule.max;
+                    
+                    if (isWin) {
+                        wins++;
+                        document.getElementById('wins').textContent = wins;
+                        result.textContent = `🎉 ${total}点！赢了！`;
+                        result.className = 'result win';
+                    } else {
+                        losses++;
+                        document.getElementById('losses').textContent = losses;
+                        result.textContent = `😢 ${total}点！输了！`;
+                        result.className = 'result lose';
+                    }
+                    
+                    history.textContent = `胜: ${wins} | 败: ${losses}`;
+                    canRoll = true;
+                }
+            }, 80);
+        }
+        
+        function resetStats() {
+            wins = 0;
+            losses = 0;
+            document.getElementById('wins').textContent = wins;
+            document.getElementById('losses').textContent = losses;
+            document.getElementById('history').textContent = '';
+            document.getElementById('dice1').textContent = '?';
+            document.getElementById('dice2').textContent = '?';
+            document.getElementById('result').textContent = '🎲 点击按钮掷骰子';
+            document.getElementById('result').className = 'result';
+        }
+        
+        setDifficulty('easy');
+    </script>
+</body>
+</html>

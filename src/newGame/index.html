@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏合集</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px 12px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #FFD93D, #FF6B6B, #4ECDC4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 15px;
+            font-size: 0.85rem;
+        }
+
+        .game-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .game-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .game-item:hover::before {
+            left: 100%;
+        }
+
+        .game-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #FFD93D;
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(255, 217, 61, 0.2);
+        }
+
+        .game-item .icon {
+            font-size: 1.3rem;
+            margin-right: 10px;
+        }
+
+        .game-item .arrow {
+            margin-left: auto;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .game-item:hover .arrow {
+            opacity: 1;
+        }
+
+        footer {
+            margin-top: 20px;
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        @media (min-width: 500px) {
+            body { padding: 30px 20px; }
+            h1 { font-size: 2rem; }
+            .subtitle { margin-bottom: 20px; }
+            .game-list { gap: 10px; }
+            .game-item {
+                padding: 14px 18px;
+                font-size: 1rem;
+            }
+            .game-item .icon {
+                font-size: 1.5rem;
+                margin-right: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 游戏合集</h1>
+        <p class="subtitle">点击开始玩吧！</p>
+
+        <div class="game-list">
+            <a href="bombgame.html" class="game-item">
+                <span class="icon">💣</span> 数字炸弹
+                <span class="arrow">→</span>
+            </a>
+            <a href="tictactoe.html" class="game-item">
+                <span class="icon">🎮</span> 井字棋
+                <span class="arrow">→</span>
+            </a>
+            <a href="gomoku.html" class="game-item">
+                <span class="icon">⚫</span> 五子棋
+                <span class="arrow">→</span>
+            </a>
+            <a href="othello.html" class="game-item">
+                <span class="icon">🔄</span> 翻转棋
+                <span class="arrow">→</span>
+            </a>
+            <a href="connectfour.html" class="game-item">
+                <span class="icon">🔴</span> 四子棋
+                <span class="arrow">→</span>
+            </a>
+            <a href="memory.html" class="game-item">
+                <span class="icon">🧠</span> 记忆翻牌
+                <span class="arrow">→</span>
+            </a>
+            <a href="minesweeper.html" class="game-item">
+                <span class="icon">💣</span> 扫雷
+                <span class="arrow">→</span>
+            </a>
+            <a href="snake.html" class="game-item">
+                <span class="icon">🐍</span> 贪吃蛇
+                <span class="arrow">→</span>
+            </a>
+            <a href="pinball.html" class="game-item">
+                <span class="icon">🏓</span> 弹球
+                <span class="arrow">→</span>
+            </a>
+            <a href="tetris.html" class="game-item">
+                <span class="icon">🧱</span> 俄罗斯方块
+                <span class="arrow">→</span>
+            </a>
+            <a href="blackjack.html" class="game-item">
+                <span class="icon">🃏</span> 21点
+                <span class="arrow">→</span>
+            </a>
+            <a href="fifteen.html" class="game-item">
+                <span class="icon">🔢</span> 15滑块
+                <span class="arrow">→</span>
+            </a>
+            <a href="2048.html" class="game-item">
+                <span class="icon">🔢</span> 2048
+                <span class="arrow">→</span>
+            </a>
+            <a href="whackamole.html" class="game-item">
+                <span class="icon">🔨</span> 打地鼠
+                <span class="arrow">→</span>
+            </a>
+            <a href="fruitcatch.html" class="game-item">
+                <span class="icon">🍎</span> 接水果
+                <span class="arrow">→</span>
+            </a>
+            <a href="ball.html" class="game-item">
+                <span class="icon">🏃</span> 弹球躲避
+                <span class="arrow">→</span>
+            </a>
+            <a href="spotdiff.html" class="game-item">
+                <span class="icon">🔍</span> 找不同
+                <span class="arrow">→</span>
+            </a>
+            <a href="connectdots.html" class="game-item">
+                <span class="icon">✨</span> 连点成画
+                <span class="arrow">→</span>
+            </a>
+            <a href="reflex.html" class="game-item">
+                <span class="icon">⚡</span> 反应速度
+                <span class="arrow">→</span>
+            </a>
+            <a href="balloon.html" class="game-item">
+                <span class="icon">🎈</span> 戳气球
+                <span class="arrow">→</span>
+            </a>
+            <a href="tapcount.html" class="game-item">
+                <span class="icon">👆</span> 疯狂点击
+                <span class="arrow">→</span>
+            </a>
+            <a href="bubblepop.html" class="game-item">
+                <span class="icon">🫧</span> 泡泡龙
+                <span class="arrow">→</span>
+            </a>
+            <a href="match3.html" class="game-item">
+                <span class="icon">💎</span> 宝石消除
+                <span class="arrow">→</span>
+            </a>
+            <a href="slidingpuzzle.html" class="game-item">
+                <span class="icon">🔢</span> 数字华容道
+                <span class="arrow">→</span>
+            </a>
+            <a href="memoryseq.html" class="game-item">
+                <span class="icon">🧠</span> 记忆大师
+                <span class="arrow">→</span>
+            </a>
+            <a href="hold.html" class="game-item">
+                <span class="icon">⏱️</span> 按住不放
+                <span class="arrow">→</span>
+            </a>
+            <a href="numberguess.html" class="game-item">
+                <span class="icon">🔢</span> 猜数字
+                <span class="arrow">→</span>
+            </a>
+            <a href="snakeeyes.html" class="game-item">
+                <span class="icon">🎲</span> 摇骰子
+                <span class="arrow">→</span>
+            </a>
+            <a href="colorpick.html" class="game-item">
+                <span class="icon">🎨</span> 颜色识别
+                <span class="arrow">→</span>
+            </a>
+            <a href="tilttomatch.html" class="game-item">
+                <span class="icon">🃏</span> 滑动配对
+                <span class="arrow">→</span>
+            </a>
+            <a href="aimtrain.html" class="game-item">
+                <span class="icon">🎯</span> 瞄准训练
+                <span class="arrow">→</span>
+            </a>
+            <a href="rhythm.html" class="game-item">
+                <span class="icon">🎵</span> 节奏大师
+                <span class="arrow">→</span>
+            </a>
+            <a href="colorblast.html" class="game-item">
+                <span class="icon">🌈</span> 彩虹消消乐
+                <span class="arrow">→</span>
+            </a>
+            <a href="numblast.html" class="game-item">
+                <span class="icon">🔢</span> 数字连连消
+                <span class="arrow">→</span>
+            </a>
+            <a href="quickmem.html" class="game-item">
+                <span class="icon">🧠</span> 快速记忆
+                <span class="arrow">→</span>
+            </a>
+            <a href="clickreflex.html" class="game-item">
+                <span class="icon">⚡</span> 反应点击
+                <span class="arrow">→</span>
+            </a>
+            <a href="typing.html" class="game-item">
+                <span class="icon">⌨️</span> 打字练习
+                <span class="arrow">→</span>
+            </a>
+            <a href="rps.html" class="game-item">
+                <span class="icon">✊</span> 石头剪刀布
+                <span class="arrow">→</span>
+            </a>
+            <a href="matchmem.html" class="game-item">
+                <span class="icon">🐾</span> 翻牌记忆
+                <span class="arrow">→</span>
+            </a>
+            <a href="colormatch.html" class="game-item">
+                <span class="icon">🎨</span> 颜色匹配
+                <span class="arrow">→</span>
+            </a>
+            <a href="popshoot.html" class="game-item">
+                <span class="icon">🫧</span> 打泡泡
+                <span class="arrow">→</span>
+            </a>
+            <a href="pattern.html" class="game-item">
+                <span class="icon">✏️</span> 画板涂鸦
+                <span class="arrow">→</span>
+            </a>
+            <a href="taptime.html" class="game-item">
+                <span class="icon">🎵</span> 节奏点击
+                <span class="arrow">→</span>
+            </a>
+            <a href="sequence.html" class="game-item">
+                <span class="icon">🔢</span> 序列记忆
+                <span class="arrow">→</span>
+            </a>
+            <a href="lightout.html" class="game-item">
+                <span class="icon">💡</span> 熄灯挑战
+                <span class="arrow">→</span>
+            </a>
+        </div>
+
+        <footer>共 42 款游戏</footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2048 数字消消乐</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0c3483 0%, #a2b6df 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            touch-action: none;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 300px;
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+        }
+        .cell {
+            width: 55px;
+            height: 55px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .cell:active { transform: scale(0.9); }
+        .cell[data-v="2"] { background: #eee4da; }
+        .cell[data-v="4"] { background: #ede0c8; }
+        .cell[data-v="8"] { background: #f2b179; color: white; }
+        .cell[data-v="16"] { background: #f59563; color: white; }
+        .cell[data-v="32"] { background: #f67c5f; color: white; }
+        .cell[data-v="64"] { background: #f65e3b; color: white; }
+        .cell.merge { animation: merge 0.3s; }
+        @keyframes merge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        .btn {
+            margin-top: 15px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            background: white;
+            color: #0c3483;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .combo {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            color: #f1c40f;
+            font-weight: bold;
+            pointer-events: none;
+            animation: comboAnim 0.5s forwards;
+        }
+        @keyframes comboAnim {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -80%) scale(1.5); }
+        }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>💯 <span id="score">0</span></span>
+        <span>🆙 <span id="maxNum">0</span></span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <button class="btn" onclick="init()">新游戏</button>
+
+    <script>
+        let grid = [], score = 0;
+
+        function init() {
+            grid = Array(25).fill(0);
+            score = 0;
+            addNumber();
+            addNumber();
+            update();
+        }
+
+        function addNumber() {
+            const empty = grid.map((v, i) => v === 0 ? i : -1).filter(i => i >= 0);
+            if (empty.length) {
+                grid[empty[Math.floor(Math.random() * empty.length)]] = Math.random() < 0.9 ? 2 : 4;
+            }
+        }
+
+        function update() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = grid.map(v => {
+                if (v === 0) return '<div class="cell"></div>';
+                return `<div class="cell" data-v="${v}">${v}</div>`;
+            }).join('');
+            document.getElementById('score').textContent = score;
+            document.getElementById('maxNum').textContent = Math.max(...grid);
+        }
+
+        function tap(index) {
+            if (grid[index] === 0) return;
+            
+            // Check horizontal neighbors
+            let merged = false;
+            const row = Math.floor(index / 5);
+            const col = index % 5;
+            
+            // Right
+            if (col < 4 && grid[index] === grid[index + 1]) {
+                grid[index] *= 2;
+                score += grid[index];
+                grid[index + 1] = 0;
+                merged = true;
+                showCombo(grid[index]);
+            }
+            // Left  
+            else if (col > 0 && grid[index] === grid[index - 1]) {
+                grid[index] *= 2;
+                score += grid[index];
+                grid[index - 1] = 0;
+                merged = true;
+                showCombo(grid[index]);
+            }
+            // Down
+            else if (row < 4 && grid[index] === grid[index + 5]) {
+                grid[index] *= 2;
+                score += grid[index];
+                grid[index + 5] = 0;
+                merged = true;
+                showCombo(grid[index]);
+            }
+            // Up
+            else if (row > 0 && grid[index] === grid[index - 5]) {
+                grid[index] *= 2;
+                score += grid[index];
+                grid[index - 5] = 0;
+                merged = true;
+                showCombo(grid[index]);
+            }
+
+            if (merged) {
+                update();
+                setTimeout(() => {
+                    dropAndFill();
+                }, 200);
+            }
+        }
+
+        function dropAndFill() {
+            // Drop down
+            for (let c = 0; c < 5; c++) {
+                let nonZero = [];
+                for (let r = 4; r >= 0; r--) {
+                    if (grid[r * 5 + c] !== 0) {
+                        nonZero.push(grid[r * 5 + c]);
+                    }
+                }
+                for (let r = 4; r >= 0; r--) {
+                    grid[r * 5 + c] = nonZero.length > 0 ? nonZero.shift() : 0;
+                }
+            }
+            
+            // Fill empty
+            addNumber();
+            update();
+        }
+
+        function showCombo(num) {
+            const combo = document.createElement('div');
+            combo.className = 'combo';
+            combo.textContent = num >= 64 ? `🔥 ${num}!` : `+${num}`;
+            document.body.appendChild(combo);
+            setTimeout(() => combo.remove(), 500);
+        }
+
+        init();
+    </script>
+</body>
+</html>

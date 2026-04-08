@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>颜色匹配</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #e74c3c 0%, #9b59b6 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            touch-action: manipulation;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 300px;
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        .question {
+            background: white;
+            padding: 25px 40px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .color-name {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .color-box {
+            width: 120px;
+            height: 60px;
+            border-radius: 15px;
+            margin: 0 auto;
+            border: 3px solid rgba(0,0,0,0.1);
+        }
+        .hint {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        .choices {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-width: 300px;
+        }
+        .choice {
+            padding: 18px;
+            background: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .choice:active { transform: scale(0.95); }
+        .choice.correct { background: #2ecc71; color: white; }
+        .choice.wrong { background: #e74c3c; color: white; }
+        .choice:disabled { pointer-events: none; }
+        .btn {
+            margin-top: 25px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            background: white;
+            color: #e74c3c;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .result {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .result.show { display: flex; }
+        .result h1 { font-size: 2rem; margin-bottom: 20px; }
+        .result .stat { font-size: 1.3rem; margin: 10px 0; }
+        .result .stat span { color: #f1c40f; }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>💯 <span id="score">0</span>分</span>
+        <span>🔢 <span id="round">1</span>/10</span>
+    </div>
+    
+    <div class="question">
+        <div class="color-name" id="colorName">红色</div>
+        <div class="color-box" id="colorBox"></div>
+        <div class="hint">文字实际显示的颜色是?</div>
+    </div>
+    
+    <div class="choices" id="choices"></div>
+    
+    <div class="result" id="result">
+        <h1>🎉 完成!</h1>
+        <div class="stat">得分: <span id="finalScore">0</span></div>
+        <div class="stat">正确: <span id="correctCount">0</span>/10</div>
+        <button class="btn" onclick="startGame()">再来一次</button>
+    </div>
+
+    <script>
+        const colors = [
+            { name: '红色', hex: '#e74c3c' },
+            { name: '蓝色', hex: '#3498db' },
+            { name: '绿色', hex: '#2ecc71' },
+            { name: '黄色', hex: '#f1c40f' },
+            { name: '紫色', hex: '#9b59b6' },
+            { name: '橙色', hex: '#e67e22' },
+            { name: '粉色', hex: '#fd79a8' },
+            { name: '黑色', hex: '#2c3e50' },
+            { name: '白色', hex: '#ecf0f1' },
+            { name: '棕色', hex: '#a04000' },
+            { name: '青色', hex: '#00cec9' },
+            { name: '灰色', hex: '#95a5a6' }
+        ];
+
+        let score = 0, round = 0, correct = 0, currentColor = null;
+
+        function startGame() {
+            document.getElementById('result').classList.remove('show');
+            score = 0;
+            correct = 0;
+            round = 0;
+            document.getElementById('score').textContent = '0';
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            if (round >= 10) {
+                document.getElementById('finalScore').textContent = score;
+                document.getElementById('correctCount').textContent = correct;
+                document.getElementById('result').classList.add('show');
+                return;
+            }
+            
+            round++;
+            document.getElementById('round').textContent = round;
+            
+            // Pick correct color
+            const correctIdx = Math.floor(Math.random() * colors.length);
+            currentColor = colors[correctIdx];
+            
+            // Pick a different color for text (to create mismatch)
+            let wrongIdx;
+            do {
+                wrongIdx = Math.floor(Math.random() * colors.length);
+            } while (wrongIdx === correctIdx);
+            const wrongColor = colors[wrongIdx];
+            
+            // Set display
+            document.getElementById('colorName').textContent = currentColor.name;
+            document.getElementById('colorName').style.color = wrongColor.hex;
+            document.getElementById('colorBox').style.background = currentColor.hex;
+            
+            // Generate choices
+            const choices = [currentColor];
+            const used = new Set([correctIdx]);
+            while (choices.length < 4) {
+                const idx = Math.floor(Math.random() * colors.length);
+                if (!used.has(idx)) {
+                    used.add(idx);
+                    choices.push(colors[idx]);
+                }
+            }
+            
+            // Shuffle
+            choices.sort(() => Math.random() - 0.5);
+            
+            const choicesEl = document.getElementById('choices');
+            choicesEl.innerHTML = choices.map(c => 
+                `<button class="choice" onclick="select('${c.name}')">${c.name}</button>`
+            ).join('');
+        }
+
+        function select(name) {
+            const buttons = document.querySelectorAll('.choice');
+            buttons.forEach(b => b.disabled = true);
+            
+            if (name === currentColor.name) {
+                correct++;
+                score += 10;
+                document.getElementById('score').textContent = score;
+                event.target.classList.add('correct');
+            } else {
+                event.target.classList.add('wrong');
+                buttons.forEach(b => {
+                    if (b.textContent === currentColor.name) b.classList.add('correct');
+                });
+            }
+            
+            setTimeout(nextQuestion, 1000);
+        }
+
+        startGame();
+    </script>
+</body>
+</html>

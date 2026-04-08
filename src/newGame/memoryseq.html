@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>记忆大师 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .start-btn {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+        }
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+        }
+        .cell {
+            width: 70px;
+            height: 70px;
+            background: #2ECC71;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+        }
+        .cell:active { transform: scale(0.95); }
+        .cell.active {
+            background: #FFD93D !important;
+            transform: scale(1.1);
+        }
+        .cell.wrong {
+            background: #FF6B6B !important;
+        }
+        .cell.show {
+            background: #4ECDC4 !important;
+        }
+        .status {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            text-align: center;
+            min-height: 30px;
+        }
+        .hint {
+            margin-top: 10px;
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+        @media (max-width: 300px) {
+            .cell { width: 60px; height: 60px; }
+            .game-grid { gap: 8px; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🧠 记忆大师</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">等级</div>
+            <div class="value" id="level">1</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">1</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button onclick="location.href='index.html'">← 返回</button>
+        <button class="start-btn" onclick="startGame()">开始</button>
+    </div>
+    <div class="game-grid" id="grid">
+        <div class="cell" onclick="input(0)">🍎</div>
+        <div class="cell" onclick="input(1)">🍊</div>
+        <div class="cell" onclick="input(2)">🍋</div>
+        <div class="cell" onclick="input(3)">🍇</div>
+        <div class="cell" onclick="input(4)">🍓</div>
+        <div class="cell" onclick="input(5)">🍒</div>
+        <div class="cell" onclick="input(6)">🥝</div>
+        <div class="cell" onclick="input(7)">🍑</div>
+        <div class="cell" onclick="input(8)">🥭</div>
+    </div>
+    <div class="status" id="status">点击开始</div>
+    <p class="hint">记住水果出现的顺序，然后按相同顺序点击</p>
+
+    <script>
+        const cells = document.querySelectorAll('.cell');
+        const emojis = ['🍎', '🍊', '🍋', '🍇', '🍓', '🍒', '🥝', '🍑', '🥭'];
+        let sequence = [];
+        let playerIndex = 0;
+        let level = 1;
+        let high = parseInt(localStorage.getItem('memSeqHigh') || '1');
+        let isShowing = false;
+        
+        document.getElementById('high').textContent = high;
+        
+        function startGame() {
+            level = 1;
+            document.getElementById('level').textContent = level;
+            document.getElementById('status').textContent = '记住顺序...';
+            sequence = [];
+            addToSequence();
+        }
+        
+        function addToSequence() {
+            sequence.push(Math.floor(Math.random() * 9));
+            showSequence();
+        }
+        
+        async function showSequence() {
+            isShowing = true;
+            playerIndex = 0;
+            cells.forEach(c => c.classList.remove('active', 'wrong'));
+            
+            await sleep(500);
+            
+            for (let i = 0; i < sequence.length; i++) {
+                cells[sequence[i]].classList.add('show');
+                await sleep(400);
+                cells[sequence[i]].classList.remove('show');
+                await sleep(200);
+            }
+            
+            isShowing = false;
+            document.getElementById('status').textContent = '轮到你了！';
+        }
+        
+        function input(idx) {
+            if (isShowing) return;
+            
+            cells[idx].classList.add('active');
+            setTimeout(() => cells[idx].classList.remove('active'), 200);
+            
+            if (sequence[playerIndex] === idx) {
+                playerIndex++;
+                
+                if (playerIndex === sequence.length) {
+                    level++;
+                    document.getElementById('level').textContent = level;
+                    if (level > high) {
+                        high = level;
+                        localStorage.setItem('memSeqHigh', high);
+                        document.getElementById('high').textContent = high;
+                    }
+                    document.getElementById('status').textContent = '🎉 正确！下一关...';
+                    setTimeout(addToSequence, 1000);
+                }
+            } else {
+                cells[idx].classList.add('wrong');
+                document.getElementById('status').textContent = `❌ 错误！到达第 ${level} 关`;
+                isShowing = true;
+            }
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+</body>
+</html>

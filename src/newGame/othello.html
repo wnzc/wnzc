@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>翻转棋 - 人机对战</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #FFD93D, #FF6B6B, #4ECDC4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .back-link:hover { background: rgba(255, 255, 255, 0.2); }
+        .status {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            background: rgba(255, 107, 107, 0.2);
+            border: 2px solid #FF6B6B;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .status.player2 {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ECDC4;
+        }
+        .status.thinking { animation: thinking 1s ease infinite; }
+        @keyframes thinking { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 15px;
+        }
+        .score {
+            padding: 10px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+        .score-label { font-size: 0.9rem; color: #888; margin-bottom: 5px; }
+        .score-value { font-size: 2rem; font-weight: bold; }
+        .score.player1 .score-value { color: #FF6B6B; }
+        .score.player2 .score-value { color: #4ECDC4; }
+        .board {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            margin: 0 auto;
+        }
+        .row { display: flex; gap: 2px; }
+        .cell {
+            width: 50px;
+            height: 50px;
+            background: rgba(34, 139, 34, 0.6);
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .cell:hover { background: rgba(34, 139, 34, 0.8); }
+        .piece {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            aspect-ratio: 1;
+        }
+        .black-piece {
+            background: #1a1a1a;
+            border: 3px solid #444;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            aspect-ratio: 1;
+        }
+        .white-piece {
+            background: linear-gradient(145deg, #fff, #e0e0e0);
+            border: 3px solid #ccc;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            aspect-ratio: 1;
+        }
+        .new-piece.new-black, .new-piece.new-white {
+            animation: placePiece 0.4s ease-out, glow 0.6s ease-out;
+        }
+        @keyframes glow {
+            0% { box-shadow: 0 0 25px 8px rgba(255, 255, 255, 1); }
+            100% { box-shadow: 0 0 15px rgba(0, 0, 0, 0.5); }
+        }
+        .new-piece.new-black {
+            box-shadow: 0 0 25px 8px rgba(255, 255, 255, 1);
+        }
+        .new-piece.new-white {
+            box-shadow: 0 0 25px 8px rgba(255, 215, 0, 1);
+        }
+        .flipPiece { animation: flip 0.5s ease-in-out; }
+        @keyframes flip {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(180deg); }
+        }
+        .hint {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            animation: pulse 1.5s ease infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 0.6; }
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        .result-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        .result-modal.show { opacity: 1; visibility: visible; }
+        .result-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #FFD93D;
+            transform: scale(0.8);
+            transition: transform 0.3s;
+        }
+        .result-modal.show .result-content { transform: scale(1); }
+        .result-title {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #FFD93D, #FF6B6B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .result-message { font-size: 1.2rem; color: #ccc; margin-bottom: 30px; }
+        @media (max-width: 500px) {
+            .cell { width: 38px; height: 38px; }
+            .piece { width: 30px; height: 30px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回主页</a>
+        <h1>翻转棋</h1>
+        <div class="status player1" id="status">你（黑方）回合</div>
+        <div class="score-board">
+            <div class="score player1">
+                <div class="score-label">黑方</div>
+                <div class="score-value" id="black-score">2</div>
+            </div>
+            <div class="score player2">
+                <div class="score-label">白方</div>
+                <div class="score-value" id="white-score">2</div>
+            </div>
+        </div>
+        <div class="board" id="board"></div>
+        <button class="btn" onclick="init()">重新开始</button>
+    </div>
+
+    <div class="result-modal" id="modal">
+        <div class="result-content">
+            <h2 class="result-title" id="result-title">胜利!</h2>
+            <p class="result-message" id="result-message">恭喜获胜</p>
+            <button class="btn" onclick="playAgain()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        const SIZE = 8;
+        const DIRS = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+        let board, currentPlayer, gameOver, lastMove = null, flippedCells = [];
+
+        function init() {
+            board = Array(SIZE).fill(null).map(() => Array(SIZE).fill(''));
+            board[3][3] = 'W'; board[3][4] = 'B';
+            board[4][3] = 'B'; board[4][4] = 'W';
+            currentPlayer = 'B';
+            gameOver = false;
+            lastMove = null;
+            flippedCells = [];
+            render();
+            updateScore();
+        }
+
+        function render() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            const validMoves = getValidMoves(currentPlayer);
+            for (let i = 0; i < SIZE; i++) {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let j = 0; j < SIZE; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    const isValid = validMoves.some(m => m[0] === i && m[1] === j);
+                    const isLast = lastMove && lastMove.row === i && lastMove.col === j;
+                    const isFlipped = flippedCells.some(f => f[0] === i && f[1] === j);
+                    if (board[i][j]) {
+                        const piece = document.createElement('div');
+                        let extra = '';
+                        if (isLast) extra = ' new-piece new-' + (board[i][j] === 'B' ? 'black' : 'white');
+                        else if (isFlipped) extra = ' flipPiece';
+                        piece.className = `piece ${board[i][j] === 'B' ? 'black-piece' : 'white-piece'}${extra}`;
+                        cell.appendChild(piece);
+                    } else if (isValid) {
+                        cell.onclick = () => handleClick(i, j);
+                        const hint = document.createElement('div');
+                        hint.className = 'hint';
+                        cell.appendChild(hint);
+                    }
+                    row.appendChild(cell);
+                }
+                boardEl.appendChild(row);
+            }
+            updateStatus();
+        }
+
+        function handleClick(row, col) {
+            if (gameOver || currentPlayer === 'W') return;
+            const flips = getFlips(row, col, currentPlayer);
+            if (!flips.length) return;
+            makeMove(row, col, flips);
+            if (!gameOver && currentPlayer === 'W') {
+                document.getElementById('status').classList.add('thinking');
+                setTimeout(aiMove, 500);
+            }
+        }
+
+        function makeMove(row, col, flips) {
+            board[row][col] = currentPlayer;
+            lastMove = { row, col };
+            flippedCells = [...flips];
+            flips.forEach(([r, c]) => board[r][c] = currentPlayer);
+            const next = currentPlayer === 'B' ? 'W' : 'B';
+            const nextMoves = getValidMoves(next);
+            if (nextMoves.length) currentPlayer = next;
+            else {
+                const currMoves = getValidMoves(currentPlayer);
+                if (!currMoves.length) { endGame(); return; }
+            }
+            render();
+            updateScore();
+        }
+
+        function aiMove() {
+            if (gameOver) return;
+            const move = getBestMove();
+            if (move) {
+                const flips = getFlips(move.row, move.col, 'W');
+                makeMove(move.row, move.col, flips);
+            }
+            document.getElementById('status').classList.remove('thinking');
+        }
+
+        function getBestMove() {
+            const moves = getValidMoves('W');
+            if (!moves.length) return null;
+            let best = null, bestScore = -Infinity;
+            for (const [row, col] of moves) {
+                const flips = getFlips(row, col, 'W');
+                let score = flips.length * 10;
+                if ((row === 0 || row === SIZE-1) && (col === 0 || col === SIZE-1)) score += 100;
+                else if (row === 0 || row === SIZE-1 || col === 0 || col === SIZE-1) score += 20;
+                else if ((row === 1 && col === 1) || (row === 1 && col === SIZE-2) || (row === SIZE-2 && col === 1) || (row === SIZE-2 && col === SIZE-2)) score -= 50;
+                else if ((row === 0 && col === 1) || (row === 1 && col === 0) || (row === 0 && col === SIZE-2) || (row === 1 && col === SIZE-1) || (row === SIZE-1 && col === 1) || (row === SIZE-2 && col === 0) || (row === SIZE-1 && col === SIZE-2) || (row === SIZE-2 && col === SIZE-1)) score -= 20;
+                if (score > bestScore) { bestScore = score; best = { row, col }; }
+            }
+            return best || moves[Math.floor(Math.random() * moves.length)];
+        }
+
+        function getValidMoves(player) {
+            const moves = [];
+            for (let r = 0; r < SIZE; r++)
+                for (let c = 0; c < SIZE; c++)
+                    if (!board[r][c] && getFlips(r, c, player).length) moves.push([r, c]);
+            return moves;
+        }
+
+        function getFlips(row, col, player) {
+            const flips = [], opp = player === 'B' ? 'W' : 'B';
+            for (const [dr, dc] of DIRS) {
+                let r = row + dr, c = col + dc, line = [];
+                while (r >= 0 && r < SIZE && c >= 0 && c < SIZE) {
+                    if (board[r][c] === opp) line.push([r, c]);
+                    else if (board[r][c] === player) { flips.push(...line); break; }
+                    else break;
+                    r += dr; c += dc;
+                }
+            }
+            return flips;
+        }
+
+        function updateScore() {
+            let black = 0, white = 0;
+            for (let r = 0; r < SIZE; r++)
+                for (let c = 0; c < SIZE; c++) {
+                    if (board[r][c] === 'B') black++;
+                    else if (board[r][c] === 'W') white++;
+                }
+            document.getElementById('black-score').textContent = black;
+            document.getElementById('white-score').textContent = white;
+        }
+
+        function updateStatus() {
+            const s = document.getElementById('status');
+            const player = currentPlayer === 'B' ? '你（黑方）' : 'AI（白方）';
+            const moves = getValidMoves(currentPlayer);
+            s.textContent = moves.length ? `${player}回合` : `${player}无法落子`;
+            s.className = `status ${currentPlayer === 'B' ? 'player1' : 'player2'}`;
+        }
+
+        function endGame() {
+            gameOver = true;
+            const black = parseInt(document.getElementById('black-score').textContent);
+            const white = parseInt(document.getElementById('white-score').textContent);
+            if (black > white) showResult('黑方获胜!', `最终比分: 黑${black} vs 白${white}`);
+            else if (white > black) showResult('白方获胜!', `最终比分: 黑${black} vs 白${white}`);
+            else showResult('平局!', `最终比分: 黑${black} vs 白${white}`);
+        }
+
+        function showResult(title, msg) {
+            document.getElementById('result-title').textContent = title;
+            document.getElementById('result-message').textContent = msg;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function playAgain() {
+            document.getElementById('modal').classList.remove('show');
+            init();
+        }
+
+        init();
+    </script>
+</body>
+</html>

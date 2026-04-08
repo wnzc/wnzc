@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>瞄准训练 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #434343, #000000);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.8; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        #gameArea {
+            width: 300px;
+            height: 400px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+            border: 3px solid #333;
+        }
+        .target {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #FF6B6B 0%, #c0392b 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            transition: transform 0.1s;
+            box-shadow: 0 0 15px rgba(255,107,107,0.5);
+        }
+        .target:active { transform: scale(0.9); }
+        .target::before {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 50%;
+        }
+        .crosshair {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 100;
+            transform: translate(-50%, -50%);
+        }
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255,255,255,0.8);
+        }
+        .crosshair::before {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .crosshair::after {
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .timer-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 6px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 3px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #FFD93D);
+            transition: width 0.1s linear;
+        }
+        .hit-effect {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 3px solid #4ECDC4;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: hitRipple 0.4s ease-out forwards;
+        }
+        @keyframes hitRipple {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+        .game-over {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over h2 { font-size: 1.6rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>🎯 瞄准训练</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">击中</div>
+            <div class="value" id="hits">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">准确率</div>
+            <div class="value" id="accuracy">-%</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">0</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button onclick="location.href='index.html'">← 返回</button>
+        <button onclick="startGame()">开始</button>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer"></div></div>
+    <div id="gameArea"></div>
+    <div class="crosshair" id="crosshair"></div>
+
+    <div class="game-over hidden" id="gameOver">
+        <h2>⏰ 时间到！</h2>
+        <p style="font-size:1.5rem;margin:10px 0">击中: <span id="finalHits">0</span></p>
+        <p style="margin-bottom:15px;opacity:0.8">准确率: <span id="finalAccuracy">0</span>%</p>
+        <button onclick="startGame()">再来一局</button>
+    </div>
+
+    <script>
+        const GAME_TIME = 20;
+        const gameArea = document.getElementById('gameArea');
+        const crosshair = document.getElementById('crosshair');
+        
+        let hits = 0;
+        let shots = 0;
+        let timeLeft;
+        let gameRunning = false;
+        let timerInterval;
+        let targetTimeout;
+        let high = parseInt(localStorage.getItem('aimHigh') || '0');
+        
+        document.getElementById('high').textContent = high;
+        
+        function startGame() {
+            document.getElementById('gameOver').classList.add('hidden');
+            hits = 0;
+            shots = 0;
+            timeLeft = GAME_TIME;
+            gameRunning = true;
+            
+            document.getElementById('hits').textContent = hits;
+            document.getElementById('accuracy').textContent = '-%';
+            document.getElementById('timer').style.width = '100%';
+            
+            gameArea.innerHTML = '';
+            clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').style.width = (timeLeft / GAME_TIME * 100) + '%';
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+            
+            spawnTarget();
+        }
+        
+        function spawnTarget() {
+            if (!gameRunning) return;
+            
+            const target = document.createElement('div');
+            target.className = 'target';
+            target.style.left = (30 + Math.random() * (260)) + 'px';
+            target.style.top = (30 + Math.random() * (320)) + 'px';
+            
+            target.onclick = (e) => {
+                if (!gameRunning) return;
+                e.stopPropagation();
+                hits++;
+                shots++;
+                document.getElementById('hits').textContent = hits;
+                document.getElementById('accuracy').textContent = Math.round(hits / shots * 100) + '%';
+                
+                // 爆炸效果
+                const effect = document.createElement('div');
+                effect.className = 'hit-effect';
+                effect.style.left = target.style.left;
+                effect.style.top = target.style.top;
+                gameArea.appendChild(effect);
+                setTimeout(() => effect.remove(), 400);
+                
+                target.remove();
+                clearTimeout(targetTimeout);
+                spawnTarget();
+            };
+            
+            gameArea.appendChild(target);
+            
+            targetTimeout = setTimeout(() => {
+                if (target.parentNode) {
+                    shots++;
+                    document.getElementById('accuracy').textContent = Math.round(hits / shots * 100) + '%';
+                    target.remove();
+                    spawnTarget();
+                }
+            }, 1500);
+        }
+        
+        function endGame() {
+            gameRunning = false;
+            clearInterval(timerInterval);
+            clearTimeout(targetTimeout);
+            gameArea.innerHTML = '';
+            
+            if (hits > high) {
+                high = hits;
+                localStorage.setItem('aimHigh', high);
+                document.getElementById('high').textContent = high;
+            }
+            
+            document.getElementById('finalHits').textContent = hits;
+            document.getElementById('finalAccuracy').textContent = shots > 0 ? Math.round(hits / shots * 100) : 0;
+            document.getElementById('gameOver').classList.remove('hidden');
+        }
+        
+        // 自定义准星
+        gameArea.addEventListener('mousemove', e => {
+            crosshair.style.left = e.clientX + 'px';
+            crosshair.style.top = e.clientY + 'px';
+        });
+        
+        gameArea.addEventListener('click', () => {
+            if (gameRunning) shots++;
+        });
+    </script>
+</body>
+</html>

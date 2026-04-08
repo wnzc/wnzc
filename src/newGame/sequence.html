@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>序列记忆</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            touch-action: manipulation;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 300px;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+        .display {
+            background: #1a1a2e;
+            padding: 30px 50px;
+            border-radius: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .sequence {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #f1c40f;
+            letter-spacing: 15px;
+            margin-bottom: 10px;
+        }
+        .status {
+            color: #666;
+            font-size: 1rem;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            max-width: 280px;
+        }
+        .num-btn {
+            padding: 25px;
+            background: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .num-btn:active { transform: scale(0.9); }
+        .num-btn.correct { background: #2ecc71; color: white; }
+        .num-btn.wrong { background: #e74c3c; color: white; }
+        .btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background: white;
+            color: #fc4a1a;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .result {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .result.show { display: flex; }
+        .result h1 { font-size: 2rem; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>关卡 <span id="level">1</span></span>
+        <span>💯 <span id="score">0</span></span>
+    </div>
+    
+    <div class="display">
+        <div class="sequence" id="sequence"></div>
+        <div class="status" id="status">准备好!</div>
+    </div>
+    
+    <div class="input-grid" id="inputGrid"></div>
+    
+    <button class="btn" id="startBtn" onclick="startRound()">开始</button>
+    
+    <div class="result" id="result">
+        <h1>🎉 完成!</h1>
+        <p>最高关卡: <span id="maxLevel">0</span></p>
+        <p>得分: <span id="finalScore">0</span></p>
+        <button class="btn" onclick="newGame()">再来一次</button>
+    </div>
+
+    <script>
+        const sequenceEl = document.getElementById('sequence');
+        const statusEl = document.getElementById('status');
+        const inputGrid = document.getElementById('inputGrid');
+        const startBtn = document.getElementById('startBtn');
+        
+        let level = 1, score = 0, sequence = [], playerSeq = [];
+        let maxLevelReached = 0, isShowing = false;
+
+        function newGame() {
+            document.getElementById('result').classList.remove('show');
+            level = 1;
+            score = 0;
+            maxLevelReached = 0;
+            sequence = [];
+            document.getElementById('level').textContent = level;
+            document.getElementById('score').textContent = score;
+            createButtons();
+            startBtn.style.display = 'block';
+            startBtn.textContent = '开始';
+            statusEl.textContent = '准备好!';
+            sequenceEl.textContent = '';
+        }
+
+        function createButtons() {
+            inputGrid.innerHTML = '';
+            for (let i = 1; i <= 9; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'num-btn';
+                btn.textContent = i;
+                btn.dataset.num = i;
+                btn.onclick = () => inputNum(i);
+                inputGrid.appendChild(btn);
+            }
+        }
+
+        function startRound() {
+            startBtn.style.display = 'none';
+            
+            // Add new number to sequence
+            sequence.push(Math.floor(Math.random() * 9) + 1);
+            document.getElementById('level').textContent = level;
+            
+            playerSeq = [];
+            statusEl.textContent = '记住序列...';
+            sequenceEl.textContent = '';
+            
+            // Show sequence
+            isShowing = true;
+            let i = 0;
+            const showNext = () => {
+                if (i < sequence.length) {
+                    sequenceEl.textContent = sequence.slice(0, i + 1).join(' ');
+                    setTimeout(() => {
+                        sequenceEl.textContent = '';
+                        i++;
+                        setTimeout(showNext, 300);
+                    }, 700);
+                } else {
+                    isShowing = false;
+                    statusEl.textContent = '输入序列!';
+                }
+            };
+            setTimeout(showNext, 500);
+        }
+
+        function inputNum(num) {
+            if (isShowing || startBtn.style.display !== 'none') return;
+            
+            playerSeq.push(num);
+            const idx = playerSeq.length - 1;
+            
+            // Visual feedback
+            const btn = document.querySelector(`[data-num="${num}"]`);
+            btn.classList.add('correct');
+            setTimeout(() => btn.classList.remove('correct'), 200);
+            
+            if (playerSeq[idx] !== sequence[idx]) {
+                // Wrong
+                btn.classList.add('wrong');
+                setTimeout(() => btn.classList.remove('wrong'), 300);
+                
+                statusEl.textContent = '错误! 游戏结束';
+                maxLevelReached = Math.max(maxLevelReached, level - 1);
+                
+                setTimeout(() => {
+                    document.getElementById('maxLevel').textContent = maxLevelReached;
+                    document.getElementById('finalScore').textContent = score;
+                    document.getElementById('result').classList.add('show');
+                }, 1000);
+                return;
+            }
+            
+            if (playerSeq.length === sequence.length) {
+                // Correct!
+                score += level * 10;
+                document.getElementById('score').textContent = score;
+                level++;
+                statusEl.textContent = '正确! ⭐';
+                
+                setTimeout(startRound, 1000);
+            }
+        }
+
+        newGame();
+    </script>
+</body>
+</html>

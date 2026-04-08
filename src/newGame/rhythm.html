@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>节奏大师</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 300px;
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .track {
+            width: 100%;
+            max-width: 300px;
+            height: 400px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .note {
+            position: absolute;
+            width: 60px;
+            height: 30px;
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            border-radius: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+        }
+        .hit-zone {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 40px;
+            border: 3px solid #3498db;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3498db;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .hit-zone.perfect { border-color: #f1c40f; background: rgba(241, 196, 15, 0.2); }
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            pointer-events: none;
+            animation: feedbackPop 0.3s forwards;
+        }
+        @keyframes feedbackPop {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+            100% { opacity: 0; transform: translate(-50%, -80%) scale(1); }
+        }
+        .keys {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .key {
+            width: 70px;
+            height: 70px;
+            border-radius: 15px;
+            background: #3498db;
+            color: white;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        .key:active, .key.active { transform: scale(0.9); background: #2980b9; }
+        .game-over {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .game-over.show { display: flex; }
+        .game-over h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .game-over p { font-size: 1.3rem; margin-bottom: 30px; color: #f1c40f; }
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>💯 <span id="score">0</span></span>
+        <span>⏱️ <span id="time">30</span>s</span>
+        <span>⭐ <span id="combo">0</span></span>
+    </div>
+    <div class="track" id="track">
+        <div class="hit-zone" id="hitZone">⬇️</div>
+    </div>
+    <div class="keys">
+        <div class="key" id="key1" ontouchstart="hit(1)" onclick="hit(1)">1️⃣</div>
+        <div class="key" id="key2" ontouchstart="hit(2)" onclick="hit(2)">2️⃣</div>
+        <div class="key" id="key3" ontouchstart="hit(3)" onclick="hit(3)">3️⃣</div>
+        <div class="key" id="key4" ontouchstart="hit(4)" onclick="hit(4)">4️⃣</div>
+    </div>
+    
+    <div class="game-over" id="gameOver">
+        <h1>🎵 游戏结束!</h1>
+        <p>得分: <span id="finalScore">0</span></p>
+        <button class="btn" onclick="startGame()">再来一次</button>
+    </div>
+
+    <script>
+        const track = document.getElementById('track');
+        const hitZone = document.getElementById('hitZone');
+        let score = 0, combo = 0, timeLeft = 30, notes = [], gameLoop = null, timer = null, isPlaying = false;
+
+        function startGame() {
+            isPlaying = true;
+            score = 0;
+            combo = 0;
+            timeLeft = 30;
+            notes = [];
+            track.innerHTML = '<div class="hit-zone" id="hitZone">⬇️</div>';
+            document.getElementById('score').textContent = '0';
+            document.getElementById('combo').textContent = '0';
+            document.getElementById('time').textContent = '30';
+            document.getElementById('gameOver').classList.remove('show');
+
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time').textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+
+            gameLoop = setInterval(spawnNote, 600);
+        }
+
+        function spawnNote() {
+            if (!isPlaying) return;
+            const note = document.createElement('div');
+            note.className = 'note';
+            note.textContent = Math.floor(Math.random() * 4) + 1;
+            note.style.top = '-40px';
+            track.appendChild(note);
+
+            notes.push({
+                el: note,
+                num: parseInt(note.textContent),
+                y: -40,
+                hit: false
+            });
+        }
+
+        function gameLoop2() {
+            if (!isPlaying) return;
+            const hitZoneY = track.offsetHeight - 40;
+            
+            notes.forEach((n, i) => {
+                if (n.hit) return;
+                n.y += 5;
+                n.el.style.top = n.y + 'px';
+
+                if (n.y > hitZoneY + 50) {
+                    n.el.remove();
+                    notes.splice(i, 1);
+                    combo = 0;
+                    document.getElementById('combo').textContent = combo;
+                }
+            });
+
+            requestAnimationFrame(gameLoop2);
+        }
+
+        function hit(num) {
+            document.getElementById('key' + num).classList.add('active');
+            setTimeout(() => document.getElementById('key' + num).classList.remove('active'), 100);
+
+            const hitZoneEl = document.getElementById('hitZone');
+            const hitZoneY = track.offsetHeight - 40;
+            
+            for (let i = 0; i < notes.length; i++) {
+                const n = notes[i];
+                if (n.hit || n.num !== num) continue;
+                
+                const dist = Math.abs(n.y - hitZoneY);
+                if (dist < 50) {
+                    n.hit = true;
+                    n.el.remove();
+                    notes.splice(i, 1);
+                    
+                    combo++;
+                    const points = combo >= 5 ? 3 : combo >= 3 ? 2 : 1;
+                    score += points * 10;
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('combo').textContent = combo;
+
+                    hitZoneEl.classList.add('perfect');
+                    setTimeout(() => hitZoneEl.classList.remove('perfect'), 150);
+
+                    showFeedback(dist < 20 ? 'PERFECT!' : 'GOOD!');
+                    break;
+                }
+            }
+        }
+
+        function showFeedback(text) {
+            const fb = document.createElement('div');
+            fb.className = 'feedback';
+            fb.textContent = text;
+            fb.style.color = text === 'PERFECT!' ? '#f1c40f' : '#3498db';
+            document.body.appendChild(fb);
+            setTimeout(() => fb.remove(), 300);
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timer);
+            clearInterval(gameLoop);
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').classList.add('show');
+        }
+
+        startGame();
+        gameLoop2();
+    </script>
+</body>
+</html>

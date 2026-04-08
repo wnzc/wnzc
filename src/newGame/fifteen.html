@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15滑块 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            color: #fff;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 8px; }
+        .header { display: flex; gap: 15px; margin-bottom: 8px; }
+        .stat-box { background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 10px; text-align: center; }
+        .stat-box .label { font-size: 0.65rem; opacity: 0.8; }
+        .stat-box .value { font-size: 1.2rem; font-weight: bold; }
+        .controls { display: flex; gap: 6px; margin-bottom: 10px; }
+        button { padding: 6px 14px; border: none; border-radius: 18px; background: linear-gradient(135deg, #FFD93D, #FF8C00); color: #333; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; }
+        button:hover { transform: translateY(-2px); }
+        .back-btn { background: rgba(255,255,255,0.2); color: #fff; }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            padding: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            width: 90vw;
+            max-width: 300px;
+        }
+        .tile {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #fff, #e0e0e0);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .tile:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .tile.empty { background: transparent; cursor: default; box-shadow: none; }
+        .tile.correct { background: linear-gradient(135deg, #4ECDC4, #44a08d); color: #fff; }
+        .win-message { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .win-message h2 { color: #FFD93D; font-size: 2rem; margin-bottom: 12px; }
+        .win-message p { margin-bottom: 12px; }
+        .hidden { display: none !important; }
+        @media (min-width: 400px) {
+            h1 { font-size: 1.8rem; }
+            .tile { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>15滑块</h1>
+    <div class="header">
+        <div class="stat-box"><div class="label">步数</div><div class="value" id="moves">0</div></div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">←</button>
+        <button onclick="initGame()">重新开始</button>
+    </div>
+    <div class="board" id="board"></div>
+
+    <div class="win-message hidden" id="winMessage">
+        <h2>🎉 完成!</h2>
+        <p>共用 <span id="finalMoves">0</span> 步</p>
+        <button onclick="initGame()">再玩一次</button>
+    </div>
+
+    <script>
+        let tiles = [], moves = 0;
+        
+        function initGame() {
+            tiles = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0];
+            // 随机打乱
+            for (let i = 0; i < 200; i++) {
+                const emptyIdx = tiles.indexOf(0);
+                const neighbors = getNeighbors(emptyIdx);
+                const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                [tiles[emptyIdx], tiles[randomNeighbor]] = [tiles[randomNeighbor], tiles[emptyIdx]];
+            }
+            moves = 0;
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('winMessage').classList.add('hidden');
+            render();
+        }
+        
+        function getNeighbors(idx) {
+            const row = Math.floor(idx / 4), col = idx % 4;
+            const neighbors = [];
+            if (row > 0) neighbors.push(idx - 4);
+            if (row < 3) neighbors.push(idx + 4);
+            if (col > 0) neighbors.push(idx - 1);
+            if (col < 3) neighbors.push(idx + 1);
+            return neighbors;
+        }
+        
+        function clickTile(idx) {
+            const emptyIdx = tiles.indexOf(0);
+            const neighbors = getNeighbors(emptyIdx);
+            if (neighbors.includes(idx)) {
+                [tiles[emptyIdx], tiles[idx]] = [tiles[idx], tiles[emptyIdx]];
+                moves++;
+                document.getElementById('moves').textContent = moves;
+                render();
+                checkWin();
+            }
+        }
+        
+        function render() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            tiles.forEach((num, idx) => {
+                const tile = document.createElement('div');
+                if (num === 0) {
+                    tile.className = 'tile empty';
+                } else {
+                    tile.className = 'tile' + (num === idx + 1 ? ' correct' : '');
+                    tile.textContent = num;
+                    tile.onclick = () => clickTile(idx);
+                }
+                board.appendChild(tile);
+            });
+        }
+        
+        function checkWin() {
+            const win = tiles.every((num, idx) => num === 0 ? idx === 15 : num === idx + 1);
+            if (win) {
+                document.getElementById('finalMoves').textContent = moves;
+                document.getElementById('winMessage').classList.remove('hidden');
+            }
+        }
+        
+        initGame();
+    </script>
+</body>
+</html>

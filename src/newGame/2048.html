@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2048</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            touch-action: none;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 15px;
+        }
+        h1 { color: white; font-size: 1.6rem; }
+        .scores { display: flex; gap: 10px; }
+        .score-box {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+        .score-box .label { font-size: 0.7rem; }
+        .score-box .value { font-size: 1.2rem; font-weight: bold; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            background: rgba(255,255,255,0.3);
+            padding: 8px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 350px;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .cell[data-v="2"] { background: #eee4da; }
+        .cell[data-v="4"] { background: #ede0c8; }
+        .cell[data-v="8"] { background: #f2b179; color: white; }
+        .cell[data-v="16"] { background: #f59563; color: white; }
+        .cell[data-v="32"] { background: #f67c5f; color: white; }
+        .cell[data-v="64"] { background: #f65e3b; color: white; }
+        .cell[data-v="128"] { background: #edcf72; font-size: 1.3rem; }
+        .cell[data-v="256"] { background: #edcc61; font-size: 1.3rem; }
+        .cell[data-v="512"] { background: #edc850; font-size: 1.3rem; }
+        .cell[data-v="1024"] { background: #edc53f; font-size: 1.1rem; }
+        .cell[data-v="2048"] { background: #edc22e; font-size: 1.1rem; }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 55px);
+            grid-template-rows: repeat(2, 55px);
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .ctrl-btn {
+            width: 55px;
+            height: 55px;
+            border: none;
+            border-radius: 10px;
+            background: white;
+            font-size: 1.3rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .ctrl-btn:active { transform: scale(0.9); }
+        .btn-reset {
+            background: #ff6b6b;
+            color: white;
+            font-size: 0.9rem;
+        }
+        .win-modal, .lose-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .win-modal.show, .lose-modal.show { display: flex; }
+        .win-modal h2 { font-size: 2rem; margin-bottom: 20px; color: #55efc4; }
+        .lose-modal h2 { font-size: 2rem; margin-bottom: 20px; color: #ff6b6b; }
+        .modal-btn {
+            margin: 5px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        .modal-btn.primary { background: #55efc4; color: #333; }
+        .modal-btn.secondary { background: rgba(255,255,255,0.2); color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧩 2048</h1>
+        <div class="scores">
+            <div class="score-box">
+                <div class="label">分数</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-box">
+                <div class="label">最高</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="controls">
+        <div></div>
+        <button class="ctrl-btn" ontouchstart="move('up')" onclick="move('up')">⬆️</button>
+        <div></div>
+        <button class="ctrl-btn" ontouchstart="move('left')" onclick="move('left')">⬅️</button>
+        <button class="ctrl-btn btn-reset" onclick="init()">重置</button>
+        <button class="ctrl-btn" ontouchstart="move('right')" onclick="move('right')">➡️</button>
+        <div></div>
+        <button class="ctrl-btn" ontouchstart="move('down')" onclick="move('down')">⬇️</button>
+        <div></div>
+    </div>
+
+    <div class="win-modal" id="winModal">
+        <h2>🎉 2048达成!</h2>
+        <p>分数: <span id="winScore">0</span></p>
+        <div>
+            <button class="modal-btn primary" onclick="init()">重新开始</button>
+            <button class="modal-btn secondary" onclick="continueGame()">继续游戏</button>
+        </div>
+    </div>
+
+    <div class="lose-modal" id="loseModal">
+        <h2>💔 游戏结束</h2>
+        <p>得分: <span id="loseScore">0</span></p>
+        <button class="modal-btn primary" onclick="init()">再来一次</button>
+    </div>
+
+    <script>
+        let grid = [], score = 0, won = false, continued = false;
+
+        function init() {
+            grid = Array(4).fill().map(() => Array(4).fill(0));
+            score = 0;
+            won = false;
+            continued = false;
+            document.getElementById('winModal').classList.remove('show');
+            document.getElementById('loseModal').classList.remove('show');
+            addRandom();
+            addRandom();
+            update();
+        }
+
+        function addRandom() {
+            const empty = [];
+            for (let r = 0; r < 4; r++)
+                for (let c = 0; c < 4; c++)
+                    if (!grid[r][c]) empty.push({r, c});
+            if (empty.length) {
+                const {r, c} = empty[Math.floor(Math.random() * empty.length)];
+                grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+                return {r, c};
+            }
+        }
+
+        function render() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+            for (let r = 0; r < 4; r++) {
+                for (let c = 0; c < 4; c++) {
+                    const v = grid[r][c];
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if (v) {
+                        cell.textContent = v;
+                        cell.dataset.v = v;
+                    }
+                    gridEl.appendChild(cell);
+                }
+            }
+            document.getElementById('score').textContent = score;
+            const best = localStorage.getItem('2048-best') || 0;
+            document.getElementById('best').textContent = Math.max(score, best);
+            if (score > best) {
+                localStorage.setItem('2048-best', score);
+            }
+        }
+
+        function update() {
+            render();
+        }
+
+        function slide(row) {
+            let arr = row.filter(v => v);
+            let merged = [];
+            for (let i = 0; i < arr.length - 1; i++) {
+                if (arr[i] === arr[i + 1]) {
+                    arr[i] *= 2;
+                    score += arr[i];
+                    merged.push(i);
+                    arr.splice(i + 1, 1);
+                }
+            }
+            while (arr.length < 4) arr.push(0);
+            return { result: arr, merged };
+        }
+
+        function move(dir) {
+            if (won && !continued) return;
+            
+            let moved = false;
+            const prev = grid.map(r => [...r]);
+
+            if (dir === 'left') {
+                for (let r = 0; r < 4; r++) {
+                    const { result } = slide(grid[r]);
+                    grid[r] = result;
+                }
+            } else if (dir === 'right') {
+                for (let r = 0; r < 4; r++) {
+                    const { result } = slide([...grid[r]].reverse());
+                    grid[r] = result.reverse();
+                }
+            } else if (dir === 'up') {
+                for (let c = 0; c < 4; c++) {
+                    let col = [grid[0][c], grid[1][c], grid[2][c], grid[3][c]];
+                    const { result } = slide(col);
+                    for (let r = 0; r < 4; r++) grid[r][c] = result[r];
+                }
+            } else if (dir === 'down') {
+                for (let c = 0; c < 4; c++) {
+                    let col = [grid[3][c], grid[2][c], grid[1][c], grid[0][c]];
+                    const { result } = slide(col);
+                    for (let r = 0; r < 4; r++) grid[3 - r][c] = result[r];
+                }
+            }
+
+            for (let r = 0; r < 4; r++)
+                for (let c = 0; c < 4; c++)
+                    if (grid[r][c] !== prev[r][c]) { moved = true; break; }
+
+            if (moved) {
+                addRandom();
+                update();
+
+                if (!won && !continued) {
+                    outer: for (let r = 0; r < 4; r++)
+                        for (let c = 0; c < 4; c++)
+                            if (grid[r][c] === 2048) { won = true; break outer; }
+                    if (won) {
+                        document.getElementById('winScore').textContent = score;
+                        document.getElementById('winModal').classList.add('show');
+                    }
+                }
+
+                if (!canMove()) {
+                    setTimeout(() => {
+                        document.getElementById('loseScore').textContent = score;
+                        document.getElementById('loseModal').classList.add('show');
+                    }, 300);
+                }
+            }
+        }
+
+        function canMove() {
+            for (let r = 0; r < 4; r++)
+                for (let c = 0; c < 4; c++)
+                    if (!grid[r][c]) return true;
+            for (let r = 0; r < 4; r++)
+                for (let c = 0; c < 4; c++) {
+                    const v = grid[r][c];
+                    if (c < 3 && v === grid[r][c + 1]) return true;
+                    if (r < 3 && v === grid[r + 1][c]) return true;
+                }
+            return false;
+        }
+
+        function continueGame() {
+            continued = true;
+            document.getElementById('winModal').classList.remove('show');
+        }
+
+        let startX, startY;
+        document.addEventListener('touchstart', e => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', e => {
+            if (!startX || !startY) return;
+            const dx = e.changedTouches[0].clientX - startX;
+            const dy = e.changedTouches[0].clientY - startY;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+            if (Math.max(absDx, absDy) > 30) {
+                if (absDx > absDy) move(dx > 0 ? 'right' : 'left');
+                else move(dy > 0 ? 'down' : 'up');
+            }
+            startX = startY = null;
+        }, { passive: true });
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>泡泡龙 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(255,255,255,0.2); }
+        #gameCanvas {
+            background: linear-gradient(180deg, #1a1a2e 0%, #0a0a1a 100%);
+            border-radius: 10px;
+            touch-action: none;
+        }
+        .game-over {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over h2 { font-size: 1.6rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>🫧 泡泡龙</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">得分</div>
+            <div class="value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">0</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="startGame()">重新开始</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="game-over hidden" id="gameOver">
+        <h2>💥 游戏结束</h2>
+        <p style="margin-bottom:15px">得分: <span id="finalScore">0</span></p>
+        <button onclick="startGame()">再来一局</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let W, H;
+        function initSize() {
+            W = Math.min(window.innerWidth - 20, 320);
+            H = Math.min(window.innerHeight - 130, 450);
+            canvas.width = W;
+            canvas.height = H;
+        }
+        
+        const COLORS = ['#FF6B6B', '#4ECDC4', '#FFD93D', '#9B59B6', '#3498DB', '#2ECC71', '#E74C3C', '#F39C12'];
+        
+        let bubbles = [];
+        let shooter = { x: 0, y: 0, nextColor: null, currentColor: null };
+        let shooting = null;
+        let score, high = parseInt(localStorage.getItem('bubbleHigh') || '0');
+        let gameRunning;
+        let popEffects = [];
+        
+        document.getElementById('high').textContent = high;
+        
+        function startGame() {
+            document.getElementById('gameOver').classList.add('hidden');
+            initSize();
+            
+            bubbles = [];
+            score = 0;
+            gameRunning = true;
+            shooting = null;
+            
+            document.getElementById('score').textContent = score;
+            shooter.y = H - 30;
+            shooter.x = W / 2;
+            shooter.currentColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            shooter.nextColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            
+            // 生成顶部气泡
+            for (let row = 0; row < 5; row++) {
+                const count = row % 2 === 0 ? 6 : 5;
+                const startX = row % 2 === 0 ? 25 : 45;
+                for (let i = 0; i < count; i++) {
+                    bubbles.push({
+                        x: startX + i * 50,
+                        y: 30 + row * 40,
+                        r: 20,
+                        color: COLORS[Math.floor(Math.random() * COLORS.length)]
+                    });
+                }
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, W, H);
+            
+            // 绘制气泡
+            bubbles.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 高光
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.arc(b.x - 6, b.y - 6, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // 绘制发射器
+            ctx.fillStyle = '#4ECDC4';
+            ctx.beginPath();
+            ctx.moveTo(shooter.x - 25, H);
+            ctx.lineTo(shooter.x + 25, H);
+            ctx.lineTo(shooter.x + 15, H - 20);
+            ctx.lineTo(shooter.x - 15, H - 20);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 绘制当前气泡
+            ctx.fillStyle = shooter.currentColor;
+            ctx.beginPath();
+            ctx.arc(shooter.x, shooter.y, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 绘制下一个气泡
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillRect(W - 40, H - 50, 35, 35);
+            ctx.fillStyle = shooter.nextColor;
+            ctx.beginPath();
+            ctx.arc(W - 22, H - 32, 12, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 更新射击气泡
+            if (shooting) {
+                shooting.x += shooting.vx;
+                shooting.y += shooting.vy;
+                
+                // 边界反弹
+                if (shooting.x < 20 || shooting.x > W - 20) shooting.vx *= -1;
+                
+                // 顶部反弹
+                if (shooting.y < 25) {
+                    shooting.y = 25;
+                    attachBubble(shooting);
+                    return requestAnimationFrame(gameLoop);
+                }
+                
+                // 绘制射击气泡
+                ctx.fillStyle = shooting.color;
+                ctx.beginPath();
+                ctx.arc(shooting.x, shooting.y, 15, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 检测碰撞
+                for (let b of bubbles) {
+                    const dx = shooting.x - b.x;
+                    const dy = shooting.y - b.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 35) {
+                        attachBubble(shooting);
+                        return requestAnimationFrame(gameLoop);
+                    }
+                }
+            }
+            
+            // 绘制爆炸效果
+            popEffects = popEffects.filter(p => {
+                p.life -= 0.05;
+                if (p.life <= 0) return false;
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * (2 - p.life), 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                return true;
+            });
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function attachBubble(b) {
+            bubbles.push({ x: b.x, y: b.y, r: 20, color: b.color });
+            
+            // 检测同色连接
+            const connected = [];
+            const visited = new Set();
+            
+            function dfs(bubble) {
+                const key = `${bubble.x},${bubble.y}`;
+                if (visited.has(key)) return;
+                if (bubble.color !== b.color) return;
+                visited.add(key);
+                connected.push(bubble);
+                
+                bubbles.forEach(other => {
+                    const dx = bubble.x - other.x;
+                    const dy = bubble.y - other.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 42) {
+                        dfs(other);
+                    }
+                });
+            }
+            
+            dfs(bubbles[bubbles.length - 1]);
+            
+            if (connected.length >= 3) {
+                // 消除气泡
+                connected.forEach(cb => {
+                    for (let i = 0; i < bubbles.length; i++) {
+                        if (bubbles[i] === cb) {
+                            popEffects.push({ x: cb.x, y: cb.y, r: 20, color: cb.color, life: 1 });
+                            bubbles.splice(i, 1);
+                            break;
+                        }
+                    }
+                });
+                
+                score += connected.length * 10;
+                document.getElementById('score').textContent = score;
+                
+                if (score > high) {
+                    high = score;
+                    localStorage.setItem('bubbleHigh', high);
+                    document.getElementById('high').textContent = high;
+                }
+            }
+            
+            // 检测悬空气泡
+            setTimeout(removeFloating, 100);
+            
+            // 下一发
+            shooting = null;
+            shooter.currentColor = shooter.nextColor;
+            shooter.nextColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+            
+            // 检测游戏结束
+            for (let b of bubbles) {
+                if (b.y > H - 80) {
+                    gameRunning = false;
+                    document.getElementById('finalScore').textContent = score;
+                    document.getElementById('gameOver').classList.remove('hidden');
+                    return;
+                }
+            }
+        }
+        
+        function removeFloating() {
+            // 找出所有连接到底部的气泡
+            const attached = new Set();
+            const queue = bubbles.filter(b => b.y < 50);
+            queue.forEach(b => attached.add(`${b.x},${b.y}`));
+            
+            while (queue.length > 0) {
+                const bubble = queue.shift();
+                bubbles.forEach(other => {
+                    const key = `${other.x},${other.y}`;
+                    if (attached.has(key)) return;
+                    const dx = bubble.x - other.x;
+                    const dy = bubble.y - other.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 42) {
+                        attached.add(key);
+                        queue.push(other);
+                    }
+                });
+            }
+            
+            // 移除悬空气泡
+            bubbles = bubbles.filter(b => attached.has(`${b.x},${b.y}`));
+        }
+        
+        canvas.addEventListener('click', e => {
+            if (!gameRunning || shooting) return;
+            const rect = canvas.getBoundingClientRect();
+            const dx = e.clientX - rect.left - shooter.x;
+            const dy = e.clientY - rect.top - shooter.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            shooting = {
+                x: shooter.x,
+                y: shooter.y,
+                vx: dx / dist * 12,
+                vy: dy / dist * 12,
+                color: shooter.currentColor
+            };
+        });
+        
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            if (!gameRunning || shooting) return;
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const dx = touch.clientX - rect.left - shooter.x;
+            const dy = touch.clientY - rect.top - shooter.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            
+            shooting = {
+                x: shooter.x,
+                y: shooter.y,
+                vx: dx / dist * 12,
+                vy: dy / dist * 12,
+                color: shooter.currentColor
+            };
+        }, { passive: false });
+        
+        startGame();
+    </script>
+</body>
+</html>

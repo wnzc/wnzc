@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>戳气球 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(180deg, #a18cd1 0%, #fbc2eb 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.3);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(255,255,255,0.3); }
+        #gameCanvas {
+            background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 100%);
+            border-radius: 10px;
+            touch-action: none;
+        }
+        .timer-bar {
+            width: 100%;
+            max-width: 320px;
+            height: 6px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            margin-bottom: 5px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF6B6B, #FFD93D);
+            transition: width 0.1s linear;
+        }
+        .hint {
+            margin-top: 5px;
+            font-size: 0.65rem;
+            opacity: 0.8;
+        }
+        .game-over {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over h2 { font-size: 1.6rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>🎈 戳气球</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">得分</div>
+            <div class="value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">连击</div>
+            <div class="value" id="combo">0</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="startGame()">开始</button>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer"></div></div>
+    <canvas id="gameCanvas"></canvas>
+    <p class="hint">30秒内戳尽可能多的气球！连击加分！</p>
+
+    <div class="game-over hidden" id="gameOver">
+        <h2>⏰ 时间到！</h2>
+        <p style="margin-bottom:10px;font-size:1.1rem">得分: <span id="finalScore">0</span></p>
+        <p style="margin-bottom:15px;font-size:0.9rem">最高连击: <span id="maxCombo">0</span></p>
+        <button onclick="startGame()">再来一局</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let W, H;
+        function initSize() {
+            W = Math.min(window.innerWidth - 20, 320);
+            H = Math.min(window.innerHeight - 160, 400);
+            canvas.width = W;
+            canvas.height = H;
+        }
+        
+        const BALLOON_COLORS = [
+            '#FF6B6B', '#4ECDC4', '#FFD93D', '#9B59B6', '#3498DB', 
+            '#2ECC71', '#E74C3C', '#F39C12', '#1ABC9C', '#E91E63'
+        ];
+        const EMOJIS = ['🎈', '⭐', '💎', '🎁', '🌟', '✨', '💫'];
+        
+        const GAME_TIME = 30;
+        let balloons = [];
+        let score, combo, maxCombo, timeLeft;
+        let gameRunning;
+        let lastSpawn = 0;
+        let animationId;
+        let popEffects = [];
+        
+        function startGame() {
+            document.getElementById('gameOver').classList.add('hidden');
+            initSize();
+            balloons = [];
+            popEffects = [];
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            timeLeft = GAME_TIME;
+            gameRunning = true;
+            lastSpawn = 0;
+            
+            document.getElementById('score').textContent = score;
+            document.getElementById('combo').textContent = combo;
+            
+            cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+        
+        function spawnBalloon() {
+            const balloon = {
+                x: 30 + Math.random() * (W - 60),
+                y: H + 40,
+                size: 35 + Math.random() * 15,
+                speed: 1.5 + Math.random() * 1.5,
+                color: BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.05 + Math.random() * 0.03,
+                emoji: Math.random() < 0.3 ? EMOJIS[Math.floor(Math.random() * EMOJIS.length)] : null
+            };
+            balloons.push(balloon);
+        }
+        
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+            
+            ctx.clearRect(0, 0, W, H);
+            
+            // 生成气球
+            if (timestamp - lastSpawn > 500 - (GAME_TIME - timeLeft) * 5) {
+                spawnBalloon();
+                lastSpawn = timestamp;
+            }
+            
+            // 更新和绘制气球
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                const b = balloons[i];
+                b.y -= b.speed;
+                b.wobble += b.wobbleSpeed;
+                
+                const wobbleX = Math.sin(b.wobble) * 2;
+                
+                // 绘制气球
+                ctx.save();
+                ctx.translate(b.x + wobbleX, b.y);
+                
+                // 气球身体
+                ctx.fillStyle = b.color;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, b.size * 0.4, b.size * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 高光
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.ellipse(-b.size * 0.12, -b.size * 0.15, b.size * 0.1, b.size * 0.15, -0.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 气球嘴
+                ctx.fillStyle = b.color;
+                ctx.beginPath();
+                ctx.moveTo(-4, b.size * 0.48);
+                ctx.lineTo(4, b.size * 0.48);
+                ctx.lineTo(0, b.size * 0.58);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 绳子
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, b.size * 0.58);
+                ctx.quadraticCurveTo(3, b.size * 0.7, 0, b.size * 0.8);
+                ctx.stroke();
+                
+                // emoji
+                if (b.emoji) {
+                    ctx.font = `${b.size * 0.4}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(b.emoji, 0, 0);
+                }
+                
+                ctx.restore();
+                
+                // 移除出界气球
+                if (b.y < -b.size) {
+                    balloons.splice(i, 1);
+                    combo = 0;
+                    document.getElementById('combo').textContent = combo;
+                }
+            }
+            
+            // 绘制爆炸效果
+            for (let i = popEffects.length - 1; i >= 0; i--) {
+                const p = popEffects[i];
+                p.life -= 0.05;
+                if (p.life <= 0) {
+                    popEffects.splice(i, 1);
+                    continue;
+                }
+                
+                ctx.fillStyle = `rgba(255,255,255,${p.life})`;
+                ctx.font = `${p.size * (1 + (1 - p.life) * 2)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('💥', p.x, p.y);
+            }
+            
+            // 更新计时器
+            document.getElementById('timer').style.width = (timeLeft / GAME_TIME * 100) + '%';
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function handleClick(e) {
+            if (!gameRunning) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            let x, y;
+            
+            if (e.touches) {
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+            
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                const b = balloons[i];
+                const wobbleX = Math.sin(b.wobble) * 2;
+                const dx = x - (b.x + wobbleX);
+                const dy = y - b.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < b.size * 0.6) {
+                    // 戳中
+                    combo++;
+                    maxCombo = Math.max(maxCombo, combo);
+                    
+                    const points = 10 + (combo > 1 ? (combo - 1) * 5 : 0);
+                    score += points;
+                    
+                    document.getElementById('score').textContent = score;
+                    document.getElementById('combo').textContent = combo;
+                    
+                    // 爆炸效果
+                    popEffects.push({
+                        x: b.x + wobbleX,
+                        y: b.y,
+                        size: b.size,
+                        life: 1
+                    });
+                    
+                    balloons.splice(i, 1);
+                    break;
+                }
+            }
+        }
+        
+        // 计时器
+        setInterval(() => {
+            if (gameRunning) {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    gameRunning = false;
+                    document.getElementById('finalScore').textContent = score;
+                    document.getElementById('maxCombo').textContent = maxCombo;
+                    document.getElementById('gameOver').classList.remove('hidden');
+                }
+            }
+        }, 1000);
+        
+        canvas.addEventListener('click', handleClick);
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            handleClick(e);
+        }, { passive: false });
+        
+        startGame();
+    </script>
+</body>
+</html>

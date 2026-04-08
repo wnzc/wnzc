@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21点 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #0f3460);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            color: #fff;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 10px; }
+        .table {
+            background: linear-gradient(135deg, #1d6f42, #145a32);
+            border-radius: 15px;
+            padding: 20px;
+            width: 95vw;
+            max-width: 400px;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .dealer, .player { margin: 10px 0; }
+        .label { font-size: 0.8rem; opacity: 0.8; margin-bottom: 8px; }
+        .cards { display: flex; gap: 8px; flex-wrap: wrap; min-height: 70px; }
+        .card {
+            width: 55px; height: 75px;
+            background: #fff; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; color: #333;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        .card.red { color: #dc3545; }
+        .card.hidden { background: #2c3e50; color: #fff; }
+        .result { font-size: 1.3rem; font-weight: bold; text-align: center; margin: 15px 0; min-height: 30px; }
+        .result.win { color: #4ECDC4; }
+        .result.lose { color: #FF6B6B; }
+        .result.tie { color: #FFD93D; }
+        .controls { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+        button { padding: 10px 20px; border: none; border-radius: 25px; font-size: 0.9rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease; }
+        button:hover { transform: translateY(-2px); }
+        .hit { background: linear-gradient(135deg, #4ECDC4, #44a08d); color: #fff; }
+        .stand { background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: #fff; }
+        .deal { background: linear-gradient(135deg, #FFD93D, #FF8C00); color: #333; }
+        .back-btn { background: rgba(255,255,255,0.2); color: #fff; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        @media (min-width: 450px) {
+            h1 { font-size: 1.8rem; }
+            .card { width: 65px; height: 90px; font-size: 2.2rem; }
+            button { padding: 10px 24px; font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🃏 21点</h1>
+    <div class="table">
+        <div class="dealer">
+            <div class="label">庄家 <span id="dealerScore"></span></div>
+            <div class="cards" id="dealerCards"></div>
+        </div>
+        <div class="result" id="result"></div>
+        <div class="player">
+            <div class="label">你 <span id="playerScore"></span></div>
+            <div class="cards" id="playerCards"></div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">←</button>
+        <button class="deal" id="dealBtn" onclick="startGame()">发牌</button>
+        <button class="hit" id="hitBtn" onclick="hit()" disabled>要牌</button>
+        <button class="stand" id="standBtn" onclick="stand()" disabled>停牌</button>
+    </div>
+
+    <script>
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        let deck, playerHand, dealerHand, gameOver;
+        
+        function createDeck() {
+            deck = [];
+            for (let s of suits) for (let v of values) deck.push({suit: s, value: v});
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+        
+        function getValue(card) {
+            if (['J','Q','K'].includes(card.value)) return 10;
+            if (card.value === 'A') return 11;
+            return parseInt(card.value);
+        }
+        
+        function calcScore(hand) {
+            let score = 0, aces = 0;
+            for (let c of hand) { score += getValue(c); if (c.value === 'A') aces++; }
+            while (score > 21 && aces > 0) { score -= 10; aces--; }
+            return score;
+        }
+        
+        function renderCard(c, hidden) {
+            if (hidden) return '<div class="card hidden">?</div>';
+            const red = c.suit === '♥' || c.suit === '♦';
+            return `<div class="card ${red?'red':''}">${c.value}${c.suit}</div>`;
+        }
+        
+        function render() {
+            document.getElementById('dealerCards').innerHTML = dealerHand.map((c,i) => renderCard(c, i===1&&!gameOver)).join('');
+            document.getElementById('playerCards').innerHTML = playerHand.map(c => renderCard(c)).join('');
+            document.getElementById('dealerScore').textContent = gameOver ? `(${calcScore(dealerHand)})` : '';
+            document.getElementById('playerScore').textContent = `(${calcScore(playerHand)})`;
+        }
+        
+        function startGame() {
+            createDeck();
+            playerHand = [deck.pop(), deck.pop()];
+            dealerHand = [deck.pop(), deck.pop()];
+            gameOver = false;
+            document.getElementById('result').textContent = '';
+            document.getElementById('result').className = 'result';
+            updateButtons();
+            render();
+        }
+        
+        function hit() {
+            playerHand.push(deck.pop());
+            render();
+            if (calcScore(playerHand) > 21) endGame('你爆牌了！', 'lose');
+        }
+        
+        function stand() {
+            gameOver = true;
+            while (calcScore(dealerHand) < 17) dealerHand.push(deck.pop());
+            const ps = calcScore(playerHand), ds = calcScore(dealerHand);
+            if (ds > 21) endGame(`庄家爆牌，你赢！ ${ps}`, 'win');
+            else if (ps > ds) endGame(`你赢了！ ${ps} vs ${ds}`, 'win');
+            else if (ps < ds) endGame(`你输了！ ${ps} vs ${ds}`, 'lose');
+            else endGame(`平局！ ${ps} vs ${ds}`, 'tie');
+        }
+        
+        function endGame(msg, type) {
+            gameOver = true;
+            document.getElementById('result').textContent = msg;
+            document.getElementById('result').className = `result ${type}`;
+            updateButtons();
+            render();
+        }
+        
+        function updateButtons() {
+            document.getElementById('dealBtn').disabled = !gameOver;
+            document.getElementById('hitBtn').disabled = gameOver;
+            document.getElementById('standBtn').disabled = gameOver;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>按住不放 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.25);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1.1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.3);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .timer-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD93D, #FF6B6B);
+            transition: width 0.1s linear;
+            border-radius: 4px;
+        }
+        #holdBtn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FFD93D, #FF8E53);
+            border: none;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+        #holdBtn:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        #holdBtn.holding {
+            background: linear-gradient(135deg, #4ECDC4, #2ECC71);
+        }
+        #holdBtn .emoji { font-size: 3rem; margin-bottom: 5px; }
+        .progress-ring {
+            width: 220px;
+            height: 220px;
+            position: absolute;
+        }
+        .progress-ring circle {
+            fill: none;
+            stroke: rgba(255,255,255,0.3);
+            stroke-width: 6;
+        }
+        .progress-ring .progress {
+            stroke: #4ECDC4;
+            stroke-width: 6;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            transition: stroke-dashoffset 0.1s;
+        }
+        .hint {
+            margin-top: 15px;
+            font-size: 0.7rem;
+            opacity: 0.8;
+            text-align: center;
+        }
+        .game-over {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over h2 { font-size: 1.6rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>⏱️ 按住不放</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">成功</div>
+            <div class="value" id="success">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">0</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button onclick="location.href='index.html'">← 返回</button>
+        <button onclick="initGame()">重置</button>
+    </div>
+    <div class="timer-bar"><div class="timer-fill" id="timer"></div></div>
+    <div style="position:relative">
+        <svg class="progress-ring">
+            <circle cx="110" cy="110" r="104"/>
+            <circle class="progress" id="progress" cx="110" cy="110" r="104" 
+                    stroke-dasharray="653" stroke-dashoffset="653"/>
+        </svg>
+        <button id="holdBtn">
+            <span class="emoji">🎯</span>
+            <span id="btnText">按住2秒</span>
+        </button>
+    </div>
+    <p class="hint">按住按钮保持2秒不放！中间松开就失败</p>
+
+    <div class="game-over hidden" id="gameOver">
+        <h2>⏰ 时间到！</h2>
+        <p style="font-size:2rem;margin:10px 0">成功: <span id="finalScore">0</span></p>
+        <p style="margin-bottom:15px;opacity:0.8">最高: <span id="record">0</span></p>
+        <button onclick="initGame()">再来一局</button>
+    </div>
+
+    <script>
+        const GAME_TIME = 30;
+        const HOLD_TIME = 2000;
+        const holdBtn = document.getElementById('holdBtn');
+        const btnText = document.getElementById('btnText');
+        const progress = document.getElementById('progress');
+        const timerFill = document.getElementById('timer');
+        
+        let success = 0;
+        let timeLeft = GAME_TIME;
+        let holdStart = 0;
+        let isHolding = false;
+        let gameRunning = false;
+        let gameInterval, holdInterval;
+        let high = parseInt(localStorage.getItem('holdHigh') || '0');
+        
+        document.getElementById('high').textContent = high;
+        
+        function initGame() {
+            document.getElementById('gameOver').classList.add('hidden');
+            success = 0;
+            timeLeft = GAME_TIME;
+            gameRunning = true;
+            document.getElementById('success').textContent = success;
+            document.getElementById('timer').style.width = '100%';
+            resetProgress();
+            
+            clearInterval(gameInterval);
+            clearInterval(holdInterval);
+            
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').style.width = (timeLeft / GAME_TIME * 100) + '%';
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+        
+        function resetProgress() {
+            progress.style.strokeDashoffset = '653';
+            holdBtn.classList.remove('holding');
+            btnText.textContent = '按住2秒';
+        }
+        
+        function startHold() {
+            if (!gameRunning || isHolding) return;
+            isHolding = true;
+            holdStart = Date.now();
+            holdBtn.classList.add('holding');
+            btnText.textContent = '保持住...';
+            
+            holdInterval = setInterval(() => {
+                const elapsed = Date.now() - holdStart;
+                const percent = Math.min(elapsed / HOLD_TIME, 1);
+                progress.style.strokeDashoffset = 653 * (1 - percent);
+                
+                if (percent >= 1) {
+                    // 成功！
+                    clearInterval(holdInterval);
+                    success++;
+                    document.getElementById('success').textContent = success;
+                    if (success > high) {
+                        high = success;
+                        localStorage.setItem('holdHigh', high);
+                        document.getElementById('high').textContent = high;
+                    }
+                    btnText.textContent = '🎉 成功！';
+                    holdBtn.style.transform = 'scale(1.1)';
+                    setTimeout(() => {
+                        holdBtn.style.transform = '';
+                        resetProgress();
+                        isHolding = false;
+                    }, 500);
+                }
+            }, 16);
+        }
+        
+        function endHold() {
+            if (!isHolding) return;
+            clearInterval(holdInterval);
+            const elapsed = Date.now() - holdStart;
+            
+            if (elapsed < HOLD_TIME) {
+                // 失败了
+                btnText.textContent = '❌ 太快松手！';
+                holdBtn.style.background = 'linear-gradient(135deg, #FF6B6B, #e74c3c)';
+                setTimeout(() => {
+                    holdBtn.style.background = '';
+                    resetProgress();
+                }, 500);
+            }
+            isHolding = false;
+        }
+        
+        function endGame() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            clearInterval(holdInterval);
+            
+            document.getElementById('finalScore').textContent = success;
+            document.getElementById('record').textContent = high;
+            document.getElementById('gameOver').classList.remove('hidden');
+        }
+        
+        // 事件绑定
+        holdBtn.addEventListener('mousedown', startHold);
+        holdBtn.addEventListener('mouseup', endHold);
+        holdBtn.addEventListener('mouseleave', endHold);
+        holdBtn.addEventListener('touchstart', e => { e.preventDefault(); startHold(); });
+        holdBtn.addEventListener('touchend', e => { e.preventDefault(); endHold(); });
+        
+        initGame();
+    </script>
+</body>
+</html>

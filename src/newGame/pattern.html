@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>画图形</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            touch-action: none;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 320px;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+        .canvas-container {
+            background: white;
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        canvas {
+            display: block;
+            border-radius: 10px;
+            cursor: crosshair;
+        }
+        .tools {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .tool {
+            padding: 12px 18px;
+            background: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        .tool:active { transform: scale(0.9); }
+        .tool.active { background: #ffeaa7; }
+        .color-picker {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .color {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .color.active { border-width: 4px; transform: scale(1.1); }
+        .btn {
+            margin-top: 15px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>画笔: <span id="brushSize">5</span>px</span>
+        <span>🎨 自由画画</span>
+    </div>
+    
+    <div class="canvas-container">
+        <canvas id="canvas" width="300" height="350"></canvas>
+    </div>
+    
+    <div class="tools">
+        <button class="tool active" onclick="setTool('draw')">✏️ 画笔</button>
+        <button class="tool" onclick="setTool('line')">📏 直线</button>
+        <button class="tool" onclick="setTool('rect')">⬜ 矩形</button>
+        <button class="tool" onclick="setTool('circle')">⭕ 圆形</button>
+        <button class="tool" onclick="setTool('eraser')">🧹 橡皮</button>
+    </div>
+    
+    <div class="tools">
+        <button class="tool" onclick="changeSize(-2)">➖</button>
+        <button class="tool" onclick="changeSize(2)">➕</button>
+    </div>
+    
+    <div class="color-picker">
+        <div class="color active" style="background:#2c3e50" onclick="setColor('#2c3e50', this)"></div>
+        <div class="color" style="background:#e74c3c" onclick="setColor('#e74c3c', this)"></div>
+        <div class="color" style="background:#3498db" onclick="setColor('#3498db', this)"></div>
+        <div class="color" style="background:#2ecc71" onclick="setColor('#2ecc71', this)"></div>
+        <div class="color" style="background:#f1c40f" onclick="setColor('#f1c40f', this)"></div>
+        <div class="color" style="background:#9b59b6" onclick="setColor('#9b59b6', this)"></div>
+        <div class="color" style="background:#e67e22" onclick="setColor('#e67e22', this)"></div>
+        <div class="color" style="background:#1abc9c" onclick="setColor('#1abc9c', this)"></div>
+    </div>
+    
+    <button class="btn" onclick="clearCanvas()">🗑️ 清空</button>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        let drawing = false;
+        let tool = 'draw';
+        let color = '#2c3e50';
+        let brushSize = 5;
+        let startX, startY;
+        let lastX, lastY;
+        
+        // Touch support
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            startX = lastX = touch.clientX - rect.left;
+            startY = lastY = touch.clientY - rect.top;
+            drawing = true;
+            if (tool !== 'draw' && tool !== 'eraser') {
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+            }
+        });
+        
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (!drawing) return;
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            if (tool === 'draw' || tool === 'eraser') {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = tool === 'eraser' ? 'white' : color;
+                ctx.lineWidth = brushSize;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+            
+            lastX = x;
+            lastY = y;
+        });
+        
+        canvas.addEventListener('touchend', e => {
+            if (!drawing) return;
+            drawing = false;
+            
+            const rect = canvas.getBoundingClientRect();
+            const endX = e.changedTouches[0].clientX - rect.left;
+            const endY = e.changedTouches[0].clientY - rect.top;
+            
+            if (tool === 'line') {
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = brushSize;
+                ctx.stroke();
+            } else if (tool === 'rect') {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = brushSize;
+                ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+            } else if (tool === 'circle') {
+                const r = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+                ctx.beginPath();
+                ctx.arc(startX, startY, r, 0, Math.PI * 2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = brushSize;
+                ctx.stroke();
+            }
+        });
+        
+        // Mouse support
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            startX = lastX = e.clientX - rect.left;
+            startY = lastY = e.clientY - rect.top;
+            drawing = true;
+        });
+        
+        canvas.addEventListener('mousemove', e => {
+            if (!drawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            if (tool === 'draw' || tool === 'eraser') {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = tool === 'eraser' ? 'white' : color;
+                ctx.lineWidth = brushSize;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+            
+            lastX = x;
+            lastY = y;
+        });
+        
+        canvas.addEventListener('mouseup', e => {
+            if (!drawing) return;
+            drawing = false;
+            
+            const rect = canvas.getBoundingClientRect();
+            const endX = e.clientX - rect.left;
+            const endY = e.clientY - rect.top;
+            
+            if (tool === 'line') {
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = brushSize;
+                ctx.stroke();
+            } else if (tool === 'rect') {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = brushSize;
+                ctx.strokeRect(startX, startY, endX - startX, endY - startY);
+            } else if (tool === 'circle') {
+                const r = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+                ctx.beginPath();
+                ctx.arc(startX, startY, r, 0, Math.PI * 2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = brushSize;
+                ctx.stroke();
+            }
+        });
+
+        function setTool(t) {
+            tool = t;
+            document.querySelectorAll('.tool').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function setColor(c, el) {
+            color = c;
+            document.querySelectorAll('.color').forEach(el => el.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function changeSize(delta) {
+            brushSize = Math.max(2, Math.min(30, brushSize + delta));
+            document.getElementById('brushSize').textContent = brushSize;
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+</html>

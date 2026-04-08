@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>打泡泡</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        .game-area {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            height: 450px;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b263b 100%);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.1s;
+            box-shadow: inset -3px -3px 10px rgba(0,0,0,0.3), inset 3px 3px 10px rgba(255,255,255,0.3);
+        }
+        .bubble:active { transform: scale(0.9); }
+        .bubble.pop {
+            animation: pop 0.3s forwards;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .shooter {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.5);
+        }
+        .next-bubble {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 35px;
+            height: 35px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .arrow-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 15px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: white;
+        }
+        .arrow-btn:active { background: rgba(255,255,255,0.3); }
+        .btn {
+            padding: 12px 30px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .game-over {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .game-over.show { display: flex; }
+        .game-over h1 { font-size: 2rem; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>💯 <span id="score">0</span></span>
+        <span>⏱️ <span id="time">60</span>s</span>
+    </div>
+    
+    <div class="game-area" id="gameArea">
+        <div class="shooter" id="shooter">🎯</div>
+        <div class="next-bubble" id="nextBubble"></div>
+    </div>
+    
+    <div class="controls">
+        <button class="arrow-btn" onclick="rotate(-1)">⬅️</button>
+        <button class="btn" onclick="shoot()">发射</button>
+        <button class="arrow-btn" onclick="rotate(1)">➡️</button>
+    </div>
+    
+    <div class="game-over" id="gameOver">
+        <h1>🎉 时间到!</h1>
+        <p>得分: <span id="finalScore">0</span></p>
+        <button class="btn" onclick="startGame()">再来一次</button>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const shooter = document.getElementById('shooter');
+        const nextBubbleEl = document.getElementById('nextBubble');
+        
+        const colors = ['🔴','🟠','🟡','🟢','🔵','🟣'];
+        let bubbles = [], score = 0, timeLeft = 60, angle = 0;
+        let currentColor = null, nextColor = null;
+        let gameLoop = null, timer = null, isPlaying = false;
+
+        function startGame() {
+            gameArea.innerHTML = '<div class="shooter" id="shooter">🎯</div><div class="next-bubble" id="nextBubble"></div>';
+            bubbles = [];
+            score = 0;
+            timeLeft = 60;
+            isPlaying = true;
+            
+            document.getElementById('score').textContent = '0';
+            document.getElementById('time').textContent = '60';
+            document.getElementById('gameOver').classList.remove('show');
+            
+            // Spawn initial bubbles
+            for (let i = 0; i < 15; i++) {
+                spawnBubble(true);
+            }
+            
+            pickColors();
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time').textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+            
+            gameLoop = requestAnimationFrame(update);
+        }
+
+        function pickColors() {
+            nextColor = currentColor;
+            currentColor = colors[Math.floor(Math.random() * colors.length)];
+            document.getElementById('shooter').textContent = currentColor;
+            document.getElementById('nextBubble').textContent = nextColor || currentColor;
+        }
+
+        function spawnBubble(random = false) {
+            const size = 35 + Math.random() * 15;
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.style.width = size + 'px';
+            bubble.style.height = size + 'px';
+            bubble.textContent = colors[Math.floor(Math.random() * colors.length)];
+            
+            if (random) {
+                bubble.style.left = Math.random() * (gameArea.offsetWidth - size) + 'px';
+                bubble.style.top = Math.random() * (gameArea.offsetHeight - size - 80) + 'px';
+            }
+            
+            bubble.onclick = () => hitBubble(bubble);
+            gameArea.appendChild(bubble);
+            return bubble;
+        }
+
+        function rotate(dir) {
+            angle += dir * 15;
+            document.getElementById('shooter').style.transform = `translateX(-50%) rotate(${angle}deg)`;
+        }
+
+        function shoot() {
+            if (!isPlaying) return;
+            
+            const speed = 8;
+            const vx = Math.sin(angle * Math.PI / 180) * speed;
+            const vy = -speed;
+            
+            const shooterEl = document.getElementById('shooter');
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.style.width = '40px';
+            bubble.style.height = '40px';
+            bubble.style.fontSize = '1.3rem';
+            bubble.textContent = currentColor;
+            bubble.style.left = (gameArea.offsetWidth / 2 - 20) + 'px';
+            bubble.style.top = (gameArea.offsetHeight - 60) + 'px';
+            gameArea.appendChild(bubble);
+            
+            let x = parseFloat(bubble.style.left);
+            let y = parseFloat(bubble.style.top);
+            
+            function animate() {
+                if (!isPlaying) return;
+                x += vx;
+                y += vy;
+                bubble.style.left = x + 'px';
+                bubble.style.top = y + 'px';
+                
+                // Wall bounce
+                if (x < 0 || x > gameArea.offsetWidth - 40) {
+                    bubble.remove();
+                    pickColors();
+                    return;
+                }
+                
+                // Hit top or another bubble
+                if (y < 0) {
+                    bubble.style.top = '0px';
+                    bubble.onclick = () => hitBubble(bubble);
+                    bubbles.push(bubble);
+                    pickColors();
+                    return;
+                }
+                
+                // Check collision with other bubbles
+                for (const b of bubbles) {
+                    const bx = parseFloat(b.style.left) + 20;
+                    const by = parseFloat(b.style.top) + 20;
+                    const dist = Math.sqrt((x + 20 - bx) ** 2 + (y + 20 - by) ** 2);
+                    if (dist < 38) {
+                        bubble.style.left = x + 'px';
+                        bubble.style.top = y + 'px';
+                        bubble.onclick = () => hitBubble(bubble);
+                        bubbles.push(bubble);
+                        pickColors();
+                        return;
+                    }
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        function hitBubble(bubble) {
+            if (!isPlaying || bubble.classList.contains('pop')) return;
+            
+            bubble.classList.add('pop');
+            score += 10;
+            document.getElementById('score').textContent = score;
+            
+            setTimeout(() => {
+                bubble.remove();
+                bubbles = bubbles.filter(b => b !== bubble);
+            }, 300);
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timer);
+            cancelAnimationFrame(gameLoop);
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').classList.add('show');
+        }
+
+        startGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>记忆翻牌</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            touch-action: manipulation;
+        }
+        .header {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 1.5rem; margin-bottom: 10px; }
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 1rem;
+        }
+        .stats span { background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 360px;
+            width: 100%;
+        }
+        .card {
+            aspect-ratio: 1;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .card.flipped {
+            background: #ffeaa7;
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            background: #55efc4;
+            pointer-events: none;
+        }
+        .card:active { transform: scale(0.95); }
+        .btn {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .win-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+        }
+        .win-modal.show { display: flex; }
+        .win-modal h2 { font-size: 2rem; margin-bottom: 20px; }
+        .btn:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 记忆翻牌</h1>
+        <div class="stats">
+            <span>⏱️ <span id="time">0</span>s</span>
+            <span>🎯 <span id="pairs">0</span>/8</span>
+        </div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <button class="btn" onclick="init()">重新开始</button>
+    
+    <div class="win-modal" id="winModal">
+        <h2>🎉 太棒了!</h2>
+        <p id="winTime"></p>
+        <button class="btn" onclick="init()">再玩一次</button>
+    </div>
+
+    <script>
+        const emojis = ['🍎','🍌','🍇','🍊','🍓','🥝','🍑','🍒'];
+        let cards = [], flipped = [], matched = 0, timer = null, startTime = 0;
+
+        function shuffle(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function init() {
+            document.getElementById('winModal').classList.remove('show');
+            cards = shuffle([...emojis, ...emojis]);
+            flipped = [];
+            matched = 0;
+            document.getElementById('pairs').textContent = '0';
+            clearInterval(timer);
+            startTime = Date.now();
+            timer = setInterval(() => {
+                document.getElementById('time').textContent = Math.floor((Date.now() - startTime) / 1000);
+            }, 1000);
+            render();
+        }
+
+        function render() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = cards.map((e, i) => `
+                <div class="card" data-i="${i}" onclick="flip(${i})">
+                    <span style="opacity:${flipped.includes(i) || matched >= 8 ? 1 : 0}">${e}</span>
+                </div>
+            `).join('');
+        }
+
+        function flip(i) {
+            if (flipped.length === 2 || flipped.includes(i) || matched >= 8) return;
+            flipped.push(i);
+            const cardEls = document.querySelectorAll('.card');
+            cardEls[i].querySelector('span').style.opacity = 1;
+            cardEls[i].classList.add('flipped');
+
+            if (flipped.length === 2) {
+                if (cards[flipped[0]] === cards[flipped[1]]) {
+                    matched++;
+                    document.getElementById('pairs').textContent = matched;
+                    cardEls[flipped[0]].classList.add('matched');
+                    cardEls[flipped[1]].classList.add('matched');
+                    flipped = [];
+                    if (matched === 8) {
+                        clearInterval(timer);
+                        document.getElementById('winTime').textContent = `用时: ${document.getElementById('time').textContent}秒`;
+                        setTimeout(() => document.getElementById('winModal').classList.add('show'), 300);
+                    }
+                } else {
+                    setTimeout(() => {
+                        cardEls[flipped[0]].querySelector('span').style.opacity = 0;
+                        cardEls[flipped[1]].querySelector('span').style.opacity = 0;
+                        cardEls[flipped[0]].classList.remove('flipped');
+                        cardEls[flipped[1]].classList.remove('flipped');
+                        flipped = [];
+                    }, 800);
+                }
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>连点成画 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.9; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(255,255,255,0.2); }
+        #gameCanvas {
+            background: #fff;
+            border-radius: 10px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .hint {
+            margin-top: 8px;
+            font-size: 0.7rem;
+            opacity: 0.9;
+            text-align: center;
+        }
+        .win-message {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .win-message h2 { font-size: 1.8rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>✨ 连点成画</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">进度</div>
+            <div class="value" id="progress">0/10</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">用时</div>
+            <div class="value" id="time">0s</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="initGame()">重新开始</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <p class="hint">按数字顺序连接所有点</p>
+    <div class="win-message hidden" id="winMsg">
+        <h2>🎉 完成！</h2>
+        <p style="margin-bottom:15px">用时: <span id="finalTime">0</span>秒</p>
+        <button onclick="initGame()">再来一局</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let W, H, POINT_R;
+        function initSize() {
+            W = Math.min(window.innerWidth - 20, 320);
+            H = Math.min(window.innerHeight - 180, 400);
+            canvas.width = W;
+            canvas.height = H;
+            POINT_R = Math.min(W, H) * 0.06;
+        }
+        
+        const PATTERNS = [
+            [[0.2,0.3],[0.5,0.2],[0.8,0.3],[0.7,0.6],[0.3,0.6]], // 箭头
+            [[0.2,0.2],[0.8,0.2],[0.8,0.8],[0.2,0.8]], // 方形
+            [[0.5,0.15],[0.75,0.35],[0.75,0.65],[0.5,0.85],[0.25,0.65],[0.25,0.35]], // 六边形
+            [[0.3,0.2],[0.7,0.2],[0.7,0.5],[0.3,0.5]], // 长方形
+            [[0.5,0.15],[0.85,0.4],[0.7,0.85],[0.3,0.85],[0.15,0.4]], // 五边形
+            [[0.5,0.15],[0.5,0.5],[0.85,0.5]], // 勾
+            [[0.3,0.3],[0.5,0.15],[0.7,0.3],[0.5,0.5],[0.5,0.85]], // T
+            [[0.2,0.5],[0.8,0.5],[0.5,0.2],[0.5,0.8]], // X
+            [[0.2,0.2],[0.8,0.2],[0.8,0.8],[0.2,0.8],[0.2,0.2],[0.5,0.5],[0.8,0.8]], // 日
+            [[0.3,0.3],[0.7,0.3],[0.7,0.7],[0.3,0.7],[0.3,0.3],[0.5,0.5],[0.7,0.7]], // 回
+        ];
+        
+        let points = [];
+        let currentIndex = 0;
+        let startTime;
+        let timerInterval;
+        
+        function initGame() {
+            document.getElementById('winMsg').classList.add('hidden');
+            initSize();
+            
+            const pattern = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
+            points = pattern.map(([rx, ry]) => ({
+                x: rx * W,
+                y: ry * H,
+                hit: false,
+                num: 0
+            }));
+            
+            // 随机排序点
+            for (let i = points.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [points[i], points[j]] = [points[j], points[i]];
+            }
+            
+            // 重新编号
+            points.forEach((p, i) => p.num = i + 1);
+            
+            currentIndex = 0;
+            document.getElementById('progress').textContent = `0/${points.length}`;
+            
+            startTime = Date.now();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTime, 100);
+            
+            draw();
+        }
+        
+        function updateTime() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('time').textContent = elapsed + 's';
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            
+            // 绘制连线
+            ctx.strokeStyle = '#11998e';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            let lastHit = null;
+            for (let i = 0; i < points.length; i++) {
+                if (points[i].hit) {
+                    if (lastHit === null) {
+                        lastHit = i;
+                    } else {
+                        ctx.beginPath();
+                        ctx.moveTo(points[lastHit].x, points[lastHit].y);
+                        ctx.lineTo(points[i].x, points[i].y);
+                        ctx.stroke();
+                        lastHit = i;
+                    }
+                }
+            }
+            
+            // 绘制点
+            points.forEach((p, i) => {
+                ctx.fillStyle = p.hit ? '#38ef7d' : '#11998e';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, POINT_R, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${POINT_R}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(p.num, p.x, p.y);
+            });
+        }
+        
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches) {
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            }
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+        
+        function handleInput(e) {
+            e.preventDefault();
+            const pos = getPos(e);
+            
+            for (let i = 0; i < points.length; i++) {
+                const p = points[i];
+                const dist = Math.sqrt((pos.x - p.x) ** 2 + (pos.y - p.y) ** 2);
+                
+                if (dist < POINT_R * 1.5) {
+                    if (p.num === currentIndex + 1) {
+                        p.hit = true;
+                        currentIndex++;
+                        document.getElementById('progress').textContent = 
+                            `${currentIndex}/${points.length}`;
+                        
+                        if (currentIndex === points.length) {
+                            clearInterval(timerInterval);
+                            document.getElementById('finalTime').textContent = 
+                                Math.floor((Date.now() - startTime) / 1000);
+                            document.getElementById('winMsg').classList.remove('hidden');
+                        }
+                    }
+                    break;
+                }
+            }
+            draw();
+        }
+        
+        canvas.addEventListener('click', handleInput);
+        canvas.addEventListener('touchstart', handleInput, { passive: false });
+        
+        initGame();
+    </script>
+</body>
+</html>

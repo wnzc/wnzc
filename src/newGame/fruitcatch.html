@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>接水果 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(180deg, #87CEEB, #E0F6FF);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #333;
+            overflow: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 5px; }
+        .header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.8);
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stat-box .label { font-size: 0.55rem; opacity: 0.7; }
+        .stat-box .value { font-size: 1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(100,100,100,0.3); }
+        #gameCanvas {
+            background: linear-gradient(180deg, #87CEEB 0%, #98D8AA 100%);
+            border-radius: 10px;
+            touch-action: none;
+        }
+        .game-over {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over h2 { color: #FF6B6B; font-size: 1.6rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <h1>🍎 接水果</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">得分</div>
+            <div class="value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">生命</div>
+            <div class="value" id="lives">❤️❤️❤️</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="startGame()">重新开始</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="game-over hidden" id="gameOver">
+        <h2>游戏结束</h2>
+        <p style="color:#fff;margin-bottom:15px">得分: <span id="finalScore">0</span></p>
+        <button onclick="startGame()">再来一局</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let BASKET_W, BASKET_H, FRUIT_SIZE;
+        function initSize() {
+            const w = Math.min(window.innerWidth - 20, 350);
+            canvas.width = w;
+            canvas.height = Math.min(window.innerHeight - 150, 450);
+            BASKET_W = w * 0.2;
+            BASKET_H = 25;
+            FRUIT_SIZE = Math.min(w * 0.08, 28);
+        }
+        
+        const FRUITS = ['🍎', '🍊', '🍋', '🍇', '🍓', '🍑', '🍒', '🥝'];
+        let basket, fruits, score, lives, high = parseInt(localStorage.getItem('fruitHigh') || '0');
+        let gameRunning, animationId;
+        
+        document.getElementById('high').textContent = high;
+        
+        function startGame() {
+            document.getElementById('gameOver').classList.add('hidden');
+            initSize();
+            basket = { x: canvas.width / 2 - BASKET_W / 2, y: canvas.height - BASKET_H - 5 };
+            fruits = [];
+            score = 0;
+            lives = 3;
+            gameRunning = true;
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = '❤️'.repeat(lives);
+            
+            cancelAnimationFrame(animationId);
+            spawnFruit();
+            gameLoop();
+        }
+        
+        function spawnFruit() {
+            if (!gameRunning) return;
+            const fruit = {
+                x: FRUIT_SIZE + Math.random() * (canvas.width - FRUIT_SIZE * 2),
+                y: -FRUIT_SIZE,
+                emoji: FRUITS[Math.floor(Math.random() * FRUITS.length)],
+                speed: 2 + Math.random() * 2 + score / 200
+            };
+            fruits.push(fruit);
+            
+            if (gameRunning) {
+                setTimeout(spawnFruit, 800 + Math.random() * 600);
+            }
+        }
+        
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制篮子
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.moveTo(basket.x, basket.y + BASKET_H);
+            ctx.lineTo(basket.x + BASKET_W, basket.y + BASKET_H);
+            ctx.lineTo(basket.x + BASKET_W - 5, basket.y);
+            ctx.lineTo(basket.x + 5, basket.y);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 绘制篮子条纹
+            ctx.strokeStyle = '#6B3510';
+            ctx.lineWidth = 2;
+            for (let i = 1; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(basket.x + 5 + (BASKET_W - 10) / 3 * i, basket.y);
+                ctx.lineTo(basket.x + (BASKET_W) / 3 * i, basket.y + BASKET_H);
+                ctx.stroke();
+            }
+            
+            // 更新水果
+            for (let i = fruits.length - 1; i >= 0; i--) {
+                const fruit = fruits[i];
+                fruit.y += fruit.speed;
+                
+                // 绘制水果
+                ctx.font = `${FRUIT_SIZE}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(fruit.emoji, fruit.x, fruit.y);
+                
+                // 检测碰撞
+                if (fruit.y + FRUIT_SIZE / 2 > basket.y && fruit.y - FRUIT_SIZE / 2 < basket.y + BASKET_H) {
+                    if (fruit.x > basket.x && fruit.x < basket.x + BASKET_W) {
+                        fruits.splice(i, 1);
+                        score += 10;
+                        document.getElementById('score').textContent = score;
+                        if (score > high) {
+                            high = score;
+                            localStorage.setItem('fruitHigh', high);
+                            document.getElementById('high').textContent = high;
+                        }
+                        continue;
+                    }
+                }
+                
+                // 水果落地
+                if (fruit.y > canvas.height + FRUIT_SIZE) {
+                    fruits.splice(i, 1);
+                    lives--;
+                    document.getElementById('lives').textContent = '❤️'.repeat(Math.max(0, lives));
+                    if (lives <= 0) {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+        
+        function endGame() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').classList.remove('hidden');
+        }
+        
+        // 触屏控制
+        let touchX;
+        canvas.addEventListener('touchstart', e => {
+            touchX = e.touches[0].clientX;
+        }, { passive: true });
+        
+        canvas.addEventListener('touchmove', e => {
+            if (!gameRunning) return;
+            const newX = e.touches[0].clientX;
+            basket.x += (newX - touchX);
+            basket.x = Math.max(0, Math.min(canvas.width - BASKET_W, basket.x));
+            touchX = newX;
+        }, { passive: true });
+        
+        // 鼠标控制（电脑）
+        canvas.addEventListener('mousemove', e => {
+            if (!gameRunning) return;
+            const rect = canvas.getBoundingClientRect();
+            basket.x = e.clientX - rect.left - BASKET_W / 2;
+            basket.x = Math.max(0, Math.min(canvas.width - BASKET_W, basket.x));
+        });
+        
+        startGame();
+    </script>
+</body>
+</html>

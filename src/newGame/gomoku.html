@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五子棋 - 人机对战</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 95vw;
+            width: 100%;
+            padding: 15px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #FFD93D, #4ECDC4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .back-link:hover { background: rgba(255, 255, 255, 0.2); }
+        .status {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            background: rgba(255, 107, 107, 0.2);
+            border: 2px solid #FF6B6B;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .status.player2 {
+            background: rgba(78, 205, 196, 0.2);
+            border-color: #4ECDC4;
+        }
+        .status.thinking { animation: thinking 1s ease infinite; }
+        @keyframes thinking { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .board {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin: 0 auto;
+            overflow-x: auto;
+            padding: 10px;
+        }
+        .row { display: flex; gap: 0; }
+        .cell {
+            width: 26px;
+            height: 26px;
+            background: rgba(139, 69, 19, 0.4);
+            border: 1px solid rgba(139, 69, 19, 0.6);
+            border-radius: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .cell:hover { background: rgba(139, 69, 19, 0.6); }
+        .piece {
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            aspect-ratio: 1;
+        }
+        .black-piece {
+            background: #1a1a1a;
+            border: 2px solid #444;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            aspect-ratio: 1;
+        }
+        .white-piece {
+            background: linear-gradient(145deg, #fff, #e0e0e0);
+            border: 2px solid #ccc;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            aspect-ratio: 1;
+        }
+        .new-piece.new-black, .new-piece.new-white {
+            animation: placePiece 0.4s ease-out, glow 0.6s ease-out;
+        }
+        @keyframes glow {
+            0% { box-shadow: 0 0 25px 8px rgba(255, 255, 255, 1); }
+            100% { box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
+        }
+        .new-piece.new-black {
+            box-shadow: 0 0 25px 8px rgba(255, 255, 255, 1);
+        }
+        .new-piece.new-white {
+            box-shadow: 0 0 25px 8px rgba(255, 215, 0, 1);
+        }
+        .win-cell { animation: winPulse 0.5s ease infinite alternate; }
+        @keyframes winPulse {
+            0% { box-shadow: 0 0 5px #FFD93D; }
+            100% { box-shadow: 0 0 25px #FFD93D; }
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        .result-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        .result-modal.show { opacity: 1; visibility: visible; }
+        .result-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #FFD93D;
+            transform: scale(0.8);
+            transition: transform 0.3s;
+        }
+        .result-modal.show .result-content { transform: scale(1); }
+        .result-title {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #FFD93D, #FF6B6B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .result-message { font-size: 1.2rem; color: #ccc; margin-bottom: 30px; }
+        @media (max-width: 520px) {
+            .cell { width: 20px; height: 20px; }
+            .piece { width: 16px; height: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回主页</a>
+        <h1>五子棋</h1>
+        <div class="status player1" id="status">你（黑方）回合</div>
+        <div class="board" id="board"></div>
+        <button class="btn" onclick="init()">重新开始</button>
+    </div>
+
+    <div class="result-modal" id="modal">
+        <div class="result-content">
+            <h2 class="result-title" id="result-title">胜利!</h2>
+            <p class="result-message" id="result-message">恭喜获胜</p>
+            <button class="btn" onclick="playAgain()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        const SIZE = 15;
+        let board, currentPlayer, gameOver, lastMove = null;
+
+        function init() {
+            board = Array(SIZE).fill(null).map(() => Array(SIZE).fill(''));
+            currentPlayer = 'B';
+            gameOver = false;
+            lastMove = null;
+            render();
+        }
+
+        function render() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            for (let i = 0; i < SIZE; i++) {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let j = 0; j < SIZE; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.onclick = () => handleClick(i, j);
+                    if (board[i][j]) {
+                        const piece = document.createElement('div');
+                        const isNew = lastMove && lastMove.row === i && lastMove.col === j;
+                        piece.className = `piece ${board[i][j] === 'B' ? 'black-piece' : 'white-piece'}${isNew ? ' new-piece new-' + (board[i][j] === 'B' ? 'black' : 'white') : ''}`;
+                        cell.appendChild(piece);
+                    }
+                    row.appendChild(cell);
+                }
+                boardEl.appendChild(row);
+            }
+            updateStatus();
+        }
+
+        function handleClick(row, col) {
+            if (board[row][col] || gameOver || currentPlayer === 'W') return;
+            makeMove(row, col);
+            if (!gameOver && currentPlayer === 'W') {
+                document.getElementById('status').classList.add('thinking');
+                setTimeout(aiMove, 500);
+            }
+        }
+
+        function makeMove(row, col) {
+            board[row][col] = currentPlayer;
+            lastMove = { row, col };
+            const win = checkWin(row, col);
+            if (win) {
+                gameOver = true;
+                highlightWin(win);
+                setTimeout(() => showResult(`${currentPlayer === 'B' ? '你' : 'AI'} 获胜!`, '恭喜获得胜利'), 500);
+            } else {
+                currentPlayer = currentPlayer === 'B' ? 'W' : 'B';
+            }
+            render();
+        }
+
+        function aiMove() {
+            if (gameOver) return;
+            const move = getBestMove();
+            if (move) makeMove(move.row, move.col);
+            document.getElementById('status').classList.remove('thinking');
+        }
+
+        function getBestMove() {
+            const empty = [];
+            for (let r = 0; r < SIZE; r++)
+                for (let c = 0; c < SIZE; c++)
+                    if (!board[r][c]) empty.push({ row: r, col: c });
+
+            for (const spot of empty) {
+                board[spot.row][spot.col] = 'W';
+                if (checkWin(spot.row, spot.col)) { board[spot.row][spot.col] = ''; return spot; }
+                board[spot.row][spot.col] = '';
+            }
+            for (const spot of empty) {
+                board[spot.row][spot.col] = 'B';
+                if (checkWin(spot.row, spot.col)) { board[spot.row][spot.col] = ''; return spot; }
+                board[spot.row][spot.col] = '';
+            }
+
+            let best = null, bestScore = -Infinity;
+            for (const spot of empty) {
+                board[spot.row][spot.col] = 'W';
+                const score = evaluate(spot.row, spot.col);
+                board[spot.row][spot.col] = '';
+                if (score > bestScore) { bestScore = score; best = spot; }
+            }
+            return best || empty[Math.floor(Math.random() * empty.length)];
+        }
+
+        function evaluate(row, col) {
+            const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
+            let score = 0;
+            for (const [dr, dc] of dirs) {
+                score += evalLine(row, col, dr, dc, 'W') * 1.1;
+                score += evalLine(row, col, dr, dc, 'B') * 0.9;
+            }
+            const center = Math.floor(SIZE / 2);
+            score += (SIZE - Math.abs(row - center) - Math.abs(col - center)) * 0.1;
+            return score;
+        }
+
+        function evalLine(row, col, dr, dc, player) {
+            let count = 1, open = 0;
+            let r = row + dr, c = col + dc;
+            while (r >= 0 && r < SIZE && c >= 0 && c < SIZE) {
+                if (board[r][c] === player) count++;
+                else { if (board[r][c] === '') open++; break; }
+                r += dr; c += dc;
+            }
+            r = row - dr; c = col - dc;
+            while (r >= 0 && r < SIZE && c >= 0 && c < SIZE) {
+                if (board[r][c] === player) count++;
+                else { if (board[r][c] === '') open++; break; }
+                r -= dr; c -= dc;
+            }
+            if (count >= 5) return 100000;
+            if (count === 4 && open === 2) return 10000;
+            if (count === 4 && open === 1) return 1000;
+            if (count === 3 && open === 2) return 1000;
+            if (count === 3 && open === 1) return 100;
+            if (count === 2 && open === 2) return 100;
+            return count;
+        }
+
+        function checkWin(row, col) {
+            const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
+            for (const [dx, dy] of dirs) {
+                let count = 1, cells = [[row, col]];
+                for (const dir of [1, -1]) {
+                    let r = row + dx * dir, c = col + dy * dir;
+                    while (r >= 0 && r < SIZE && c >= 0 && c < SIZE) {
+                        if (board[r][c] === board[row][col]) { count++; cells.push([r, c]); }
+                        else break;
+                        r += dx * dir; c += dy * dir;
+                    }
+                }
+                if (count >= 5) return cells;
+            }
+            return null;
+        }
+
+        function highlightWin(cells) {
+            const boardEl = document.getElementById('board');
+            cells.forEach(([r, c]) => {
+                boardEl.children[r].children[c].classList.add('win-cell');
+            });
+        }
+
+        function updateStatus() {
+            const s = document.getElementById('status');
+            s.textContent = currentPlayer === 'B' ? '你（黑方）回合' : 'AI（白方）思考中...';
+            s.className = `status ${currentPlayer === 'B' ? 'player1' : 'player2'}`;
+        }
+
+        function showResult(title, msg) {
+            document.getElementById('result-title').textContent = title;
+            document.getElementById('result-message').textContent = msg;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function playAgain() {
+            document.getElementById('modal').classList.remove('show');
+            init();
+        }
+
+        init();
+    </script>
+</body>
+</html>

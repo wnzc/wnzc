@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>石头剪刀布</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 {
+            color: white;
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+        }
+        .battle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+        .hand {
+            font-size: 4rem;
+            padding: 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            min-width: 100px;
+            text-align: center;
+        }
+        .vs {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .result-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 20px;
+            min-height: 50px;
+            text-align: center;
+        }
+        .choices {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .choice {
+            font-size: 3rem;
+            padding: 20px;
+            background: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .choice:active { transform: scale(0.9); }
+        .choice:hover { transform: scale(1.1); }
+        .stats {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+            color: white;
+            font-size: 1.1rem;
+        }
+        .stat-box {
+            text-align: center;
+            background: rgba(255,255,255,0.15);
+            padding: 15px 25px;
+            border-radius: 15px;
+        }
+        .stat-box .label { font-size: 0.9rem; margin-bottom: 5px; }
+        .stat-box .value { font-size: 1.5rem; font-weight: bold; }
+        .history {
+            margin-top: 20px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 300px;
+        }
+        .hist-item {
+            font-size: 1.5rem;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>✊✋✌️ 石头剪刀布</h1>
+    
+    <div class="battle">
+        <div class="hand" id="playerHand">❓</div>
+        <div class="vs">VS</div>
+        <div class="hand" id="aiHand">❓</div>
+    </div>
+    
+    <div class="result-text" id="resultText">选择你的出拳!</div>
+    
+    <div class="choices">
+        <button class="choice" onclick="play('rock')">✊</button>
+        <button class="choice" onclick="play('paper')">✋</button>
+        <button class="choice" onclick="play('scissors')">✌️</button>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-box">
+            <div class="label">胜利</div>
+            <div class="value" id="wins">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">平局</div>
+            <div class="value" id="draws">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">失败</div>
+            <div class="value" id="losses">0</div>
+        </div>
+    </div>
+    
+    <div class="history" id="history"></div>
+
+    <script>
+        const hands = { rock: '✊', paper: '✋', scissors: '✌️' };
+        const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+        let wins = 0, draws = 0, losses = 0;
+
+        function play(playerChoice) {
+            const aiChoice = ['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)];
+            
+            document.getElementById('playerHand').textContent = hands[playerChoice];
+            document.getElementById('aiHand').textContent = hands[aiChoice];
+            
+            let result;
+            if (playerChoice === aiChoice) {
+                draws++;
+                document.getElementById('draws').textContent = draws;
+                result = '平局!';
+            } else if (beats[playerChoice] === aiChoice) {
+                wins++;
+                document.getElementById('wins').textContent = wins;
+                result = '你赢了! 🎉';
+            } else {
+                losses++;
+                document.getElementById('losses').textContent = losses;
+                result = '你输了!';
+            }
+            
+            document.getElementById('resultText').textContent = result;
+            
+            // Add to history
+            const hist = document.getElementById('history');
+            const item = document.createElement('div');
+            item.className = 'hist-item';
+            item.textContent = result.includes('赢') ? '🟢' : result.includes('输') ? '🔴' : '🟡';
+            hist.appendChild(item);
+            if (hist.children.length > 20) hist.removeChild(hist.firstChild);
+        }
+    </script>
+</body>
+</html>

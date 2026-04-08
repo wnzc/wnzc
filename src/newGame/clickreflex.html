@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>反应点击</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            touch-action: manipulation;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 300px;
+            color: white;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        .hud span {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 25px;
+        }
+        .game-area {
+            width: 100%;
+            max-width: 300px;
+            height: 300px;
+            background: #16213e;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .target {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border-radius: 50%;
+            position: absolute;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.5);
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        .target.show { display: flex; }
+        .message {
+            color: white;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+        .message.red { color: #e74c3c; }
+        .message.green { color: #2ecc71; }
+        .result {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .result.show { display: flex; }
+        .result h1 { font-size: 2rem; margin-bottom: 20px; }
+        .result .stat {
+            font-size: 1.2rem;
+            margin: 10px 0;
+        }
+        .result .stat span { color: #f1c40f; }
+        .btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn:active { transform: scale(0.95); }
+        .times-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .time-item {
+            padding: 5px 0;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="hud">
+        <span>🎯 <span id="hits">0</span>命中</span>
+        <span>⏱️ <span id="time">30</span>s</span>
+    </div>
+    
+    <div class="game-area" id="gameArea">
+        <div class="target" id="target" ontouchstart="hit()" onclick="hit()">🎯</div>
+        <div class="message" id="message">准备...</div>
+    </div>
+    
+    <div class="result" id="result">
+        <h1>🎉 游戏结束!</h1>
+        <div class="stat">命中次数: <span id="finalHits">0</span></div>
+        <div class="stat">平均反应: <span id="avgTime">0</span>ms</div>
+        <div class="stat">最快反应: <span id="bestTime">0</span>ms</div>
+        <div class="times-list" id="timesList"></div>
+        <button class="btn" onclick="startGame()">再来一次</button>
+    </div>
+
+    <script>
+        const target = document.getElementById('target');
+        const message = document.getElementById('message');
+        const gameArea = document.getElementById('gameArea');
+        let hits = 0, timeLeft = 30, reactionTimes = [], timeout = null, gameLoop = null, timer = null, isPlaying = false, startTime = 0;
+
+        function startGame() {
+            hits = 0;
+            timeLeft = 30;
+            reactionTimes = [];
+            isPlaying = true;
+            
+            document.getElementById('hits').textContent = '0';
+            document.getElementById('time').textContent = '30';
+            document.getElementById('result').classList.remove('show');
+            message.className = 'message';
+            message.textContent = '准备...';
+            target.classList.remove('show');
+
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time').textContent = timeLeft;
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+
+            setTimeout(spawnTarget, 1000);
+        }
+
+        function spawnTarget() {
+            if (!isPlaying) return;
+            
+            // Random position
+            const areaW = gameArea.offsetWidth - 70;
+            const areaH = gameArea.offsetHeight - 70;
+            target.style.left = Math.random() * areaW + 'px';
+            target.style.top = Math.random() * areaH + 'px';
+            target.classList.add('show');
+            message.className = 'message green';
+            message.textContent = '快点击!';
+            
+            startTime = Date.now();
+            timeout = setTimeout(() => {
+                // Too slow
+                if (isPlaying) {
+                    target.classList.remove('show');
+                    message.className = 'message red';
+                    message.textContent = '太慢了!';
+                    setTimeout(spawnTarget, 800);
+                }
+            }, 2000 - timeLeft * 30); // Gets faster
+        }
+
+        function hit() {
+            if (!isPlaying || !target.classList.contains('show')) return;
+            
+            const reaction = Date.now() - startTime;
+            reactionTimes.push(reaction);
+            hits++;
+            document.getElementById('hits').textContent = hits;
+            
+            target.classList.remove('show');
+            message.className = 'message';
+            message.textContent = `${reaction}ms`;
+            
+            clearTimeout(timeout);
+            setTimeout(spawnTarget, 500 + Math.random() * 500);
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timer);
+            clearTimeout(timeout);
+            target.classList.remove('show');
+            
+            document.getElementById('finalHits').textContent = hits;
+            
+            if (reactionTimes.length > 0) {
+                const avg = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
+                const best = Math.min(...reactionTimes);
+                document.getElementById('avgTime').textContent = avg;
+                document.getElementById('bestTime').textContent = best;
+                
+                // Show last 10 times
+                const list = document.getElementById('timesList');
+                list.innerHTML = '<div style="margin-bottom:10px">最近几次:</div>' + 
+                    reactionTimes.slice(-10).map(t => `<div class="time-item">${t}ms</div>`).join('');
+            }
+            
+            setTimeout(() => {
+                document.getElementById('result').classList.add('show');
+            }, 500);
+        }
+
+        startGame();
+    </script>
+</body>
+</html>

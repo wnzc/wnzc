@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>快速记忆</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #834d9b 0%, #d04ed6 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            touch-action: manipulation;
+        }
+        .header {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 1.5rem; margin-bottom: 10px; }
+        .stats {
+            display: flex;
+            gap: 15px;
+            font-size: 1rem;
+        }
+        .stats span { background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 280px;
+            width: 100%;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .cell:active { transform: scale(0.95); }
+        .cell.show { background: #ffeaa7; }
+        .cell.correct { background: #55efc4; }
+        .cell.wrong { background: #ff6b6b; }
+        .cell.disabled { pointer-events: none; }
+        .status {
+            margin-top: 20px;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            min-height: 30px;
+        }
+        .btn {
+            margin-top: 15px;
+            padding: 12px 30px;
+            font-size: 1rem;
+            background: white;
+            color: #834d9b;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn:active { transform: scale(0.95); }
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .message.show { display: block; }
+        .message h2 { color: #333; font-size: 1.5rem; margin-bottom: 10px; }
+        .message p { color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 快速记忆</h1>
+        <div class="stats">
+            <span>🔢 <span id="level">1</span>关</span>
+            <span>💯 <span id="score">0</span>分</span>
+        </div>
+    </div>
+    
+    <div class="grid" id="grid"></div>
+    <div class="status" id="status">记住红色格子的位置!</div>
+    <button class="btn" onclick="init()">开始游戏</button>
+    
+    <div class="message" id="message">
+        <h2 id="msgTitle"></h2>
+        <p id="msgText"></p>
+    </div>
+
+    <script>
+        const grid = document.getElementById('grid');
+        let cells = [], level = 1, score = 0, shown = [], selected = [];
+        const maxLevel = 10;
+
+        function init() {
+            hideMessage();
+            level = 1;
+            score = 0;
+            document.getElementById('level').textContent = level;
+            document.getElementById('score').textContent = score;
+            startLevel();
+        }
+
+        function startLevel() {
+            selected = [];
+            shown = [];
+            document.getElementById('status').textContent = '记住红色格子的位置!';
+            
+            // Clear grid
+            grid.innerHTML = '';
+            cells = [];
+            
+            const count = Math.min(2 + level, 7);
+            
+            // Create cells
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell disabled';
+                cell.dataset.i = i;
+                cell.onclick = () => tap(i);
+                grid.appendChild(cell);
+                cells.push(cell);
+            }
+            
+            // Show random cells
+            const indices = [];
+            while (indices.length < count) {
+                const idx = Math.floor(Math.random() * 9);
+                if (!indices.includes(idx)) indices.push(idx);
+            }
+            
+            setTimeout(() => {
+                indices.forEach(i => {
+                    cells[i].classList.add('show');
+                    shown.push(i);
+                });
+                
+                setTimeout(() => {
+                    cells.forEach(c => c.classList.remove('show', 'disabled'));
+                }, 800 + level * 100);
+            }, 500);
+        }
+
+        function tap(i) {
+            if (shown.length === 0) return; // Not showing
+            if (cells[i].classList.contains('disabled')) return;
+            
+            if (shown.includes(i) && !selected.includes(i)) {
+                cells[i].classList.add('correct');
+                selected.push(i);
+            } else if (!shown.includes(i)) {
+                cells[i].classList.add('wrong');
+                setTimeout(() => cells[i].classList.remove('wrong'), 300);
+            }
+            
+            // Check if all found
+            if (selected.length === shown.length) {
+                score += level * 10;
+                document.getElementById('score').textContent = score;
+                
+                setTimeout(() => {
+                    if (level >= maxLevel) {
+                        showMessage('🎉 太厉害了!', `满分通关! 总分: ${score}`);
+                    } else {
+                        level++;
+                        document.getElementById('level').textContent = level;
+                        startLevel();
+                    }
+                }, 500);
+            }
+        }
+
+        function showMessage(title, text) {
+            document.getElementById('msgTitle').textContent = title;
+            document.getElementById('msgText').textContent = text;
+            document.getElementById('message').classList.add('show');
+        }
+
+        function hideMessage() {
+            document.getElementById('message').classList.remove('show');
+        }
+
+        init();
+    </script>
+</body>
+</html>

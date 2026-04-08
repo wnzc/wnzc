@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>数字炸弹</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #434343 0%, #000000 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            touch-action: manipulation;
+        }
+        .bomb-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin-bottom: 30px;
+        }
+        .bomb {
+            font-size: 8rem;
+            text-align: center;
+            animation: shake 0.5s infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        .range {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 30px;
+            border-radius: 15px;
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .range span { color: #f1c40f; font-weight: bold; }
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .input {
+            width: 80px;
+            padding: 15px;
+            font-size: 1.3rem;
+            text-align: center;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.9);
+        }
+        .guess-btn {
+            padding: 15px 25px;
+            font-size: 1rem;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .guess-btn:active { transform: scale(0.95); }
+        .hint {
+            color: #f1c40f;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            min-height: 30px;
+            text-align: center;
+        }
+        .history {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            max-width: 300px;
+            margin-top: 20px;
+        }
+        .hist-item {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        .hist-item.safe { background: #2ecc71; color: white; }
+        .hist-item.boom { background: #e74c3c; color: white; }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 100;
+        }
+        .modal.show { display: flex; }
+        .modal h1 { font-size: 3rem; margin-bottom: 20px; }
+        .modal p { font-size: 1.3rem; margin-bottom: 20px; }
+        .modal .bomb-icon { font-size: 5rem; }
+        .btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background: white;
+            color: #333;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="bomb-container">
+        <div class="bomb">💣</div>
+    </div>
+    
+    <div class="range">
+        猜猜炸弹在哪?<br>
+        范围: <span id="minNum">1</span> ~ <span id="maxNum">100</span>
+    </div>
+    
+    <div class="input-area">
+        <input type="number" class="input" id="guessInput" placeholder="?" min="1" max="100">
+        <button class="guess-btn" onclick="guess()">猜测</button>
+    </div>
+    
+    <div class="hint" id="hint">输入数字开始游戏!</div>
+    
+    <div class="history" id="history"></div>
+    
+    <div class="modal" id="modal">
+        <div class="bomb-icon">💥</div>
+        <h1>爆炸!</h1>
+        <p>炸弹在 <span id="bombNum">0</span></p>
+        <button class="btn" onclick="newGame()">重新开始</button>
+    </div>
+
+    <script>
+        let bomb, min, max, guesses;
+
+        function newGame() {
+            min = 1;
+            max = 100;
+            bomb = Math.floor(Math.random() * 100) + 1;
+            guesses = 0;
+            document.getElementById('minNum').textContent = min;
+            document.getElementById('maxNum').textContent = max;
+            document.getElementById('hint').textContent = '输入数字开始游戏!';
+            document.getElementById('guessInput').value = '';
+            document.getElementById('history').innerHTML = '';
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        function guess() {
+            const input = document.getElementById('guessInput');
+            const num = parseInt(input.value);
+            
+            if (isNaN(num) || num < min || num > max) {
+                document.getElementById('hint').textContent = `请输入 ${min} ~ ${max} 之间的数字`;
+                return;
+            }
+            
+            guesses++;
+            
+            if (num === bomb) {
+                document.getElementById('bombNum').textContent = bomb;
+                document.getElementById('modal').classList.add('show');
+                return;
+            }
+            
+            const hint = document.getElementById('hint');
+            const hist = document.getElementById('history');
+            
+            const histItem = document.createElement('div');
+            histItem.className = 'hist-item safe';
+            histItem.textContent = num;
+            
+            if (num < bomb) {
+                min = Math.max(min, num + 1);
+                document.getElementById('minNum').textContent = min;
+                hint.textContent = '太低了! ↑';
+                histItem.textContent += ' ↑';
+            } else {
+                max = Math.min(max, num - 1);
+                document.getElementById('maxNum').textContent = max;
+                hint.textContent = '太高了! ↓';
+                histItem.textContent += ' ↓';
+            }
+            
+            hist.appendChild(histItem);
+            input.value = '';
+            input.focus();
+        }
+
+        document.getElementById('guessInput').addEventListener('keypress', e => {
+            if (e.key === 'Enter') guess();
+        });
+
+        newGame();
+    </script>
+</body>
+</html>

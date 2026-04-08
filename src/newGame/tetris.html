@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>俄罗斯方块 - 游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        h1 { font-size: 1.3rem; margin-bottom: 6px; }
+        .header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .label { font-size: 0.6rem; opacity: 0.8; }
+        .stat-box .value { font-size: 1.1rem; font-weight: bold; }
+        .controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+        button {
+            padding: 5px 12px;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { transform: translateY(-1px); }
+        button:active { transform: scale(0.95); }
+        .back-btn { background: rgba(255,255,255,0.2); }
+        .game-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        #gameCanvas {
+            background: #0a0a1a;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 5px;
+            touch-action: none;
+        }
+        .next-box {
+            background: rgba(0,0,0,0.3);
+            padding: 6px;
+            border-radius: 5px;
+        }
+        .next-box p { font-size: 0.6rem; margin-bottom: 4px; text-align: center; }
+        #nextCanvas {
+            background: #0a0a1a;
+            border-radius: 3px;
+        }
+        .game-over {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .game-over h2 { color: #FF6B6B; font-size: 1.6rem; margin-bottom: 12px; }
+        .hidden { display: none !important; }
+        .instructions {
+            margin-top: 8px;
+            font-size: 0.65rem;
+            opacity: 0.7;
+            text-align: center;
+        }
+        .touch-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(2, 50px);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .touch-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .touch-btn:active {
+            background: rgba(255,255,255,0.3);
+            transform: scale(0.95);
+        }
+        .touch-btn.rotate { grid-column: 2; }
+        .touch-btn.left { grid-column: 1; grid-row: 2; }
+        .touch-btn.down { grid-column: 2; grid-row: 2; font-size: 1.2rem; }
+        .touch-btn.right { grid-column: 3; grid-row: 2; }
+        .touch-btn.drop {
+            grid-column: 1 / 4;
+            grid-row: 1;
+            font-size: 1rem;
+            background: rgba(255,107,107,0.3);
+        }
+        @media (min-width: 450px) {
+            h1 { font-size: 1.6rem; }
+            .stat-box .label { font-size: 0.7rem; }
+            button { padding: 6px 14px; font-size: 0.8rem; }
+            .touch-controls { display: none; }
+        }
+        @media (max-width: 449px) {
+            .instructions { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <h1>俄罗斯方块</h1>
+    <div class="header">
+        <div class="stat-box">
+            <div class="label">得分</div>
+            <div class="value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="label">最高</div>
+            <div class="value" id="high">0</div>
+        </div>
+    </div>
+    <div class="controls">
+        <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+        <button onclick="initGame()">重新开始</button>
+    </div>
+    <div class="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div class="next-box">
+            <p>下一个</p>
+            <canvas id="nextCanvas"></canvas>
+        </div>
+    </div>
+    <div class="touch-controls">
+        <button class="touch-btn drop" ontouchstart="drop()">快速下落</button>
+        <button class="touch-btn rotate" ontouchstart="rotate()">↻</button>
+        <button class="touch-btn left" ontouchstart="move(-1)">←</button>
+        <button class="touch-btn down" ontouchstart="softDrop()">↓</button>
+        <button class="touch-btn right" ontouchstart="move(1)">→</button>
+    </div>
+    <p class="instructions">← →移动 | ↑旋转 | ↓加速 | 空格下落</p>
+
+    <div class="game-over hidden" id="gameOver">
+        <h2>游戏结束</h2>
+        <p style="margin-bottom:15px">得分: <span id="finalScore">0</span></p>
+        <button onclick="initGame()">再来一局</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('nextCanvas');
+        const nextCtx = nextCanvas.getContext('2d');
+        
+        const COLS = 10, ROWS = 20;
+        let SIZE;
+        
+        function initSize() {
+            const maxWidth = window.innerWidth - 90;
+            const maxHeight = window.innerHeight - 220;
+            SIZE = Math.min(Math.floor(maxWidth / COLS), Math.floor(maxHeight / ROWS), 24);
+            SIZE = Math.max(SIZE, 14);
+            canvas.width = COLS * SIZE;
+            canvas.height = ROWS * SIZE;
+            nextCanvas.width = 4 * SIZE * 0.6;
+            nextCanvas.height = 4 * SIZE * 0.6;
+        }
+        
+        const SHAPES = [
+            [[1,1,1,1]],
+            [[1,1],[1,1]],
+            [[1,1,1],[0,1,0]],
+            [[1,1,1],[1,0,0]],
+            [[1,1,1],[0,0,1]],
+            [[1,1,0],[0,1,1]],
+            [[0,1,1],[1,1,0]]
+        ];
+        const COLORS = ['#FF6B6B','#4ECDC4','#FFD93D','#9B59B6','#3498DB','#2ECC71','#E74C3C'];
+        
+        let board, current, next, score, high = parseInt(localStorage.getItem('tetrisHigh') || '0');
+        let gameLoop, gameRunning;
+        
+        document.getElementById('high').textContent = high;
+        
+        function initGame() {
+            initSize();
+            document.getElementById('gameOver').classList.add('hidden');
+            board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+            score = 0;
+            document.getElementById('score').textContent = score;
+            current = createPiece();
+            next = createPiece();
+            drawNext();
+            gameRunning = true;
+            clearInterval(gameLoop);
+            gameLoop = setInterval(update, 400);
+            draw();
+        }
+        
+        function createPiece() {
+            const idx = Math.floor(Math.random() * SHAPES.length);
+            return { shape: SHAPES[idx], color: COLORS[idx], x: Math.floor((COLS - SHAPES[idx][0].length) / 2), y: 0 };
+        }
+        
+        function update() {
+            if (!gameRunning) return;
+            if (!move(0, 1)) {
+                placePiece();
+                clearLines();
+                current = next;
+                next = createPiece();
+                drawNext();
+            }
+            draw();
+        }
+        
+        function move(dx, dy) {
+            const newX = current.x + dx;
+            const newY = current.y + dy;
+            if (!collide(newX, newY, current.shape)) {
+                current.x = newX;
+                current.y = newY;
+                return true;
+            }
+            return false;
+        }
+        
+        function collide(x, y, shape) {
+            for (let r = 0; r < shape.length; r++) {
+                for (let c = 0; c < shape[r].length; c++) {
+                    if (shape[r][c]) {
+                        const nx = x + c, ny = y + r;
+                        if (nx < 0 || nx >= COLS || ny >= ROWS) return true;
+                        if (ny >= 0 && board[ny][nx]) return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        function rotate() {
+            if (!gameRunning) return;
+            const shape = current.shape;
+            const rotated = shape[0].map((_, i) => shape.map(row => row[i]).reverse());
+            if (!collide(current.x, current.y, rotated)) {
+                current.shape = rotated;
+                draw();
+            }
+        }
+        
+        function placePiece() {
+            for (let r = 0; r < current.shape.length; r++) {
+                for (let c = 0; c < current.shape[r].length; c++) {
+                    if (current.shape[r][c]) {
+                        const y = current.y + r, x = current.x + c;
+                        if (y >= 0) board[y][x] = current.color;
+                        else gameOver();
+                    }
+                }
+            }
+        }
+        
+        function clearLines() {
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (board[r].every(c => c)) {
+                    board.splice(r, 1);
+                    board.unshift(Array(COLS).fill(0));
+                    score += 100;
+                    document.getElementById('score').textContent = score;
+                    if (score > high) {
+                        high = score;
+                        localStorage.setItem('tetrisHigh', high);
+                        document.getElementById('high').textContent = high;
+                    }
+                    r++;
+                }
+            }
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (board[r][c]) {
+                        ctx.fillStyle = board[r][c];
+                        ctx.fillRect(c * SIZE + 1, r * SIZE + 1, SIZE - 2, SIZE - 2);
+                    }
+                }
+            }
+            
+            if (current) {
+                ctx.fillStyle = current.color;
+                for (let r = 0; r < current.shape.length; r++) {
+                    for (let c = 0; c < current.shape[r].length; c++) {
+                        if (current.shape[r][c]) {
+                            const y = current.y + r, x = current.x + c;
+                            if (y >= 0) {
+                                ctx.fillRect(x * SIZE + 1, y * SIZE + 1, SIZE - 2, SIZE - 2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        function drawNext() {
+            const s = SIZE * 0.6;
+            nextCtx.fillStyle = '#0a0a1a';
+            nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+            nextCtx.fillStyle = next.color;
+            for (let r = 0; r < next.shape.length; r++) {
+                for (let c = 0; c < next.shape[r].length; c++) {
+                    if (next.shape[r][c]) {
+                        nextCtx.fillRect(c * s + 2, r * s + 2, s - 4, s - 4);
+                    }
+                }
+            }
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            clearInterval(gameLoop);
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('gameOver').classList.remove('hidden');
+        }
+        
+        function softDrop() {
+            if (!gameRunning) return;
+            move(0, 1);
+            draw();
+        }
+        
+        function drop() {
+            if (!gameRunning) return;
+            while (move(0, 1)) {}
+            draw();
+            placePiece();
+            clearLines();
+            current = next;
+            next = createPiece();
+            drawNext();
+            draw();
+        }
+        
+        // 键盘控制
+        document.addEventListener('keydown', e => {
+            if (!gameRunning) return;
+            if (e.key === 'ArrowLeft') { move(-1, 0); draw(); }
+            if (e.key === 'ArrowRight') { move(1, 0); draw(); }
+            if (e.key === 'ArrowDown') { softDrop(); }
+            if (e.key === 'ArrowUp') { rotate(); }
+            if (e.key === ' ') { e.preventDefault(); drop(); }
+        });
+        
+        // 触屏滑动控制
+        let touchStartX, touchStartY;
+        canvas.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        
+        canvas.addEventListener('touchend', e => {
+            if (!gameRunning) return;
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+            const minSwipe = 30;
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (Math.abs(dx) > minSwipe) {
+                    move(dx > 0 ? 1 : -1, 0);
+                }
+            } else {
+                if (dy > minSwipe) {
+                    softDrop();
+                } else if (dy < -minSwipe) {
+                    rotate();
+                }
+            }
+            draw();
+        }, { passive: true });
+        
+        // 监听屏幕变化
+        window.addEventListener('resize', () => {
+            if (gameRunning) {
+                initSize();
+                draw();
+                drawNext();
+            }
+        });
+        
+        initGame();
+    </script>
+</body>
+</html>

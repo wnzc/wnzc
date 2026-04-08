@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四子棋 - 人机对战</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #FF6B6B, #FFD93D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .back-link:hover { background: rgba(255, 255, 255, 0.2); }
+        .status {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            background: rgba(255, 107, 107, 0.2);
+            border: 2px solid #FF6B6B;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .status.player2 {
+            background: rgba(255, 221, 0, 0.2);
+            border-color: #ffdd00;
+        }
+        .status.thinking { animation: thinking 1s ease infinite; }
+        @keyframes thinking { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .board {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            margin: 0 auto;
+            background: rgba(30, 30, 150, 0.6);
+            padding: 10px;
+            border-radius: 15px;
+        }
+        .row { display: flex; gap: 5px; }
+        .cell {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            overflow: visible;
+        }
+        .cell:hover { background: rgba(0, 0, 0, 0.5); }
+        .piece {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            aspect-ratio: 1;
+        }
+        @keyframes placePiece {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .red-piece {
+            background: linear-gradient(145deg, #ff4444, #cc0000);
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+            aspect-ratio: 1;
+        }
+        .yellow-piece {
+            background: linear-gradient(145deg, #ffdd00, #cc9900);
+            box-shadow: 0 0 15px rgba(255, 221, 0, 0.5);
+            aspect-ratio: 1;
+        }
+        /* 下落动画 */
+        .piece.dropping {
+            animation: dropPiece 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        @keyframes dropPiece {
+            0% { transform: translateY(-350px); }
+            65% { transform: translateY(8px); }
+            85% { transform: translateY(-4px); }
+            100% { transform: translateY(0); }
+        }
+        .new-piece.new-red, .new-piece.new-yellow {
+            animation: placePiece 0.4s ease-out, glow 0.6s ease-out;
+        }
+        @keyframes glow {
+            0% { box-shadow: 0 0 30px 10px rgba(255, 255, 255, 1); }
+            100% { box-shadow: 0 0 15px rgba(255, 68, 68, 0.5); }
+        }
+        .new-piece.new-red {
+            box-shadow: 0 0 30px 10px rgba(255, 255, 255, 1);
+        }
+        .new-piece.new-yellow {
+            box-shadow: 0 0 30px 10px rgba(255, 0, 0, 1);
+        }
+        .win-cell { animation: winPulse 0.5s ease infinite alternate; }
+        @keyframes winPulse {
+            0% { box-shadow: 0 0 5px #FFD93D; }
+            100% { box-shadow: 0 0 25px #FFD93D; }
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            color: white;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        .result-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        .result-modal.show { opacity: 1; visibility: visible; }
+        .result-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #FFD93D;
+            transform: scale(0.8);
+            transition: transform 0.3s;
+        }
+        .result-modal.show .result-content { transform: scale(1); }
+        .result-title {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #FFD93D, #FF6B6B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .result-message { font-size: 1.2rem; color: #ccc; margin-bottom: 30px; }
+        @media (max-width: 420px) {
+            .cell { width: 40px; height: 40px; }
+            .piece { width: 32px; height: 32px; }
+            .board { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回主页</a>
+        <h1>四子棋</h1>
+        <div class="status player1" id="status">你（红方）回合</div>
+        <div class="board" id="board"></div>
+        <button class="btn" onclick="init()">重新开始</button>
+    </div>
+
+    <div class="result-modal" id="modal">
+        <div class="result-content">
+            <h2 class="result-title" id="result-title">胜利!</h2>
+            <p class="result-message" id="result-message">恭喜获胜</p>
+            <button class="btn" onclick="playAgain()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        const COLS = 7, ROWS = 6;
+        let board, currentPlayer, gameOver, lastCol = -1, lastRow = -1;
+
+        function init() {
+            board = Array(ROWS).fill(null).map(() => Array(COLS).fill(''));
+            currentPlayer = 'R';
+            gameOver = false;
+            lastCol = -1;
+            lastRow = -1;
+            render();
+        }
+
+        function render() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            for (let i = 0; i < ROWS; i++) {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let j = 0; j < COLS; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if (board[i][j]) {
+                        const piece = document.createElement('div');
+                        const isNew = i === lastRow && j === lastCol;
+                        const color = board[i][j] === 'R' ? 'red-piece' : 'yellow-piece';
+                        let extra = '';
+                        if (isNew) extra = ' dropping new-piece new-' + (board[i][j] === 'R' ? 'red' : 'yellow');
+                        piece.className = `piece ${color}${extra}`;
+                        cell.appendChild(piece);
+                    } else {
+                        cell.onclick = () => handleClick(j);
+                    }
+                    row.appendChild(cell);
+                }
+                boardEl.appendChild(row);
+            }
+            updateStatus();
+        }
+
+        function handleClick(col) {
+            if (gameOver || currentPlayer === 'Y') return;
+            makeMove(col);
+            if (!gameOver && currentPlayer === 'Y') {
+                document.getElementById('status').classList.add('thinking');
+                setTimeout(aiMove, 600);
+            }
+        }
+
+        function makeMove(col) {
+            let row = ROWS - 1;
+            while (row >= 0 && board[row][col]) row--;
+            if (row < 0) return;
+            lastRow = row;
+            lastCol = col;
+            board[row][col] = currentPlayer;
+            const win = checkWin(row, col);
+            if (win) {
+                gameOver = true;
+                highlightWin(win);
+                setTimeout(() => showResult(`${currentPlayer === 'R' ? '你' : 'AI'} 获胜!`, '恭喜获得胜利'), 600);
+            } else {
+                currentPlayer = currentPlayer === 'R' ? 'Y' : 'R';
+            }
+            render();
+        }
+
+        function aiMove() {
+            if (gameOver) return;
+            const move = getBestMove();
+            if (move !== null) makeMove(move);
+            document.getElementById('status').classList.remove('thinking');
+        }
+
+        function getBestMove() {
+            for (let c = 0; c < COLS; c++) {
+                const r = getDropRow(c);
+                if (r < 0) continue;
+                board[r][c] = 'Y';
+                if (checkWin(r, c)) { board[r][c] = ''; return c; }
+                board[r][c] = '';
+            }
+            for (let c = 0; c < COLS; c++) {
+                const r = getDropRow(c);
+                if (r < 0) continue;
+                board[r][c] = 'R';
+                if (checkWin(r, c)) { board[r][c] = ''; return c; }
+                board[r][c] = '';
+            }
+            const priorities = [3, 2, 4, 1, 5, 0, 6];
+            for (const c of priorities) {
+                const r = getDropRow(c);
+                if (r >= 0) return c;
+            }
+            return null;
+        }
+
+        function getDropRow(col) {
+            for (let r = ROWS - 1; r >= 0; r--) if (!board[r][col]) return r;
+            return -1;
+        }
+
+        function checkWin(row, col) {
+            const player = board[row][col];
+            const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
+            for (const [dr, dc] of dirs) {
+                let count = 1, cells = [[row, col]];
+                for (const dir of [1, -1]) {
+                    let r = row + dr * dir, c = col + dc * dir;
+                    while (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                        if (board[r][c] === player) { count++; cells.push([r, c]); }
+                        else break;
+                        r += dr * dir; c += dc * dir;
+                    }
+                }
+                if (count >= 4) return cells;
+            }
+            return null;
+        }
+
+        function highlightWin(cells) {
+            const boardEl = document.getElementById('board');
+            cells.forEach(([r, c]) => {
+                boardEl.children[r].children[c].classList.add('win-cell');
+            });
+        }
+
+        function updateStatus() {
+            const s = document.getElementById('status');
+            const player = currentPlayer === 'R' ? '你（红方）' : 'AI（黄方）';
+            s.textContent = `${player}回合`;
+            s.className = `status ${currentPlayer === 'R' ? 'player1' : 'player2'}`;
+        }
+
+        function showResult(title, msg) {
+            document.getElementById('result-title').textContent = title;
+            document.getElementById('result-message').textContent = msg;
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function playAgain() {
+            document.getElementById('modal').classList.remove('show');
+            init();
+        }
+
+        init();
+    </script>
+</body>
+</html>
