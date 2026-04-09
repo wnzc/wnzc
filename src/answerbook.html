@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>答案之书</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #2c1810 0%, #4a2c2a 50%, #1a1a2e 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
+
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 215, 0, 0.6);
+      border-radius: 50%;
+      animation: float 8s infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+    }
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-family: inherit;
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 25px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+
+    /* 封面状态 */
+    .book-cover {
+      background: linear-gradient(145deg, #8B4513 0%, #654321 50%, #4a3728 100%);
+      border-radius: 16px;
+      padding: 60px 40px;
+      text-align: center;
+      box-shadow: 
+        0 0 0 3px #3d2817,
+        0 0 0 6px #2a1a0f,
+        0 20px 60px rgba(0,0,0,0.5),
+        inset 0 0 40px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: all 0.5s ease;
+      position: relative;
+    }
+
+    .book-cover:hover {
+      transform: scale(1.02);
+      box-shadow: 
+        0 0 0 3px #3d2817,
+        0 0 0 6px #2a1a0f,
+        0 25px 70px rgba(0,0,0,0.6),
+        inset 0 0 40px rgba(0,0,0,0.3);
+    }
+
+    .book-cover::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20px;
+      bottom: 20px;
+      width: 20px;
+      background: linear-gradient(90deg, #2a1a0f, #3d2817, #2a1a0f);
+      border-radius: 4px 0 0 4px;
+    }
+
+    .cover-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .cover-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #ffd700;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+      margin-bottom: 12px;
+      letter-spacing: 4px;
+    }
+
+    .cover-subtitle {
+      font-size: 14px;
+      color: rgba(255,215,0,0.7);
+      letter-spacing: 6px;
+      margin-bottom: 30px;
+    }
+
+    .cover-hint {
+      font-size: 14px;
+      color: rgba(255,215,0,0.5);
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* 书页内容 */
+    .book-content {
+      display: none;
+    }
+
+    .book-content.show {
+      display: block;
+    }
+
+    .book-page {
+      background: linear-gradient(145deg, #f5f0e6 0%, #e8e0d0 100%);
+      border-radius: 16px;
+      padding: 40px 30px;
+      color: #333;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .book-page::before {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 20px;
+      bottom: 20px;
+      width: 30px;
+      background: linear-gradient(90deg, rgba(0,0,0,0.05), transparent);
+      border-radius: 0 16px 16px 0;
+    }
+
+    .book-page::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20px;
+      bottom: 20px;
+      width: 3px;
+      background: linear-gradient(180deg, #8B4513, #654321, #8B4513);
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      color: #8B4513;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      font-size: 12px;
+      color: #999;
+      letter-spacing: 2px;
+    }
+
+    .question-input {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-family: inherit;
+      background: rgba(0,0,0,0.05);
+      border: 2px solid transparent;
+      border-radius: 12px;
+      color: #333;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+      resize: none;
+      height: 100px;
+    }
+
+    .question-input:focus {
+      outline: none;
+      border-color: #8B4513;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+    }
+
+    .question-input::placeholder {
+      color: #aaa;
+    }
+
+    .get-answer-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #fff;
+      background: linear-gradient(145deg, #8B4513, #654321);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .get-answer-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(139, 69, 19, 0.5);
+    }
+
+    .get-answer-btn:active {
+      transform: translateY(0);
+    }
+
+    .get-answer-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 加载状态 */
+    .loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 40px 0;
+    }
+
+    .loading.show {
+      display: flex;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(139, 69, 19, 0.2);
+      border-top-color: #8B4513;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      color: #8B4513;
+    }
+
+    /* 答案展示 */
+    .answer-display {
+      display: none;
+      text-align: center;
+    }
+
+    .answer-display.show {
+      display: block;
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .answer-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 16px;
+      letter-spacing: 3px;
+    }
+
+    .answer-text {
+      font-size: 28px;
+      font-weight: 600;
+      color: #8B4513;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: rgba(139, 69, 19, 0.1);
+      border-radius: 12px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .replay-btn, .back-cover-btn {
+      padding: 12px 24px;
+      font-size: 14px;
+      font-family: inherit;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .replay-btn {
+      color: #fff;
+      background: linear-gradient(145deg, #667eea, #764ba2);
+    }
+
+    .replay-btn:hover {
+      transform: scale(1.05);
+    }
+
+    .back-cover-btn {
+      color: #8B4513;
+      background: rgba(139, 69, 19, 0.1);
+      border: 2px solid #8B4513;
+    }
+
+    .back-cover-btn:hover {
+      background: rgba(139, 69, 19, 0.2);
+    }
+
+    /* 翻页动画遮罩 */
+    .page-flip-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #2c1810;
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-flip-overlay.show {
+      display: flex;
+      animation: flipOverlay 0.8s ease forwards;
+    }
+
+    @keyframes flipOverlay {
+      0% { clip-path: inset(0 0 0 0); }
+      50% { clip-path: inset(0 50% 0 50%); }
+      100% { clip-path: inset(50% 0 0 0); }
+    }
+
+    .flip-book-icon {
+      font-size: 100px;
+      animation: flipIcon 0.8s ease;
+    }
+
+    @keyframes flipIcon {
+      0% { transform: rotateY(0deg); }
+      50% { transform: rotateY(90deg); }
+      100% { transform: rotateY(0deg); }
+    }
+
+    /* 动画效果 */
+    .flip-out {
+      animation: flipOut 0.4s ease forwards;
+    }
+
+    @keyframes flipOut {
+      0% { transform: scale(1) rotateY(0); opacity: 1; }
+      100% { transform: scale(0.8) rotateY(-30deg); opacity: 0; }
+    }
+
+    .flip-in {
+      animation: flipIn 0.4s ease forwards;
+    }
+
+    @keyframes flipIn {
+      0% { transform: scale(0.8) rotateY(30deg); opacity: 0; }
+      100% { transform: scale(1) rotateY(0); opacity: 1; }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <a href="index.html" class="back-btn">
+    <span>←</span>
+    <span>返回首页</span>
+  </a>
+
+  <div class="container">
+    <!-- 封面 -->
+    <div class="book-cover" id="bookCover">
+      <div class="cover-icon">📖</div>
+      <div class="cover-title">答案之书</div>
+      <div class="cover-subtitle">THE ANSWER BOOK</div>
+      <div class="cover-hint">点击翻开探索答案</div>
+    </div>
+
+    <!-- 内容页 -->
+    <div class="book-content" id="bookContent">
+      <div class="book-page" id="bookPage">
+        <div class="page-header">
+          <div class="page-title">✧ 命运的指引 ✧</div>
+          <div class="page-subtitle">闭上眼睛，心中默念你的问题</div>
+        </div>
+
+        <div class="input-section" id="inputSection">
+          <textarea 
+            class="question-input" 
+            id="questionInput" 
+            placeholder="在这里输入你的问题..."
+          ></textarea>
+          <button class="get-answer-btn" id="getAnswerBtn">
+            <span>🔮</span>
+            <span>寻找答案</span>
+          </button>
+        </div>
+
+        <div class="loading" id="loading">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">命运正在揭晓...</div>
+        </div>
+
+        <div class="answer-display" id="answerDisplay">
+          <div class="answer-label">✦ 答案 ✦</div>
+          <div class="answer-text" id="answerText"></div>
+          <div class="btn-group">
+            <button class="replay-btn" id="replayBtn">再问一次</button>
+            <button class="back-cover-btn" id="backCoverBtn">合上书</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 翻页动画遮罩 -->
+  <div class="page-flip-overlay" id="pageFlipOverlay">
+    <div class="flip-book-icon">📖</div>
+  </div>
+
+  <script>
+    // 生成粒子背景
+    function createParticles() {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 8 + 's';
+        particle.style.animationDuration = (Math.random() * 4 + 6) + 's';
+        container.appendChild(particle);
+      }
+    }
+    createParticles();
+
+    const API_KEY = 'ak_4e467bef570aafa08c488b57bd3c54946e25f2b0ff2064a1';
+    const API_URL = 'https://v1.uuhb.cn/v1/answerbook';
+
+    const bookCover = document.getElementById('bookCover');
+    const bookContent = document.getElementById('bookContent');
+    const bookPage = document.getElementById('bookPage');
+    const inputSection = document.getElementById('inputSection');
+    const loading = document.getElementById('loading');
+    const answerDisplay = document.getElementById('answerDisplay');
+    const answerText = document.getElementById('answerText');
+    const getAnswerBtn = document.getElementById('getAnswerBtn');
+    const replayBtn = document.getElementById('replayBtn');
+    const backCoverBtn = document.getElementById('backCoverBtn');
+    const questionInput = document.getElementById('questionInput');
+    const pageFlipOverlay = document.getElementById('pageFlipOverlay');
+
+    // 翻开书
+    function openBook() {
+      bookCover.classList.add('flip-out');
+      setTimeout(() => {
+        bookCover.classList.add('hidden');
+        bookContent.classList.add('show');
+        bookPage.classList.add('flip-in');
+        setTimeout(() => {
+          bookPage.classList.remove('flip-in');
+          questionInput.focus();
+        }, 400);
+      }, 400);
+    }
+
+    // 合上书
+    function closeBook() {
+      pageFlipOverlay.classList.add('show');
+      setTimeout(() => {
+        bookContent.classList.remove('show');
+        bookCover.classList.remove('hidden', 'flip-out');
+        answerDisplay.classList.remove('show');
+        inputSection.style.display = 'block';
+        questionInput.value = '';
+        questionInput.focus();
+        
+        setTimeout(() => {
+          pageFlipOverlay.classList.remove('show');
+        }, 100);
+      }, 400);
+    }
+
+    // 获取答案
+    async function getAnswer() {
+      const question = questionInput.value.trim();
+      
+      inputSection.style.display = 'none';
+      loading.classList.add('show');
+
+      try {
+        const url = `${API_URL}?apiKey=${API_KEY}&question=${encodeURIComponent(question)}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          loading.classList.remove('show');
+          
+          // 翻页动画效果
+          pageFlipOverlay.classList.add('show');
+          setTimeout(() => {
+            pageFlipOverlay.classList.remove('show');
+            answerText.textContent = result.data.answer;
+            answerDisplay.classList.add('show');
+          }, 400);
+        } else {
+          alert('获取答案失败，请重试');
+          loading.classList.remove('show');
+          inputSection.style.display = 'block';
+        }
+      } catch (error) {
+        console.error('API Error:', error);
+        alert('网络请求失败，请检查网络后重试');
+        loading.classList.remove('show');
+        inputSection.style.display = 'block';
+      }
+    }
+
+    // 再问一次
+    function replay() {
+      pageFlipOverlay.classList.add('show');
+      setTimeout(() => {
+        pageFlipOverlay.classList.remove('show');
+        answerDisplay.classList.remove('show');
+        inputSection.style.display = 'block';
+        questionInput.value = '';
+        questionInput.focus();
+      }, 400);
+    }
+
+    // 事件绑定
+    bookCover.addEventListener('click', openBook);
+    backCoverBtn.addEventListener('click', closeBook);
+    getAnswerBtn.addEventListener('click', getAnswer);
+    replayBtn.addEventListener('click', replay);
+
+    // 支持回车键提交
+    questionInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        getAnswer();
+      }
+    });
+  </script>
+</body>
+</html>

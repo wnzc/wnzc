@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>星座运势</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    .stars-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .header {
+      text-align: center;
+      padding: 30px 0;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffd700, #ff6b9d, #c44cff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .selector-wrap {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .selector-label {
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .selector-label::before {
+      content: '✦';
+      color: #ffd700;
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    .constellation-select {
+      width: 100%;
+      padding: 16px 20px;
+      font-size: 18px;
+      font-weight: 500;
+      border: 2px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      transition: all 0.3s ease;
+    }
+
+    .constellation-select:hover {
+      border-color: rgba(255,215,0,0.5);
+    }
+
+    .constellation-select:focus {
+      outline: none;
+      border-color: #ffd700;
+      box-shadow: 0 0 20px rgba(255,215,0,0.2);
+    }
+
+    .select-wrapper::after {
+      content: '▼';
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255,255,255,0.6);
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .constellation-select option {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 12px;
+      font-size: 16px;
+    }
+
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 0;
+      gap: 20px;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #ffd700;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading p {
+      color: rgba(255,255,255,0.7);
+      font-size: 14px;
+    }
+
+    .result-card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      text-align: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 20px;
+    }
+
+    .constellation-name {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffd700, #ff6b9d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .date-badge {
+      display: inline-block;
+      background: rgba(255,215,0,0.15);
+      color: #ffd700;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .overall-section {
+      text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,107,157,0.1));
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+
+    .overall-title {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .overall-text {
+      font-size: 16px;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .stars-display {
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 12px;
+    }
+
+    .star-icon {
+      font-size: 20px;
+      color: #ffd700;
+    }
+
+    .star-icon.empty {
+      opacity: 0.3;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section-item {
+      background: rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .section-item:hover {
+      transform: translateY(-2px);
+    }
+
+    .section-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .section-value {
+      font-size: 14px;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.5;
+    }
+
+    .luck-info {
+      background: linear-gradient(135deg, rgba(196,76,255,0.15), rgba(255,107,157,0.15));
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .luck-title {
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .luck-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .luck-item {
+      text-align: center;
+      padding: 12px 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+    }
+
+    .luck-label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+    }
+
+    .luck-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .luck-value.color { color: #7bed9f; }
+    .luck-value.number { color: #ffd700; }
+
+    .detail-section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .detail-icon {
+      font-size: 24px;
+    }
+
+    .detail-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .detail-text {
+      font-size: 14px;
+      line-height: 1.8;
+      color: rgba(255,255,255,0.75);
+    }
+
+    .short-comment {
+      background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,107,157,0.2));
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .short-comment-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+    }
+
+    .short-comment-text {
+      font-size: 18px;
+      font-weight: 600;
+      color: #ffd700;
+    }
+
+    .error-msg {
+      text-align: center;
+      padding: 40px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .error-msg .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 30px 0;
+      color: rgba(255,255,255,0.4);
+      font-size: 12px;
+    }
+
+    .back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-family: inherit;
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 25px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .back-btn:hover {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+
+    @media (max-width: 380px) {
+      .section-grid {
+        grid-template-columns: 1fr;
+      }
+      .luck-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-btn">
+    <span>←</span>
+    <span>返回首页</span>
+  </a>
+
+  <div class="stars-bg" id="starsBg"></div>
+
+  <div class="container">
+    <div class="header">
+      <h1>✧ 星座运势 ✧</h1>
+      <p>探索今日星象指引</p>
+    </div>
+
+    <div class="selector-wrap">
+      <div class="selector-label">选择你的星座</div>
+      <div class="select-wrapper">
+        <select class="constellation-select" id="constellationSelect">
+          <option value="">请选择星座</option>
+          <option value="白羊座">♈ 白羊座 (3.21-4.19)</option>
+          <option value="金牛座">♉ 金牛座 (4.20-5.20)</option>
+          <option value="双子座">♊ 双子座 (5.21-6.21)</option>
+          <option value="巨蟹座">♋ 巨蟹座 (6.22-7.22)</option>
+          <option value="狮子座">♌ 狮子座 (7.23-8.22)</option>
+          <option value="处女座">♍ 处女座 (8.23-9.22)</option>
+          <option value="天秤座">♎ 天秤座 (9.23-10.23)</option>
+          <option value="天蝎座">♏ 天蝎座 (10.24-11.22)</option>
+          <option value="射手座">♐ 射手座 (11.23-12.21)</option>
+          <option value="摩羯座">♑ 摩羯座 (12.22-1.19)</option>
+          <option value="水瓶座">♒ 水瓶座 (1.20-2.18)</option>
+          <option value="双鱼座">♓ 双鱼座 (2.19-3.20)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="contentArea">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <p>正在获取星座运势...</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      ✧ 愿星辰指引你的每一天 ✧
+    </div>
+  </div>
+
+  <script>
+    // 生成星星背景
+    function createStars() {
+      const container = document.getElementById('starsBg');
+      for (let i = 0; i < 80; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.width = Math.random() * 3 + 1 + 'px';
+        star.style.height = star.style.width;
+        star.style.animationDelay = Math.random() * 3 + 's';
+        star.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        container.appendChild(star);
+      }
+    }
+    createStars();
+
+    const STORAGE_KEY = 'selected_constellation';
+    const API_KEY = 'ak_4e467bef570aafa08c488b57bd3c54946e25f2b0ff2064a1';
+    const API_URL = 'https://v1.uuhb.cn/v1/fortune';
+
+    const constellationSelect = document.getElementById('constellationSelect');
+    const contentArea = document.getElementById('contentArea');
+
+    // 从本地存储读取保存的星座
+    function loadSavedConstellation() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        constellationSelect.value = saved;
+        fetchFortune(saved);
+      } else {
+        contentArea.innerHTML = `
+          <div class="result-card">
+            <div class="error-msg">
+              <div class="icon">🌟</div>
+              <p>请在上方选择你的星座</p>
+              <p style="font-size:12px;margin-top:8px;color:rgba(255,255,255,0.4);">选择后将自动保存，下次进入自动显示</p>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // 保存星座选择
+    function saveConstellation(name) {
+      localStorage.setItem(STORAGE_KEY, name);
+    }
+
+    // 获取运势数据
+    async function fetchFortune(constellation) {
+      if (!constellation) return;
+
+      contentArea.innerHTML = `
+        <div class="loading">
+          <div class="loading-spinner"></div>
+          <p>正在获取 ${constellation} 今日运势...</p>
+        </div>
+      `;
+
+      try {
+        const url = `${API_URL}?apiKey=${API_KEY}&constellation=${encodeURIComponent(constellation)}`;
+        const response = await fetch(url);
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          renderFortune(result.data);
+        } else {
+          showError('获取运势失败，请稍后重试');
+        }
+      } catch (error) {
+        console.error('API Error:', error);
+        showError('网络请求失败，请检查网络后重试');
+      }
+    }
+
+    // 渲染运势数据
+    function renderFortune(data) {
+      const stars = (count) => {
+        let html = '';
+        for (let i = 1; i <= 5; i++) {
+          html += `<span class="star-icon ${i > parseInt(data.overall_stars) ? 'empty' : ''}">★</span>`;
+        }
+        return html;
+      };
+
+      contentArea.innerHTML = `
+        <div class="result-card">
+          <div class="card-header">
+            <div class="constellation-name">${data.constellation}</div>
+            <div class="date-badge">📅 ${data.date}</div>
+          </div>
+
+          <div class="overall-section">
+            <div class="overall-title">今日整体运势</div>
+            <div class="overall-text">${data.overall_fortune}</div>
+            <div class="stars-display">${stars(data.overall_stars)}</div>
+          </div>
+
+          <div class="section-grid">
+            <div class="section-item">
+              <div class="section-icon">💰</div>
+              <div class="section-title">财富</div>
+              <div class="section-value">${data.wealth_stars ? '★'.repeat(parseInt(data.wealth_stars)) + '☆'.repeat(5 - parseInt(data.wealth_stars)) : '未评级'}</div>
+            </div>
+            <div class="section-item">
+              <div class="section-icon">💼</div>
+              <div class="section-title">事业</div>
+              <div class="section-value">${data.career_fortune ? '稳定推进' : '未评级'}</div>
+            </div>
+            <div class="section-item">
+              <div class="section-icon">❤️</div>
+              <div class="section-title">健康</div>
+              <div class="section-value">${data.health_index || '未评级'}</div>
+            </div>
+            <div class="section-item">
+              <div class="section-icon">🤝</div>
+              <div class="section-title">商谈</div>
+              <div class="section-value">${data.negotiation_index || '未评级'}</div>
+            </div>
+          </div>
+
+          <div class="luck-info">
+            <div class="luck-title">✨ 今日幸运提示</div>
+            <div class="luck-grid">
+              <div class="luck-item">
+                <div class="luck-label">幸运色</div>
+                <div class="luck-value color">${data.lucky_color}</div>
+              </div>
+              <div class="luck-item">
+                <div class="luck-label">幸运数</div>
+                <div class="luck-value number">${data.lucky_number}</div>
+              </div>
+              <div class="luck-item">
+                <div class="luck-label">幸运星座</div>
+                <div class="luck-value" style="color:#ff9ff3">${data.match_constellation}</div>
+              </div>
+            </div>
+          </div>
+
+          ${data.career_fortune ? `
+          <div class="detail-section">
+            <div class="detail-header">
+              <span class="detail-icon">💼</span>
+              <span class="detail-title">事业运势</span>
+            </div>
+            <div class="detail-text">${data.career_fortune}</div>
+          </div>
+          ` : ''}
+
+          ${data.wealth_fortune ? `
+          <div class="detail-section">
+            <div class="detail-header">
+              <span class="detail-icon">💰</span>
+              <span class="detail-title">财富运势</span>
+            </div>
+            <div class="detail-text">${data.wealth_fortune}</div>
+          </div>
+          ` : ''}
+
+          ${data.health_fortune ? `
+          <div class="detail-section">
+            <div class="detail-header">
+              <span class="detail-icon">🏃</span>
+              <span class="detail-title">健康提示</span>
+            </div>
+            <div class="detail-text">${data.health_fortune}</div>
+          </div>
+          ` : ''}
+
+          ${data.short_comment ? `
+          <div class="short-comment">
+            <div class="short-comment-label">今日关键词</div>
+            <div class="short-comment-text">${data.short_comment}</div>
+          </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // 显示错误
+    function showError(message) {
+      contentArea.innerHTML = `
+        <div class="result-card">
+          <div class="error-msg">
+            <div class="icon">😢</div>
+            <p>${message}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    // 监听选择变化
+    constellationSelect.addEventListener('change', (e) => {
+      const value = e.target.value;
+      if (value) {
+        saveConstellation(value);
+        fetchFortune(value);
+      } else {
+        contentArea.innerHTML = `
+          <div class="result-card">
+            <div class="error-msg">
+              <div class="icon">🌟</div>
+              <p>请选择星座查看今日运势</p>
+            </div>
+          </div>
+        `;
+      }
+    });
+
+    // 页面加载时
+    loadSavedConstellation();
+  </script>
+</body>
+</html>

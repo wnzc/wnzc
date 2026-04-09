@@ -71,6 +71,71 @@
             color: var(--text-sub);
         }
 
+        /* 时钟日期显示区域 */
+        .datetime-display {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 25px 20px;
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 87, 34, 0.1) 100%);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 152, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .datetime-display::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 152, 0, 0.1) 0%, transparent 60%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .time-display {
+            font-size: 56px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #5f27cd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+            filter: drop-shadow(0 0 20px rgba(255, 107, 107, 0.4));
+            position: relative;
+            z-index: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .time-period {
+            font-size: 20px;
+            font-weight: 500;
+            color: #ff9800;
+            margin-left: 8px;
+            vertical-align: super;
+        }
+
+        .date-display {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 10px;
+            position: relative;
+            z-index: 1;
+            letter-spacing: 2px;
+        }
+
+        .weekday {
+            color: #ff9800;
+            font-weight: 600;
+        }
+
         /* 列表容器 */
         .tools-list {
             width: 100%;
@@ -183,16 +248,29 @@
     <div class="container">
 
         <!-- ✅ 嵌入网页区域 -->
-        <div class="embed-section" id="embed-section">
+        <!-- <div class="embed-section" id="embed-section">
             <div class="embed-container">
                 <iframe class="embed-frame" id="embed-frame" src="https://teojs.github.io/clock-dashboard/"></iframe>
             </div>
-        </div>
+        </div> -->
         <!-- 头部：Logo + 标题 -->
         <div class="header">
             <img src="logo_toolbox.png" alt="工具箱Logo" class="logo-img" onerror="this.style.display='none'">
             <h1 class="title">工具箱</h1>
             <p class="subtitle">实用工具 · 一触即达</p>
+        </div>
+
+        <!-- 时间日期显示 -->
+        <div class="datetime-display">
+            <div class="time-display">
+                <span id="clock-time">00:00:00</span>
+                <span class="time-period" id="time-period">上午</span>
+            </div>
+            <div class="date-display">
+                <span id="date-year">2026年</span><span id="date-month">4月</span><span id="date-day">9日</span>
+                &nbsp;&nbsp;
+                <span class="weekday" id="weekday">星期四</span>
+            </div>
         </div>
 
         <!-- 工具列表 -->
@@ -207,14 +285,16 @@
             { title: "最热新闻", desc: "全网热搜", icon: "https://newsnow.busiyi.world/icon.svg", link: "https://newsnow.busiyi.world" },
             { title: "今日油价", desc: "全国实时油价查询", icon: "images/icon_oil.png", link: "src/oil-price.html" },
             { title: "五子棋", desc: "五子棋游戏", icon: "images/gomoku.png", link: "src/gobang-game.html" },
-            { title: "游戏合集", desc: "游戏合集", icon: "images/gomoku.png", link: "src/newGame/index.html" },
+            { title: "游戏合集", desc: "游戏合集", icon: "images/icon_games.png", link: "src/newGame/index.html" },
+            { title: "星座运势", desc: "星座运势", icon: "images/icon_fortune.png", link: "src/fortune.html" },
+            { title: "答案之书", desc: "答案之书", icon: "images/icon_answerbook.png", link: "src/answerbook.html" },
             { title: "数独", desc: "神秘数字谜题", icon: "images/Sudoku.png", link: "src/sudoku.html" },
             { title: "开关灯", desc: "益智游戏-开关灯", icon: "images/lightsOut.png", link: "src/switch.html" },
             { title: "扫雷", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/minesweeper.html" },
-            { title: "水压套圈", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/RetroWaterRingToss.html" },
-            { title: "兽棋", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/AnimalChess.html" },
-            { title: "随机选择", desc: "随机选择", icon: "images/minesweeper.png", link: "src/selector.html" },
-            { title: "随机选择", desc: "随机选择", icon: "images/minesweeper.png", link: "src/randomSelector.html" },
+            { title: "水压套圈", desc: "娱乐一下吧", icon: "images/icon_ringtoss.png", link: "src/RetroWaterRingToss.html" },
+            { title: "兽棋", desc: "娱乐一下吧", icon: "images/icon_animalchess.png", link: "src/AnimalChess.html" },
+            { title: "随机选择", desc: "随机选择", icon: "images/icon_random.png", link: "src/selector.html" },
+            { title: "随机选择", desc: "随机选择", icon: "images/icon_random.png", link: "src/randomSelector.html" },
             { title: "全景故宫", desc: "故宫博物院VR实景项目", icon: "https://pano.dpm.org.cn/resource/favicon.ico", link: "https://pano.dpm.org.cn" },
             { title: "故宫博物院数字文物库", desc: "高清数字影像", icon: "https://zm-digicol.dpm.org.cn/images/logo_center_v1.png", link: "https://zm-digicol.dpm.org.cn" },
             { title: "陕西博物馆数字展厅", desc: "虚拟游览馆藏珍品", icon: "https://www.sxhm.com/favicon.ico", link: "https://www.sxhm.com/online.html" },
@@ -273,6 +353,36 @@
 
         // 页面加载完成后渲染列表
         document.addEventListener('DOMContentLoaded', renderToolsList);
+
+        // 更新时钟和日期
+        function updateDateTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+
+            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const weekday = weekdays[now.getDay()];
+
+            // 格式化时间
+            const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const period = hours < 12 ? '上午' : '下午';
+
+            // 更新显示
+            document.getElementById('clock-time').textContent = timeStr;
+            document.getElementById('time-period').textContent = period;
+            document.getElementById('date-year').textContent = year + '年';
+            document.getElementById('date-month').textContent = month + '月';
+            document.getElementById('date-day').textContent = day + '日';
+            document.getElementById('weekday').textContent = weekday;
+        }
+
+        // 初始化并每秒更新
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
     </script>
 </body>
 
