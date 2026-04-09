@@ -501,11 +501,52 @@
     createStars();
 
     const STORAGE_KEY = 'selected_constellation';
+    const CACHE_KEY = 'fortune_cache';
     const API_KEY = 'ak_4e467bef570aafa08c488b57bd3c54946e25f2b0ff2064a1';
     const API_URL = 'https://v1.uuhb.cn/v1/fortune';
 
     const constellationSelect = document.getElementById('constellationSelect');
     const contentArea = document.getElementById('contentArea');
+
+    // 获取今天的日期格式（4月9日）
+    function getTodayDateStr() {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
+      return `${month}月${day}日`;
+    }
+
+    // 获取缓存的运势数据
+    function getCachedFortune(constellation) {
+      const cacheStr = localStorage.getItem(CACHE_KEY);
+      if (!cacheStr) return null;
+      try {
+        const cache = JSON.parse(cacheStr);
+        // 检查是否是同一个星座且日期一致
+        if (cache.constellation === constellation && cache.date === getTodayDateStr()) {
+          return cache.data;
+        }
+      } catch (e) {
+        return null;
+      }
+      return null;
+    }
+
+    // 保存运势数据到缓存
+    function saveFortuneCache(constellation, data) {
+      const cache = {
+        constellation: constellation,
+        date: getTodayDateStr(),
+        data: data,
+        updateTime: Date.now()
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    }
+
+    // 清除缓存
+    function clearFortuneCache() {
+      localStorage.removeItem(CACHE_KEY);
+    }
 
     // 从本地存储读取保存的星座
     function loadSavedConstellation() {
@@ -531,10 +572,22 @@
       localStorage.setItem(STORAGE_KEY, name);
     }
 
-    // 获取运势数据
-    async function fetchFortune(constellation) {
+    // 获取运势数据（带缓存逻辑）
+    async function fetchFortune(constellation, forceRefresh = false) {
       if (!constellation) return;
 
+      // 如果不是强制刷新，先检查缓存
+      if (!forceRefresh) {
+        const cachedData = getCachedFortune(constellation);
+        if (cachedData) {
+          renderFortune(cachedData, true); // 传入true表示是缓存数据
+          // 在后台静默刷新数据
+          fetchAndUpdateCache(constellation);
+          return;
+        }
+      }
+
+      // 显示加载状态
       contentArea.innerHTML = `
         <div class="loading">
           <div class="loading-spinner"></div>
@@ -549,17 +602,44 @@
 
         if (result.success && result.data) {
           renderFortune(result.data);
+          saveFortuneCache(constellation, result.data);
         } else {
-          showError('获取运势失败，请稍后重试');
+          // API失败时尝试使用缓存
+          const cachedData = getCachedFortune(constellation);
+          if (cachedData) {
+            renderFortune(cachedData, true);
+          } else {
+            showError('获取运势失败，请稍后重试');
+          }
         }
       } catch (error) {
         console.error('API Error:', error);
-        showError('网络请求失败，请检查网络后重试');
+        // 网络错误时尝试使用缓存
+        const cachedData = getCachedFortune(constellation);
+        if (cachedData) {
+          renderFortune(cachedData, true);
+        } else {
+          showError('网络请求失败，请检查网络后重试');
+        }
+      }
+    }
+
+    // 后台静默刷新缓存
+    async function fetchAndUpdateCache(constellation) {
+      try {
+        const url = `${API_URL}?apiKey=${API_KEY}&constellation=${encodeURIComponent(constellation)}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        if (result.success && result.data) {
+          saveFortuneCache(constellation, result.data);
+        }
+      } catch (error) {
+        console.error('Background refresh failed:', error);
       }
     }
 
     // 渲染运势数据
-    function renderFortune(data) {
+    function renderFortune(data, isCached = false) {
       const stars = (count) => {
         let html = '';
         for (let i = 1; i <= 5; i++) {
@@ -568,10 +648,13 @@
         return html;
       };
 
+      // 缓存提示标签
+      const cacheTip = isCached ? '<span style="font-size:10px;margin-left:8px;opacity:0.6;">（缓存）</span>' : '';
+
       contentArea.innerHTML = `
         <div class="result-card">
           <div class="card-header">
-            <div class="constellation-name">${data.constellation}</div>
+            <div class="constellation-name">${data.constellation}${cacheTip}</div>
             <div class="date-badge">📅 ${data.date}</div>
           </div>
 
@@ -679,7 +762,8 @@
       const value = e.target.value;
       if (value) {
         saveConstellation(value);
-        fetchFortune(value);
+        clearFortuneCache(); // 清除旧缓存，确保获取新数据
+        fetchFortune(value, true); // 强制刷新
       } else {
         contentArea.innerHTML = `
           <div class="result-card">
