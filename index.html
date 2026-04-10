@@ -255,7 +255,7 @@
         </div> -->
         <!-- 头部：Logo + 标题 -->
         <div class="header">
-            <img src="logo_toolbox.png" alt="工具箱Logo" class="logo-img" onerror="this.style.display='none'">
+            <img src="images/logo_toolbox.png" alt="工具箱Logo" class="logo-img" onerror="this.style.display='none'">
             <h1 class="title">工具箱</h1>
             <p class="subtitle">实用工具 · 一触即达</p>
         </div>
@@ -321,7 +321,11 @@
             { title: "文字游戏", desc: "摸鱼文字游戏", icon: "http://tinywaste.maougame.com/favicon.ico", link: "http://tinywaste.maougame.com" },
             { title: "益智小游戏", desc: "益智小游戏", icon: "https://gridspech.baublejar.com/assets/favicon-C29Vu5tQ.png", link: "https://gridspech.baublejar.com" },
             { title: "涂色小游戏", desc: "涂色小游戏", icon: "https://www.coloringwell.com/logo.svg", link: "https://www.coloringwell.com" },
-            { title: "更多", desc: "腾讯帮小忙在线工具箱", icon: "images/icon_bangxiaomang.png", link: "https://tool.browser.qq.com" }
+            { title: "更多", desc: "腾讯帮小忙在线工具箱", icon: "images/icon_bangxiaomang.png", link: "https://tool.browser.qq.com" },
+            { title: "彩票查询", desc: "双色球、大乐透开奖结果", icon: "fa-solid fa-futbol", link: "src/lottery.html" },
+            { title: "精选壁纸", desc: "横屏/竖屏/视频壁纸", icon: "fa-solid fa-images", link: "src/wallpaper2.html" },
+            { title: "壁纸", desc: "分类壁纸浏览", icon: "fa-solid fa-landscape", link: "src/wallpaper.html" },
+            { title: "视频播放", desc: "视频在线播放", icon: "fa-solid fa-play-circle", link: "src/video-player.html" }
         ];
 
         // 渲染工具列表
@@ -336,7 +340,9 @@
                 // 使用模板字符串构建HTML
                 toolElement.innerHTML = `
                 <div class="item-icon">
-                    <img src="${tool.icon}" alt="${tool.title}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50?text=Icon';">
+                    ${tool.icon.startsWith('fa-') 
+                        ? `<i class="${tool.icon}" style="font-size:28px;color:#ff9800;"></i>` 
+                        : `<img src="${tool.icon}" alt="${tool.title}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50?text=Icon';">`}
                 </div>
                 <div class="item-content">
                     <div class="item-title">${tool.title}</div>
@@ -373,7 +379,8 @@
 
             // 更新显示
             document.getElementById('clock-time').textContent = timeStr;
-            document.getElementById('time-period').textContent = period;
+            const timePeriodEl = document.getElementById('time-period');
+            if (timePeriodEl) timePeriodEl.textContent = period;
             document.getElementById('date-year').textContent = year + '年';
             document.getElementById('date-month').textContent = month + '月';
             document.getElementById('date-day').textContent = day + '日';
@@ -383,6 +390,7 @@
         // 初始化并每秒更新
         updateDateTime();
         setInterval(updateDateTime, 1000);
+
     </script>
 </body>
 

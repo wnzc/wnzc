@@ -260,6 +260,182 @@
     .prize-level.p3 { background: linear-gradient(135deg, #cd7f32, #a0522d); }
     .prize-level.default { background: rgba(255,255,255,0.2); }
 
+    /* 大乐透专属样式 */
+    .dlt-card {
+      background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
+      border: 1px solid rgba(102,126,234,0.3);
+    }
+
+    .dlt-ball-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .dlt-ball-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dlt-ball-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .dlt-balls {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dlt-ball {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .dlt-ball-front {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .dlt-ball-back {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .dlt-pool-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .dlt-pool-item {
+      background: rgba(0,0,0,0.3);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dlt-pool-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .dlt-pool-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 8px;
+    }
+
+    .dlt-pool-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffd700;
+    }
+
+    .dlt-prize-section {
+      background: rgba(0,0,0,0.2);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .dlt-prize-header {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 12px;
+    }
+
+    .dlt-prize-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .dlt-prize-item:last-child {
+      border-bottom: none;
+    }
+
+    .dlt-prize-level {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      margin-right: 10px;
+    }
+
+    .dlt-prize-name {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      font-size: 13px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .dlt-prize-bets {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      margin-right: 16px;
+    }
+
+    .dlt-bet-row {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .dlt-bet-type {
+      color: rgba(255,255,255,0.4);
+      min-width: 28px;
+    }
+
+    .dlt-bet-count {
+      color: rgba(255,255,255,0.7);
+    }
+
+    .dlt-bet-type.add {
+      color: #ff9f43;
+    }
+
+    .dlt-prize-money {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ffd700;
+      min-width: 70px;
+      text-align: right;
+    }
+
     .prize-text {
       font-size: 14px;
       color: rgba(255,255,255,0.9);
@@ -267,6 +443,31 @@
 
     .prize-detail {
       text-align: right;
+    }
+
+    .prize-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .prize-row .prize-type {
+      color: rgba(255,255,255,0.5);
+      min-width: 30px;
+    }
+
+    .prize-row .prize-count {
+      color: rgba(255,255,255,0.7);
+    }
+
+    .prize-row.add-prize {
+      margin-top: 4px;
+    }
+
+    .prize-row.add-prize .prize-type {
+      color: #ff9f43;
     }
 
     .prize-count {
@@ -388,7 +589,7 @@
 </head>
 <body>
   <div class="header">
-    <a href="../index.html" class="back-btn">← 返回</a>
+    <a href="javascript:history.go(-1)" class="back-btn">← 返回</a>
     <span class="title">彩票查询</span>
     <span style="width: 50px;"></span>
   </div>
@@ -515,79 +716,129 @@
       `;
     }
 
-    // 渲染其他类型（简化版）
-    function renderOther(data, type) {
+    // 渲染大乐透
+    function renderDLT(data) {
       const item = data.content[0];
       if (!item) return '<div class="error-msg"><div class="icon">😢</div><p>暂无数据</p></div>';
 
-      let numbersHtml = '';
-      if (item.frontWinningNum) {
-        const frontNums = item.frontWinningNum.split(' ');
-        numbersHtml += frontNums.map(n => `<div class="ball ball-red">${n}</div>`).join('');
-      }
-      if (item.backWinningNum) {
-        const backNums = item.backWinningNum.split(' ');
-        if (backNums[0]) {
-          numbersHtml += `<span class="plus-sign">+</span>`;
-          numbersHtml += backNums.map(n => `<div class="ball ball-blue">${n}</div>`).join('');
-        }
-      }
+      const frontNums = item.frontWinningNum.split(' ');
+      const backNums = item.backWinningNum.split(' ');
+
+      // 表头
+      let prizeHeaderHtml = `
+        <div class="dlt-prize-header">
+          <span>奖级</span>
+          <span style="margin-right: 86px;">投注方式</span>
+          <span>单注奖金</span>
+        </div>
+      `;
+
+      // 奖金等级样式
+      const levelClass = ['p1', 'p2', 'p3', 'default', 'default', 'default', 'default', 'default', 'default'];
+      const levelNames = ['', '一等奖', '二等奖', '三等奖', '四等奖', '五等奖', '六等奖', '七等奖', '八等奖', '九等奖'];
 
       let prizeHtml = '';
-      if (item.winnerDetails && item.winnerDetails.length > 0) {
-        item.winnerDetails.forEach((prize, index) => {
-          if (prize.baseBetWinner && prize.baseBetWinner.remark) {
-            prizeHtml += `
-              <div class="prize-item">
-                <div class="prize-name">
-                  <span class="prize-level default">${prize.awardEtc || index + 1}</span>
-                  <span class="prize-text">${prize.baseBetWinner.remark}</span>
-                </div>
-                <div class="prize-detail">
-                  <div class="prize-count">${prize.baseBetWinner.awardNum} 注</div>
-                  <div class="prize-money">${formatMoney(prize.baseBetWinner.awardMoney)} 元</div>
-                </div>
+      item.winnerDetails.forEach((prize, index) => {
+        if (prize.baseBetWinner && prize.baseBetWinner.remark) {
+          const levelName = levelNames[parseInt(prize.awardEtc)] || prize.baseBetWinner.remark;
+          const hasBase = prize.baseBetWinner && prize.baseBetWinner.awardNum && prize.baseBetWinner.awardNum !== '';
+          const hasAdd = prize.addToBetWinner && prize.addToBetWinner.awardNum && prize.addToBetWinner.awardNum !== '0' && prize.addToBetWinner.awardNum !== '';
+
+          let betsHtml = '';
+          if (hasBase) {
+            betsHtml += `
+              <div class="dlt-bet-row">
+                <span class="dlt-bet-type">基本</span>
+                <span class="dlt-bet-count">${prize.baseBetWinner.awardNum}注</span>
               </div>
             `;
           }
-        });
-      }
+          if (hasAdd) {
+            betsHtml += `
+              <div class="dlt-bet-row">
+                <span class="dlt-bet-type add">追加</span>
+                <span class="dlt-bet-count">${prize.addToBetWinner.awardNum}注</span>
+              </div>
+            `;
+          }
+
+          // 取基本投注的奖金（追加的显示在金额后面）
+          const moneyText = hasBase ? formatMoney(prize.baseBetWinner.awardMoney) + (hasAdd ? ' / ' + formatMoney(prize.addToBetWinner.awardMoney) : '') : (hasAdd ? formatMoney(prize.addToBetWinner.awardMoney) : '-');
+
+          prizeHtml += `
+            <div class="dlt-prize-item">
+              <span class="dlt-prize-level ${levelClass[index] || 'default'}">${prize.awardEtc}</span>
+              <div class="dlt-prize-name">${levelName}</div>
+              <div class="dlt-prize-bets">${betsHtml}</div>
+              <span class="dlt-prize-money">${moneyText}</span>
+            </div>
+          `;
+        }
+      });
 
       return `
-        <div class="result-card">
+        <div class="result-card dlt-card">
           <div class="card-header">
             <div class="lottery-name">${data.name}</div>
             <div class="issue-info">
               <span>第 <span class="issue-num">${item.issue}</span> 期</span>
-              <span>${item.week || ''}</span>
+              <span>${item.week}</span>
               <span>${item.openTime}</span>
             </div>
           </div>
 
           <div class="numbers-section">
             <div class="numbers-label">🎯 开奖号码</div>
-            <div class="numbers-display">
-              ${numbersHtml || '<div style="color:#999;">暂无号码数据</div>'}
+            <div class="dlt-ball-container">
+              <div class="dlt-ball-row">
+                <span class="dlt-ball-label">前区</span>
+                <div class="dlt-balls">
+                  ${frontNums.map(n => `<div class="dlt-ball dlt-ball-front">${n}</div>`).join('')}
+                </div>
+              </div>
+              <div class="dlt-ball-row">
+                <span class="dlt-ball-label">后区</span>
+                <div class="dlt-balls">
+                  ${backNums.map(n => `<div class="dlt-ball dlt-ball-back">${n}</div>`).join('')}
+                </div>
+              </div>
             </div>
           </div>
 
-          ${item.prizePoolMoney ? `
-          <div class="pool-info">
-            <div class="pool-item">
-              <div class="pool-label">奖池滚存</div>
-              <div class="pool-value">${formatMoney(item.prizePoolMoney)}</div>
+          <div class="dlt-pool-section">
+            <div class="dlt-pool-item">
+              <div class="dlt-pool-label">本期销量</div>
+              <div class="dlt-pool-value">${formatMoney(item.saleMoney)}</div>
+            </div>
+            <div class="dlt-pool-item">
+              <div class="dlt-pool-label">奖池滚存</div>
+              <div class="dlt-pool-value">${formatMoney(item.prizePoolMoney)}</div>
             </div>
           </div>
-          ` : ''}
 
-          ${prizeHtml ? `
-          <div class="prize-section">
-            <div class="prize-title">🏆 中奖详情</div>
-            <div class="prize-list">
-              ${prizeHtml}
-            </div>
+          <div class="dlt-prize-section">
+            <div class="prize-title" style="text-align:center;margin-bottom:16px;">🏆 中奖详情</div>
+            ${prizeHeaderHtml}
+            ${prizeHtml}
+          </div>
+
+          ${item.awardEndDesc && item.awardEndDesc !== '-' ? `
+          <div class="deadline">
+            <strong>兑奖截止：</strong>${item.awardEndDesc}
           </div>
           ` : ''}
+        </div>
+      `;
+    }
+
+    // 渲染其他类型（空界面）
+    function renderOther(data, type) {
+      return `
+        <div class="result-card">
+          <div class="error-msg">
+            <div class="icon">🚧</div>
+            <p>该彩种暂不支持查询</p>
+          </div>
         </div>
       `;
     }
@@ -622,25 +873,15 @@
       `;
 
       try {
-        const response = await fetch(API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer 6ad41ac5eed70a63382ff767103705b7'
-          },
-          body: JSON.stringify({
-            token: TOKEN,
-            mode: 'json',
-            type: currentType,
-            mun: currentMun
-          })
-        });
+        const response = await fetch(`${API_URL}?type=${currentType}&mun=${currentMun}`);
         const result = await response.json();
 
         if (result.code === 200 && result.data) {
           let html = renderHistorySelector();
           if (currentType === 'ssq') {
             html += renderSSQ(result.data);
+          } else if (currentType === 'dlt') {
+            html += renderDLT(result.data);
           } else {
             html += renderOther(result.data, currentType);
           }

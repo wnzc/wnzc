@@ -19,15 +19,10 @@ async function handleRequest(request) {
   try {
     // 彩票代理
     if (url.pathname === '/lottery') {
-      const body = await request.json()
-      const response = await fetch('http://api.yunmge.com/api/lottery', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer 6ad41ac5eed70a63382ff767103705b7'
-        },
-        body: JSON.stringify(body)
-      })
+      const type = url.searchParams.get('type') || 'ssq'
+      const mun = url.searchParams.get('mun') || '1'
+      const targetUrl = `http://api.yunmge.com/api/lottery?token=6ad41ac5eed70a63382ff767103705b7&mode=json&type=${type}&mun=${mun}`
+      const response = await fetch(targetUrl)
       const data = await response.text()
       return new Response(data, {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -43,6 +38,7 @@ async function handleRequest(request) {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+
     return new Response('OK', { headers: corsHeaders })
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
