@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>视频播放</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0a0a0a;color:#fff;min-height:100vh}
+    .header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(0,0,0,.9);position:sticky;top:0;z-index:100}
+    .back-btn{color:#fff;text-decoration:none;font-size:14px}
+    .title{font-size:16px;font-weight:500}
+    .cat-bar{display:flex;gap:8px;padding:12px;overflow-x:auto;background:#111;scrollbar-width:none}
+    .cat-bar::-webkit-scrollbar{display:none}
+    .cat-btn{flex-shrink:0;padding:8px 14px;border:none;border-radius:16px;background:#222;color:#aaa;font-size:13px;cursor:pointer;transition:.3s}
+    .cat-btn.active{background:linear-gradient(135deg,#ff6b6b,#ff8e8e);color:#fff}
+    .video-wrap{flex:1;display:flex;justify-content:center;align-items:center;padding:16px}
+    video{width:100%;max-width:500px;border-radius:12px;background:#000}
+    .controls{display:flex;gap:12px;padding:16px;justify-content:center;padding-bottom:30px}
+    .btn{padding:12px 28px;border:none;border-radius:20px;font-size:15px;cursor:pointer;transition:.3s}
+    .next-btn{background:linear-gradient(135deg,#ff6b6b,#ff8e8e);color:#fff}
+    .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;pointer-events:none}
+    .toast.show{opacity:1}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="../index.html" class="back-btn">← 返回</a>
+    <span class="title">视频播放</span>
+    <span style="width:50px"></span>
+  </div>
+
+  <div class="cat-bar" id="catBar">
+    <button class="cat-btn active" data-id="jk">JK</button>
+    <button class="cat-btn" data-id="YuMeng">欲梦</button>
+    <button class="cat-btn" data-id="NvDa">女大</button>
+    <button class="cat-btn" data-id="NvGao">女高</button>
+    <button class="cat-btn" data-id="ReWu">热舞</button>
+    <button class="cat-btn" data-id="QingCun">清纯</button>
+    <button class="cat-btn" data-id="YuZu">玉足</button>
+    <button class="cat-btn" data-id="SheJie">蛇姐</button>
+    <button class="cat-btn" data-id="ChuanDa">穿搭</button>
+    <button class="cat-btn" data-id="GaoZhiLiangXiaoJieJie">高质量</button>
+    <button class="cat-btn" data-id="HanFu">汉服</button>
+    <button class="cat-btn" data-id="HeiSi">黑丝</button>
+    <button class="cat-btn" data-id="BianZhuang">变装</button>
+    <button class="cat-btn" data-id="LuoLi">萝莉</button>
+    <button class="cat-btn" data-id="TianMei">甜妹</button>
+    <button class="cat-btn" data-id="BaiSi">白丝</button>
+  </div>
+
+  <div class="video-wrap">
+    <video id="player" controls></video>
+  </div>
+
+  <div class="controls">
+    <button class="btn next-btn" onclick="loadNext()">下一个 →</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API = 'http://api.mmp.cc/api/ksvideo';
+    let currentCat = 'jk';
+    let videoIndex = Math.floor(Math.random() * 20) + 1;
+
+    const player = document.getElementById('player');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function loadVideo() {
+      player.style.display = 'none';
+      player.src = `${API}?type=mp4&id=${currentCat}&index=${videoIndex}`;
+      player.load();
+      player.oncanplay = () => player.style.display = 'block';
+      player.onerror = () => showToast('视频加载失败');
+    }
+
+    function loadNext() {
+      videoIndex = Math.floor(Math.random() * 20) + 1;
+      loadVideo();
+      showToast('正在加载下一个...');
+    }
+
+    // 分类切换
+    document.getElementById('catBar').addEventListener('click', e => {
+      if (e.target.classList.contains('cat-btn')) {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentCat = e.target.dataset.id;
+        videoIndex = Math.floor(Math.random() * 20) + 1;
+        loadVideo();
+      }
+    });
+
+    // 初始加载
+    loadVideo();
+  </script>
+</body>
+</html>

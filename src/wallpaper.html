@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>随机壁纸</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 顶部导航 */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .back-btn {
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    /* 分类栏 */
+    .category-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      overflow-x: auto;
+      background: #111;
+      scrollbar-width: none;
+    }
+
+    .category-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-btn {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 20px;
+      background: #222;
+      color: #aaa;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .category-btn.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+    }
+
+    /* 图片容器 */
+    .image-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      position: relative;
+    }
+
+    .image-wrapper {
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 9/16;
+      max-height: 70vh;
+      background: #1a1a1a;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .wallpaper-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* 加载状态 */
+    .loading {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading p {
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
+    }
+
+    /* 控制按钮 */
+    .controls {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      justify-content: center;
+      padding-bottom: 30px;
+    }
+
+    .control-btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 25px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .next-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+    }
+
+    .download-btn {
+      background: #222;
+      color: #fff;
+    }
+
+    .control-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 提示 */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* 图片ID显示 */
+    .image-id {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      background: rgba(0,0,0,0.6);
+      color: rgba(255,255,255,0.7);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="../index.html" class="back-btn">← 返回</a>
+    <span class="title">随机壁纸</span>
+    <span style="width: 50px;"></span>
+  </div>
+
+  <!-- 分类选择 -->
+  <div class="category-bar" id="categoryBar">
+    <button class="category-btn active" data-category="">全部</button>
+    <button class="category-btn" data-category="4k">4K高清</button>
+    <button class="category-btn" data-category="landscape">风景</button>
+    <button class="category-btn" data-category="belle">美女</button>
+    <button class="category-btn" data-category="game">游戏</button>
+    <button class="category-btn" data-category="photo">影视</button>
+    <button class="category-btn" data-category="cool">炫酷</button>
+    <button class="category-btn" data-category="star">明星</button>
+    <button class="category-btn" data-category="car">汽车</button>
+    <button class="category-btn" data-category="cartoon">动漫</button>
+  </div>
+
+  <!-- 图片区域 -->
+  <div class="image-container">
+    <div class="image-wrapper" id="imageWrapper">
+      <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <p>加载中...</p>
+      </div>
+      <img class="wallpaper-img" id="wallpaperImg" style="display: none;">
+      <span class="image-id" id="imageId" style="display: none;"></span>
+    </div>
+  </div>
+
+  <!-- 控制按钮 -->
+  <div class="controls">
+    <button class="control-btn next-btn" id="nextBtn">🎲 换一张</button>
+    <button class="control-btn download-btn" id="downloadBtn">⬇️ 下载</button>
+  </div>
+
+  <!-- 提示 -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_URL = 'http://api.mmp.cc/api/pcwallpaper';
+    const PROXY_URL = '';
+    let currentCategory = '';
+    let currentImageUrl = '';
+    let currentImageId = '';
+
+    const wallpaperImg = document.getElementById('wallpaperImg');
+    const loading = document.getElementById('loading');
+    const imageId = document.getElementById('imageId');
+    const toast = document.getElementById('toast');
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    async function loadWallpaper() {
+      loading.style.display = 'flex';
+      wallpaperImg.style.display = 'none';
+      imageId.style.display = 'none';
+
+      try {
+        let url;
+        if (PROXY_URL) {
+          url = PROXY_URL + encodeURIComponent(`${API_URL}?category=${currentCategory}&type=json`);
+        } else {
+          url = `${API_URL}?category=${currentCategory}&type=json`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.status === 200 && data.url) {
+          currentImageUrl = data.url;
+          currentImageId = data.id;
+
+          wallpaperImg.onload = () => {
+            loading.style.display = 'none';
+            wallpaperImg.style.display = 'block';
+            imageId.textContent = `ID: ${data.id}`;
+            imageId.style.display = 'block';
+          };
+
+          wallpaperImg.onerror = () => {
+            showToast('图片加载失败');
+            loading.style.display = 'none';
+          };
+
+          wallpaperImg.src = data.url;
+        } else {
+          showToast('获取壁纸失败');
+          loading.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('网络请求失败，请重试');
+        loading.style.display = 'none';
+      }
+    }
+
+    function downloadImage() {
+      if (!currentImageUrl) {
+        showToast('暂无图片可下载');
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.href = currentImageUrl;
+      link.download = `wallpaper_${currentImageId}.jpg`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('开始下载...');
+    }
+
+    // 分类切换
+    document.getElementById('categoryBar').addEventListener('click', (e) => {
+      if (e.target.classList.contains('category-btn')) {
+        document.querySelectorAll('.category-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        e.target.classList.add('active');
+        currentCategory = e.target.dataset.category;
+        loadWallpaper();
+      }
+    });
+
+    // 按钮事件
+    document.getElementById('nextBtn').addEventListener('click', loadWallpaper);
+    document.getElementById('downloadBtn').addEventListener('click', downloadImage);
+
+    // 初始加载
+    loadWallpaper();
+  </script>
+</body>
+</html>
