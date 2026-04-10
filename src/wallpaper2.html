@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>精选壁纸</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    /* 顶部导航 */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .back-btn {
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    /* 顶部类型切换 */
+    .type-tabs {
+      display: flex;
+      padding: 12px 16px;
+      gap: 12px;
+      background: #16162a;
+    }
+
+    .type-tab {
+      flex: 1;
+      padding: 10px 0;
+      border: none;
+      border-radius: 10px;
+      background: #252547;
+      color: #888;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .type-tab.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+    }
+
+    /* 分类选择 */
+    .format-bar {
+      display: flex;
+      gap: 8px;
+      padding: 10px 16px;
+      overflow-x: auto;
+      background: #1e1e3a;
+      scrollbar-width: none;
+    }
+
+    .format-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .format-btn {
+      flex-shrink: 0;
+      padding: 6px 14px;
+      border: none;
+      border-radius: 15px;
+      background: #2a2a50;
+      color: #999;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .format-btn.active {
+      background: #667eea;
+      color: #fff;
+    }
+
+    /* 图片网格 */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      padding: 12px;
+      padding-bottom: 80px;
+    }
+
+    .image-item {
+      background: #252547;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      aspect-ratio: 2/3;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .image-item:hover {
+      transform: scale(1.02);
+    }
+
+    .image-item.landscape {
+      aspect-ratio: 16/9;
+      grid-column: span 2;
+    }
+
+    .image-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* 视频项 */
+    .image-item.is-video {
+      position: relative;
+    }
+
+    .image-item.is-video::after {
+      content: '▶';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #fff;
+      pointer-events: none;
+    }
+
+    .image-item .tag {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.9);
+      background: rgba(0,0,0,0.5);
+      padding: 4px 8px;
+      border-radius: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* 预览区域 */
+    .preview-content video {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+    }
+
+    /* 加载更多 */
+    .load-more {
+      padding: 20px;
+      text-align: center;
+      grid-column: span 2;
+    }
+
+    .load-more-btn {
+      padding: 12px 32px;
+      border: none;
+      border-radius: 20px;
+      background: #333;
+      color: #888;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .load-more-btn:hover {
+      background: #444;
+    }
+
+    /* 加载状态 */
+    .loading-indicator {
+      grid-column: span 2;
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    /* 预览弹窗 */
+    .preview-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.95);
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+    }
+
+    .preview-modal.show {
+      display: flex;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.8);
+    }
+
+    .preview-close {
+      color: #fff;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 0 10px;
+    }
+
+    .preview-download {
+      padding: 8px 20px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .preview-content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .preview-content img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .preview-info {
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.8);
+      font-size: 12px;
+      color: #aaa;
+    }
+
+    .preview-info span {
+      margin-right: 16px;
+    }
+
+    /* 提示 */
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 300;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="../index.html" class="back-btn">← 返回</a>
+    <span class="title">精选壁纸</span>
+    <span style="width: 50px;"></span>
+  </div>
+
+  <!-- 顶部类型切换 -->
+  <div class="type-tabs">
+    <button class="type-tab" data-screen="1">
+      🖼️ 横屏
+    </button>
+    <button class="type-tab active" data-screen="3">
+      📱 竖屏
+    </button>
+    <button class="type-tab" data-screen="2">
+      🎬 视频
+    </button>
+  </div>
+
+  <!-- 分类选择 -->
+  <div class="format-bar" id="formatBar">
+    <!-- 动态生成 -->
+  </div>
+
+  <!-- 图片网格 -->
+  <div class="image-grid" id="imageGrid">
+    <!-- 动态加载 -->
+  </div>
+
+  <!-- 加载更多 -->
+  <div class="load-more" id="loadMore" style="display: none;">
+    <button class="load-more-btn" id="loadMoreBtn">加载更多</button>
+  </div>
+
+  <!-- 预览弹窗 -->
+  <div class="preview-modal" id="previewModal">
+    <div class="preview-header">
+      <span class="preview-close" id="previewClose">×</span>
+      <button class="preview-download" id="previewDownload">⬇️ 下载</button>
+    </div>
+    <div class="preview-content">
+      <img id="previewImg" src="" alt="">
+      <video id="previewVideo" src="" controls style="display: none;"></video>
+    </div>
+    <div class="preview-info" id="previewInfo"></div>
+  </div>
+
+  <!-- 提示 -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // 分类配置
+    const formatConfig = {
+      1: [ // 横屏
+        { id: 1, name: '美女' },
+        { id: 2, name: '动漫' },
+        { id: 3, name: '风景' },
+        { id: 4, name: '游戏' },
+        { id: 5, name: '明星' },
+        { id: 6, name: '机械' },
+        { id: 7, name: '动物' },
+        { id: 8, name: '文字' },
+        { id: 9, name: '城市' },
+        { id: 10, name: '视觉' },
+        { id: 11, name: '物语' },
+        { id: 12, name: '情感' },
+        { id: 13, name: '设计' },
+        { id: 14, name: '男人' }
+      ],
+      2: [ // 视频
+        { id: 1, name: '动漫' },
+        { id: 2, name: '网红' },
+        { id: 3, name: '游戏' },
+        { id: 4, name: '热门' },
+        { id: 5, name: '风景' },
+        { id: 6, name: '其他' },
+        { id: 7, name: '热舞' },
+        { id: 8, name: '明星' },
+        { id: 9, name: '影视' },
+        { id: 10, name: '动物' }
+      ],
+      3: [ // 竖屏
+        { id: 1, name: '美女' },
+        { id: 2, name: '动漫' },
+        { id: 3, name: '风景' },
+        { id: 4, name: '游戏' },
+        { id: 5, name: '明星' },
+        { id: 6, name: '机械' },
+        { id: 7, name: '动物' },
+        { id: 8, name: '文字' },
+        { id: 9, name: '城市' },
+        { id: 10, name: '视觉' },
+        { id: 11, name: '物语' },
+        { id: 12, name: '情感' },
+        { id: 13, name: '设计' },
+        { id: 14, name: '男人' }
+      ]
+    };
+
+    // API配置
+    const API_URL = 'https://oiapi.net/api/Loveanimer';
+    
+    // 状态
+    let currentScreen = 3; // 1横屏, 2视频, 3竖屏
+    let currentFormat = 1;
+    let currentPage = 1;
+    let isLoading = false;
+    let hasMore = true;
+    let currentImages = [];
+
+    // DOM元素
+    const formatBar = document.getElementById('formatBar');
+    const imageGrid = document.getElementById('imageGrid');
+    const loadMore = document.getElementById('loadMore');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    const previewModal = document.getElementById('previewModal');
+    const previewImg = document.getElementById('previewImg');
+    const previewVideo = document.getElementById('previewVideo');
+    const previewInfo = document.getElementById('previewInfo');
+    const toast = document.getElementById('toast');
+
+    // 提示
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // 渲染分类
+    function renderFormats() {
+      const formats = formatConfig[currentScreen];
+      formatBar.innerHTML = formats.map(f => 
+        `<button class="format-btn ${f.id === currentFormat ? 'active' : ''}" data-format="${f.id}">${f.name}</button>`
+      ).join('');
+    }
+
+    // 加载图片
+    async function loadImages(reset = false) {
+      if (isLoading) return;
+      if (!reset && !hasMore) return;
+
+      if (reset) {
+        currentPage = 1;
+        hasMore = true;
+        currentImages = [];
+        imageGrid.innerHTML = '<div class="loading-indicator">加载中...</div>';
+      }
+
+      isLoading = true;
+      loadMoreBtn.textContent = '加载中...';
+
+      try {
+        const url = `${API_URL}?screen=${currentScreen}&format=${currentFormat}&page=${currentPage}&limit=12`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.code === 1 && data.data && data.data.length > 0) {
+          currentImages = reset ? data.data : [...currentImages, ...data.data];
+          renderImages(data.data, reset);
+          
+          if (data.data.length < 12) {
+            hasMore = false;
+          } else {
+            hasMore = true;
+            currentPage++;
+          }
+        } else {
+          if (reset) {
+            imageGrid.innerHTML = '<div class="loading-indicator">暂无数据</div>';
+          }
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        if (reset) {
+          imageGrid.innerHTML = '<div class="loading-indicator">加载失败，请重试</div>';
+        }
+        showToast('网络请求失败');
+      } finally {
+        isLoading = false;
+        loadMore.style.display = hasMore ? 'block' : 'none';
+        loadMoreBtn.textContent = hasMore ? '加载更多' : '没有更多了';
+      }
+    }
+
+    // 渲染图片/视频
+    function renderImages(images, reset) {
+      const startIndex = reset ? 0 : currentImages.length - images.length;
+      const isVideoType = currentScreen === 2;
+      
+      const itemsHtml = images.map((img, index) => {
+        const isLandscape = img.width > img.height * 1.5;
+        const src = isVideoType ? img.cover : img.url;
+        const itemClass = isVideoType ? 'is-video' : '';
+        return `
+          <div class="image-item ${itemClass} ${isLandscape ? 'landscape' : ''}" data-index="${startIndex + index}">
+            <img src="${src}" alt="" loading="lazy">
+            <div class="tag">${img.tag || ''}</div>
+          </div>
+        `;
+      }).join('');
+
+      if (reset) {
+        imageGrid.innerHTML = itemsHtml + '<div class="load-more" id="loadMore" style="display: none;"><button class="load-more-btn" id="loadMoreBtn">加载更多</button></div>';
+        document.getElementById('loadMoreBtn').addEventListener('click', () => loadImages(false));
+      } else {
+        // 加载更多时，在loadMore前插入
+        const loadMoreEl = document.getElementById('loadMore');
+        if (loadMoreEl) {
+          const fragment = document.createRange().createContextualFragment(itemsHtml);
+          imageGrid.insertBefore(fragment, loadMoreEl);
+        } else {
+          imageGrid.innerHTML += itemsHtml;
+        }
+      }
+    }
+
+    // 预览图片/视频
+    function previewImage(index) {
+      const item = currentImages[index];
+      if (!item) return;
+
+      const isVideo = currentScreen === 2;
+      const isVideoItem = item.url && item.url.includes('.mp4');
+      
+      if (isVideoItem) {
+        // 显示视频
+        previewImg.style.display = 'none';
+        previewVideo.style.display = 'block';
+        previewVideo.src = item.url;
+        previewVideo.poster = item.cover || '';
+        previewDownload.innerHTML = '⬇️ 下载';
+      } else {
+        // 显示图片
+        previewImg.style.display = 'block';
+        previewVideo.style.display = 'none';
+        previewVideo.src = '';
+        previewImg.src = item.url;
+        previewDownload.innerHTML = '⬇️ 下载';
+      }
+
+      previewInfo.innerHTML = `
+        <span>📐 ${item.width}×${item.height}</span>
+        <span>📦 ${(item.size / 1024).toFixed(1)} KB</span>
+        <span>🏷️ ${item.tag || ''}</span>
+      `;
+      previewModal.classList.add('show');
+    }
+
+    // 下载图片
+    function downloadImage(url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `wallpaper_${Date.now()}.jpg`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('开始下载...');
+    }
+
+    // 类型切换
+    document.querySelector('.type-tabs').addEventListener('click', (e) => {
+      const tab = e.target.closest('.type-tab');
+      if (!tab) return;
+
+      document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      
+      currentScreen = parseInt(tab.dataset.screen);
+      currentFormat = 1; // 重置分类
+      renderFormats();
+      loadImages(true);
+    });
+
+    // 分类切换
+    formatBar.addEventListener('click', (e) => {
+      const btn = e.target.closest('.format-btn');
+      if (!btn) return;
+
+      document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      currentFormat = parseInt(btn.dataset.format);
+      loadImages(true);
+    });
+
+    // 图片点击
+    imageGrid.addEventListener('click', (e) => {
+      const item = e.target.closest('.image-item');
+      if (!item) return;
+      previewImage(parseInt(item.dataset.index));
+    });
+
+    // 关闭预览
+    document.getElementById('previewClose').addEventListener('click', () => {
+      previewVideo.pause();
+      previewVideo.src = '';
+      previewModal.classList.remove('show');
+    });
+
+    // 下载
+    document.getElementById('previewDownload').addEventListener('click', () => {
+      if (previewVideo.src && previewVideo.style.display !== 'none') {
+        downloadImage(previewVideo.src);
+      } else {
+        downloadImage(previewImg.src);
+      }
+    });
+
+    // 初始化
+    renderFormats();
+    loadImages(true);
+  </script>
+</body>
+</html>

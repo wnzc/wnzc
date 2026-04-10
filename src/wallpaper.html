@@ -251,8 +251,8 @@
   <div class="toast" id="toast"></div>
 
   <script>
-    const API_URL = 'https://api.mmp.cc/api/pcwallpaper';
-    const PROXY_URL = '';
+    // 使用Worker代理避免CORS
+    const API_URL = 'https://wnzcweb.wnzc.workers.dev/wallpaper';
     let currentCategory = '';
     let currentImageUrl = '';
     let currentImageId = '';
@@ -274,12 +274,7 @@
       imageId.style.display = 'none';
 
       try {
-        let url;
-        if (PROXY_URL) {
-          url = PROXY_URL + encodeURIComponent(`${API_URL}?category=${currentCategory}&type=json`);
-        } else {
-          url = `${API_URL}?category=${currentCategory}&type=json`;
-        }
+        const url = `${API_URL}?category=${currentCategory}`;
         const response = await fetch(url);
         const data = await response.json();
 
