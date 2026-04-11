@@ -71,6 +71,28 @@
             color: var(--text-sub);
         }
 
+        /* 暖心话显示 */
+        .warm-message {
+            text-align: center;
+            margin-bottom: 15px;
+            min-height: 80px;
+            padding: 15px 20px;
+            position: relative;
+        }
+
+        .warm-greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #feca57;
+            margin-bottom: 6px;
+        }
+
+        .warm-tip {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.5;
+        }
+
         /* 时钟日期显示区域 */
         .datetime-display {
             text-align: center;
@@ -260,6 +282,12 @@
             <p class="subtitle">实用工具 · 一触即达</p>
         </div>
 
+        <!-- 暖心话显示 -->
+        <div class="warm-message" id="warmMessage">
+            <div class="warm-greeting" id="warmGreeting">加载中...</div>
+            <div class="warm-tip" id="warmTip"></div>
+        </div>
+
         <!-- 时间日期显示 -->
         <div class="datetime-display">
             <div class="time-display">
@@ -386,6 +414,57 @@
         // 初始化并每秒更新
         updateDateTime();
         setInterval(updateDateTime, 1000);
+
+        // 暖心话本地存储键
+        const WARM_MSG_KEY = 'warm_message_cache';
+
+        // 显示暖心话
+        function showWarmMessage(data) {
+            document.getElementById('warmGreeting').textContent = data.msg;
+            document.getElementById('warmTip').textContent = data.nxyj;
+        }
+
+        // 获取缓存的暖心话
+        function getCachedWarmMessage() {
+            try {
+                const cached = localStorage.getItem(WARM_MSG_KEY);
+                if (cached) {
+                    return JSON.parse(cached);
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        // 保存暖心话到缓存
+        function saveWarmMessage(data) {
+            localStorage.setItem(WARM_MSG_KEY, JSON.stringify({
+                msg: data.msg,
+                nxyj: data.nxyj,
+                savedAt: Date.now()
+            }));
+        }
+
+        // 获取暖心话
+        async function fetchWarmMessage() {
+            // 先显示缓存
+            const cached = getCachedWarmMessage();
+            if (cached) {
+                showWarmMessage(cached);
+            }
+
+            // 请求新数据
+            try {
+                const response = await fetch('http://apis.uctb.cn/api/time?type=2');
+                const result = await response.json();
+                if (result.code === 1) {
+                    showWarmMessage(result);
+                    saveWarmMessage(result);
+                }
+            } catch (error) {
+                console.error('获取暖心话失败:', error);
+            }
+        }
+        fetchWarmMessage();
 
     </script>
 </body>

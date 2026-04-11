@@ -16,9 +16,12 @@
     .cat-btn.active{background:linear-gradient(135deg,#ff6b6b,#ff8e8e);color:#fff}
     .video-wrap{flex:1;display:flex;justify-content:center;align-items:center;padding:16px}
     video{width:100%;max-width:500px;border-radius:12px;background:#000}
-    .controls{display:flex;gap:12px;padding:16px;justify-content:center;padding-bottom:30px}
+    .controls{display:flex;gap:12px;padding:16px;justify-content:center;align-items:center;padding-bottom:30px}
     .btn{padding:12px 28px;border:none;border-radius:20px;font-size:15px;cursor:pointer;transition:.3s}
     .next-btn{background:linear-gradient(135deg,#ff6b6b,#ff8e8e);color:#fff}
+    .mute-btn{width:44px;height:44px;border:none;border-radius:50%;background:linear-gradient(135deg,#ff6b6b,#ff8e8e);color:#fff;font-size:20px;cursor:pointer;transition:.3s;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(255,107,107,.4)}
+    .mute-btn:hover{transform:scale(1.1)}
+    .mute-btn:active{transform:scale(0.95)}
     .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.8);padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;pointer-events:none}
     .toast.show{opacity:1}
   </style>
@@ -54,6 +57,7 @@
   </div>
 
   <div class="controls">
+    <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔇</button>
     <button class="btn next-btn" onclick="loadNext()">下一个 →</button>
   </div>
 
@@ -61,11 +65,19 @@
 
   <script>
     const API = 'http://api.mmp.cc/api/ksvideo';
+    const MUTE_KEY = 'video_muted';
     let currentCat = 'jk';
     let videoIndex = Math.floor(Math.random() * 20) + 1;
+    let isMuted = localStorage.getItem(MUTE_KEY) === null ? true : localStorage.getItem(MUTE_KEY) === 'true';
 
     const player = document.getElementById('player');
     const toast = document.getElementById('toast');
+    const muteBtn = document.getElementById('muteBtn');
+
+    function updateMuteBtn() {
+      muteBtn.textContent = isMuted ? '🔇' : '🔊';
+    }
+    updateMuteBtn();
 
     function showToast(msg) {
       toast.textContent = msg;
@@ -73,8 +85,17 @@
       setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
+    function toggleMute() {
+      isMuted = !isMuted;
+      localStorage.setItem(MUTE_KEY, isMuted);
+      updateMuteBtn();
+      player.muted = isMuted;
+      showToast(isMuted ? '已静音' : '已开启声音');
+    }
+
     function loadVideo() {
       player.style.display = 'none';
+      player.muted = isMuted;
       player.src = `${API}?type=mp4&id=${currentCat}&index=${videoIndex}`;
       player.load();
       player.oncanplay = () => {
