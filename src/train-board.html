@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>车站大屏</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a0a2e 0%, #1a1a4e 50%, #0d0d3d 100%);
+      color: #ffffff;
+    }
+
+    /* 固定顶部搜索区域 */
+    .fixed-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: linear-gradient(180deg, #0a0a2e 0%, #1a1a4e 100%);
+      padding: 15px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .search-input {
+      padding: 12px 20px;
+      font-size: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 25px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      width: 180px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .search-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #00d4ff;
+      background: rgba(0, 212, 255, 0.15);
+    }
+
+    .search-btn {
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #00d4ff, #0099cc);
+      color: #ffffff;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+    }
+
+    .search-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+    }
+
+    .refresh-btn {
+      width: 44px;
+      height: 44px;
+      font-size: 16px;
+      background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+      color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .refresh-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.95);
+    }
+
+    .refresh-btn.spinning i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .quick-stations {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .quick-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .quick-btn:hover, .quick-btn.active {
+      background: rgba(0, 212, 255, 0.3);
+      border-color: #00d4ff;
+      color: #ffffff;
+    }
+
+    /* 统计信息 */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      padding: 12px 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 900;
+      color: #00d4ff;
+      text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 2px;
+    }
+
+    /* 滚动区域 */
+    .scroll-area {
+      padding-top: 20px;
+      padding-bottom: 80px;
+    }
+
+    /* 列表区域 */
+    .content {
+      padding: 15px;
+    }
+
+    .train-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .train-item {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .train-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+    }
+
+    /* 状态边框颜色 */
+    .train-item.status-ontime::before {
+      background: linear-gradient(180deg, #00ff88, #00d4ff);
+    }
+    .train-item.status-delayed::before {
+      background: linear-gradient(180deg, #ff6b6b, #ff9f43);
+    }
+    .train-item.status-boarding::before {
+      background: linear-gradient(180deg, #ffd700, #ff9800);
+    }
+    .train-item.status-stopped::before {
+      background: linear-gradient(180deg, #999999, #666666);
+    }
+    .train-item.status-cancelled::before {
+      background: linear-gradient(180deg, #ff0000, #990000);
+    }
+
+    .train-item:hover {
+      transform: translateX(4px);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
+    }
+
+    /* 车次号 */
+    .train-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .train-number {
+      font-size: 28px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+      letter-spacing: 2px;
+    }
+
+    /* 状态标签 - 彩色背景 */
+    .train-status {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .status-ontime {
+      background: linear-gradient(135deg, #00ff88, #00cc6a);
+      color: #003320;
+    }
+
+    .status-delayed {
+      background: linear-gradient(135deg, #ff6b6b, #ff4757);
+      color: #ffffff;
+    }
+
+    .status-boarding {
+      background: linear-gradient(135deg, #ffd700, #ff9800);
+      color: #4a2800;
+      animation: pulse-boarding 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-boarding {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .status-stopped {
+      background: linear-gradient(135deg, #888888, #666666);
+      color: #ffffff;
+    }
+
+    .status-cancelled {
+      background: linear-gradient(135deg, #ff0000, #cc0000);
+      color: #ffffff;
+    }
+
+    /* 路线信息 */
+    .train-route {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+
+    .route-point {
+      flex: 1;
+    }
+
+    .route-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255);
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+
+    .route-station {
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .route-via {
+      font-size: 11px;
+      color: rgba(255, 255, 255);
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .route-arrow {
+      font-size: 24px;
+      color: #00d4ff;
+      opacity: 0.6;
+    }
+
+    /* 时间和候车室 */
+    .train-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .time-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .departure-time {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 1px;
+    }
+
+    .time-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255);
+      margin-bottom: 3px;
+    }
+
+    /* 候车室信息 - 白色底醒目显示 */
+    .platform-info {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 10px 16px;
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .platform-label {
+      font-size: 10px;
+      color: #666666;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+
+    .platform-value {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    /* 分页 */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
+      margin-top: 15px;
+    }
+
+    .page-btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 22px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: rgba(0, 212, 255, 0.3);
+      border-color: #00d4ff;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .page-info {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 13px;
+    }
+
+    .page-num {
+      padding: 6px 12px;
+      background: rgba(0, 212, 255, 0.2);
+      border-radius: 6px;
+      color: #00d4ff;
+      font-weight: 600;
+    }
+
+    /* 加载动画 */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 20px;
+      gap: 20px;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(0, 212, 255, 0.2);
+      border-top-color: #00d4ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 16px;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 100px 20px;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    .empty-text {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 16px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #ffffff;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 2000;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="fixed-header">
+    <div class="search-box">
+      <input type="text" class="search-input" id="stationInput" placeholder="输入车站名">
+      <button class="search-btn" onclick="searchStation()">
+        <i class="fas fa-search"></i> 查询
+      </button>
+      <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="statsBar" style="display: none;">
+    <div class="stat-item">
+      <div class="stat-value" id="stationDisplay">-</div>
+      <div class="stat-label">车站</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="totalCount">0</div>
+      <div class="stat-label">总车次</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="currentPage">1</div>
+      <div class="stat-label">当前页</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="totalPages">1</div>
+      <div class="stat-label">总页数</div>
+    </div>
+  </div>
+
+  <div class="scroll-area">
+    <div class="content" id="content">
+      <div class="empty-state">
+        <div class="empty-icon">🚉</div>
+        <div class="empty-text">请输入车站名称开始查询</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_URL = 'https://apis.uctb.cn/api/12306';
+    const STORAGE_KEY = 'train_station_cache';
+
+    let currentStation = '';
+    let currentPage = 1;
+    let totalPages = 1;
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function setLoading(show) {
+      const content = document.getElementById('content');
+      if (show) {
+        content.innerHTML = `
+          <div class="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在查询车次信息...</div>
+          </div>
+        `;
+      }
+    }
+
+    function selectStation(station) {
+      document.getElementById('stationInput').value = station;
+      const stationDisplay = document.getElementById('stationDisplay');
+      if (stationDisplay) stationDisplay.textContent = station + '站';
+      currentStation = station;
+      currentPage = 1;
+      fetchTrains();
+    }
+
+    function searchStation() {
+      const input = document.getElementById('stationInput').value.trim();
+      if (!input) {
+        showToast('请输入车站名称');
+        return;
+      }
+      selectStation(input);
+    }
+
+    // 回车搜索
+    document.getElementById('stationInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') searchStation();
+    });
+
+    // 获取状态样式
+    function getStatusClass(status) {
+      const s = status || '';
+      if (s.includes('检票') || s.includes('进站')) return 'status-boarding';
+      if (s.includes('停检') || s.includes('停售') || s.includes('停止')) return 'status-stopped';
+      if (s.includes('晚点') || s.includes('延误')) return 'status-delayed';
+      if (s.includes('取消') || s.includes('停运')) return 'status-cancelled';
+      return 'status-ontime';
+    }
+
+    async function fetchTrains() {
+      if (!currentStation) return;
+
+      setLoading(true);
+
+      try {
+        const response = await fetch(`${API_URL}?msg=${encodeURIComponent(currentStation)}&type=json&page=${currentPage}`);
+        const data = await response.json();
+
+        if (data.总车次 > 0) {
+          totalPages = data.总页数;
+          renderTrains(data);
+          updateStats(data);
+          saveToCache();
+        } else {
+          document.getElementById('content').innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">🔍</div>
+              <div class="empty-text">未找到 "${currentStation}" 的车次信息</div>
+            </div>
+          `;
+          document.getElementById('statsBar').style.display = 'none';
+        }
+      } catch (error) {
+        console.error('查询失败:', error);
+        showToast('查询失败，请重试');
+        document.getElementById('content').innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">❌</div>
+            <div class="empty-text">网络错误，请检查网络后重试</div>
+          </div>
+        `;
+      }
+    }
+
+    // 手动刷新
+    function manualRefresh() {
+      const btn = document.getElementById('refreshBtn');
+      btn.classList.add('spinning');
+      fetchTrains().finally(() => {
+        btn.classList.remove('spinning');
+      });
+    }
+
+    function renderTrains(data) {
+      const content = document.getElementById('content');
+      const trains = data.当前页车次列表 || [];
+
+      let html = '<div class="train-list">';
+
+      trains.forEach(train => {
+        const statusClass = getStatusClass(train.状态);
+
+        // 候车室/检票口信息
+        const platform = train['候车室/检票口'] || train.候车室 || '候车厅';
+
+        // 途径信息
+        const viaInfo = train.途径 || '';
+
+        html += `
+          <div class="train-item ${statusClass}">
+            <div class="train-top">
+              <div class="train-number">${train.车次号}</div>
+              <div class="train-status ${statusClass}">${train.状态 || '正点'}</div>
+            </div>
+
+            <div class="train-route">
+              <div class="route-point">
+                <div class="route-label">出发</div>
+                <div class="route-station">${train.出发地}</div>
+              </div>
+              <div class="route-arrow">→</div>
+              <div class="route-point">
+                <div class="route-label">到达</div>
+                <div class="route-station">${train.目的地}</div>
+              </div>
+            </div>
+
+            ${viaInfo ? `<div class="route-via"><i class="fas fa-route"></i> 途径: ${viaInfo}</div>` : ''}
+
+            <div class="train-bottom">
+              <div class="time-info">
+                <div class="time-label">出发时间</div>
+                <div class="departure-time">${formatTime(train.出发时间)}</div>
+              </div>
+              <div class="platform-info">
+                <div class="platform-label">候车室/检票口</div>
+                <div class="platform-value">${platform}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+
+      // 分页
+      if (totalPages > 1) {
+        html += `
+          <div class="pagination">
+            <button class="page-btn" onclick="changePage(-1)" ${currentPage <= 1 ? 'disabled' : ''}>
+              <i class="fas fa-chevron-left"></i> 上一页
+            </button>
+            <span class="page-info">
+              第 <span class="page-num">${currentPage}</span> / ${totalPages} 页
+            </span>
+            <button class="page-btn" onclick="changePage(1)" ${currentPage >= totalPages ? 'disabled' : ''}>
+              下一页 <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        `;
+      }
+
+      content.innerHTML = html;
+    }
+
+    function formatTime(datetime) {
+      if (!datetime) return '--:--';
+      const time = datetime.split(' ')[1] || datetime;
+      return time.substring(0, 5);
+    }
+
+    function updateStats(data) {
+      document.getElementById('statsBar').style.display = 'flex';
+      document.getElementById('totalCount').textContent = data.总车次;
+      document.getElementById('currentPage').textContent = data.当前页码;
+      document.getElementById('totalPages').textContent = data.总页数;
+    }
+
+    function changePage(delta) {
+      const newPage = currentPage + delta;
+      if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        fetchTrains();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function saveToCache() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        station: currentStation,
+        page: currentPage,
+        savedAt: Date.now()
+      }));
+    }
+
+    function loadFromCache() {
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          const data = JSON.parse(cached);
+          // 缓存超过6小时清除
+          if (Date.now() - data.savedAt < 6 * 60 * 60 * 1000) {
+            selectStation(data.station);
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 初始化
+    // 默认查询济南
+    selectStation('济南');
+    loadFromCache();
+  </script>
+</body>
+</html>
