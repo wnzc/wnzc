@@ -77,7 +77,10 @@
       player.style.display = 'none';
       player.src = `${API}?type=mp4&id=${currentCat}&index=${videoIndex}`;
       player.load();
-      player.oncanplay = () => player.style.display = 'block';
+      player.oncanplay = () => {
+        player.style.display = 'block';
+        player.play().catch(() => {});
+      };
       player.onerror = () => showToast('视频加载失败');
     }
 

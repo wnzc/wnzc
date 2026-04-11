@@ -529,28 +529,35 @@
       const item = currentImages[index];
       if (!item) return;
 
-      const isVideo = currentScreen === 2;
-      const isVideoItem = item.url && item.url.includes('.mp4');
+      // 优先检查是否是视频文件
+      const isVideoFile = item.url && (item.url.includes('.mp4') || item.url.includes('.webm') || item.url.includes('.mov'));
       
-      if (isVideoItem) {
-        // 显示视频
+      // 如果是视频类型或者url是视频文件，显示视频
+      if (currentScreen === 2 || isVideoFile) {
         previewImg.style.display = 'none';
         previewVideo.style.display = 'block';
         previewVideo.src = item.url;
         previewVideo.poster = item.cover || '';
-        previewDownload.innerHTML = '⬇️ 下载';
+        previewVideo.muted = false;
+        previewVideo.playsInline = true;
+        previewDownload.innerHTML = '⬇️ 下载视频';
+        // 显示后自动播放
+        previewVideo.oncanplay = () => {
+          previewVideo.play().catch(() => {});
+        };
       } else {
         // 显示图片
-        previewImg.style.display = 'block';
+        previewVideo.pause();
         previewVideo.style.display = 'none';
         previewVideo.src = '';
+        previewImg.style.display = 'block';
         previewImg.src = item.url;
-        previewDownload.innerHTML = '⬇️ 下载';
+        previewDownload.innerHTML = '⬇️ 保存图片';
       }
 
       previewInfo.innerHTML = `
-        <span>📐 ${item.width}×${item.height}</span>
-        <span>📦 ${(item.size / 1024).toFixed(1)} KB</span>
+        <span>📐 ${item.width || '?'}×${item.height || '?'}</span>
+        <span>📦 ${item.size ? (item.size / 1024).toFixed(1) + ' KB' : '未知'}</span>
         <span>🏷️ ${item.tag || ''}</span>
       `;
       previewModal.classList.add('show');

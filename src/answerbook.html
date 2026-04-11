@@ -16,7 +16,7 @@
     body {
       font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
-      background: linear-gradient(135deg, #2c1810 0%, #4a2c2a 50%, #1a1a2e 100%);
+      background: linear-gradient(135deg, #0a0a1a 0%, #1a0a2e 50%, #0a1a3a 100%);
       color: #fff;
       display: flex;
       align-items: center;
@@ -24,6 +24,100 @@
       overflow-x: hidden;
     }
 
+    /* 彩虹极光 */
+    .aurora {
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: 
+        radial-gradient(ellipse at 20% 50%, rgba(255, 0, 128, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(0, 255, 255, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 40% 80%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 60%, rgba(255, 107, 0, 0.08) 0%, transparent 50%);
+      animation: auroraMove 15s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes auroraMove {
+      0%, 100% { 
+        transform: translate(0, 0) rotate(0deg) scale(1);
+        filter: hue-rotate(0deg);
+      }
+      25% { 
+        transform: translate(2%, 1%) rotate(2deg) scale(1.05);
+        filter: hue-rotate(30deg);
+      }
+      50% { 
+        transform: translate(-1%, 2%) rotate(-1deg) scale(1.1);
+        filter: hue-rotate(60deg);
+      }
+      75% { 
+        transform: translate(1%, -1%) rotate(1deg) scale(1.05);
+        filter: hue-rotate(90deg);
+      }
+    }
+
+    /* 星光闪烁 */
+    .stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      animation: twinkle 2s infinite;
+    }
+
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.2; transform: scale(0.5); filter: blur(1px); }
+      50% { opacity: 1; transform: scale(1.8); filter: blur(0px); box-shadow: 0 0 15px currentColor, 0 0 30px currentColor; }
+    }
+
+    /* 流星雨 */
+    .meteor {
+      position: fixed;
+      width: 2px;
+      height: 80px;
+      background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+      animation: meteor 3s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes meteor {
+      0% { transform: translateY(-100px) rotate(30deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(100vh) rotate(30deg); opacity: 0; }
+    }
+
+    /* 浮动光球 */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(1px);
+      animation: orbFloat 8s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+      25% { transform: translate(30px, -30px) scale(1.2); opacity: 0.5; }
+      50% { transform: translate(-20px, -50px) scale(0.8); opacity: 0.4; }
+      75% { transform: translate(40px, -20px) scale(1.1); opacity: 0.5; }
+    }
+
+    /* 粒子容器 */
     .particles {
       position: fixed;
       top: 0;
@@ -37,18 +131,31 @@
 
     .particle {
       position: absolute;
-      width: 4px;
-      height: 4px;
-      background: rgba(255, 215, 0, 0.6);
       border-radius: 50%;
       animation: float 8s infinite;
     }
 
     @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0; }
+      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); opacity: 0; }
       10% { opacity: 1; }
+      50% { transform: translateY(-50vh) rotate(360deg) scale(1.5); }
       90% { opacity: 1; }
-      100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+      100% { transform: translateY(-100vh) rotate(720deg) scale(1); opacity: 0; }
+    }
+
+    /* 能量光环 */
+    .energy-ring {
+      position: fixed;
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      border-radius: 50%;
+      animation: ringPulse 4s ease-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes ringPulse {
+      0% { transform: scale(0.5); opacity: 0.8; }
+      100% { transform: scale(3); opacity: 0; }
     }
 
     .container {
@@ -57,6 +164,7 @@
       width: 100%;
       max-width: 400px;
       padding: 20px;
+      perspective: 1500px;
     }
 
     .back-btn {
@@ -87,27 +195,61 @@
 
     /* 封面状态 */
     .book-cover {
-      background: linear-gradient(145deg, #8B4513 0%, #654321 50%, #4a3728 100%);
-      border-radius: 16px;
+      background: linear-gradient(145deg, #1a0a2e 0%, #2d1b4e 50%, #1a1a3e 100%);
+      border-radius: 20px;
       padding: 60px 40px;
       text-align: center;
       box-shadow: 
-        0 0 0 3px #3d2817,
-        0 0 0 6px #2a1a0f,
+        0 0 0 2px rgba(255, 215, 0, 0.3),
+        0 0 0 4px rgba(138, 43, 226, 0.2),
         0 20px 60px rgba(0,0,0,0.5),
-        inset 0 0 40px rgba(0,0,0,0.3);
+        0 0 100px rgba(138, 43, 226, 0.3),
+        0 0 200px rgba(255, 0, 128, 0.2),
+        inset 0 0 60px rgba(138, 43, 226, 0.1);
       cursor: pointer;
-      transition: all 0.5s ease;
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       position: relative;
+      animation: bookFloat 4s ease-in-out infinite, bookGlow 3s ease-in-out infinite;
+      transform-style: preserve-3d;
+    }
+
+    @keyframes bookFloat {
+      0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+      25% { transform: translateY(-8px) rotateX(2deg) rotateY(-2deg); }
+      50% { transform: translateY(-15px) rotateX(0deg) rotateY(0deg); }
+      75% { transform: translateY(-8px) rotateX(-2deg) rotateY(2deg); }
+    }
+
+    @keyframes bookGlow {
+      0%, 100% { 
+        box-shadow: 
+          0 0 0 2px rgba(255, 215, 0, 0.3),
+          0 0 0 4px rgba(138, 43, 226, 0.2),
+          0 20px 60px rgba(0,0,0,0.5),
+          0 0 100px rgba(138, 43, 226, 0.3),
+          0 0 200px rgba(255, 0, 128, 0.2),
+          inset 0 0 60px rgba(138, 43, 226, 0.1);
+      }
+      50% { 
+        box-shadow: 
+          0 0 0 2px rgba(255, 215, 0, 0.5),
+          0 0 0 4px rgba(138, 43, 226, 0.4),
+          0 20px 60px rgba(0,0,0,0.5),
+          0 0 150px rgba(138, 43, 226, 0.5),
+          0 0 300px rgba(255, 0, 128, 0.3),
+          inset 0 0 80px rgba(138, 43, 226, 0.2);
+      }
     }
 
     .book-cover:hover {
-      transform: scale(1.02);
+      transform: scale(1.08) rotateX(8deg) rotateY(-5deg) translateY(-10px);
       box-shadow: 
-        0 0 0 3px #3d2817,
-        0 0 0 6px #2a1a0f,
-        0 25px 70px rgba(0,0,0,0.6),
-        inset 0 0 40px rgba(0,0,0,0.3);
+        0 0 0 2px rgba(255, 215, 0, 0.6),
+        0 0 0 4px rgba(0, 255, 255, 0.3),
+        0 40px 100px rgba(0,0,0,0.6),
+        0 0 200px rgba(138, 43, 226, 0.6),
+        0 0 400px rgba(255, 0, 128, 0.4),
+        inset 0 0 100px rgba(138, 43, 226, 0.2);
     }
 
     .book-cover::before {
@@ -116,65 +258,160 @@
       left: 0;
       top: 20px;
       bottom: 20px;
-      width: 20px;
-      background: linear-gradient(90deg, #2a1a0f, #3d2817, #2a1a0f);
+      width: 25px;
+      background: linear-gradient(90deg, #1a0a2e, #2d1b4e, #1a0a2e);
       border-radius: 4px 0 0 4px;
     }
 
-    .cover-icon {
-      font-size: 80px;
-      margin-bottom: 20px;
-      animation: pulse 2s infinite;
+    .book-cover::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 60%);
+      transform: translate(-50%, -50%);
+      animation: coverAura 3s ease-in-out infinite;
+      pointer-events: none;
     }
 
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+    @keyframes coverAura {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+      50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+    }
+
+    .cover-icon {
+      font-size: 90px;
+      margin-bottom: 25px;
+      animation: iconPulse 2s infinite, iconFloat 3s ease-in-out infinite, iconRotate 6s linear infinite;
+      filter: drop-shadow(0 0 30px rgba(255, 215, 0, 1)) drop-shadow(0 0 60px rgba(255, 0, 128, 0.8));
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 30px rgba(255, 215, 0, 1)) drop-shadow(0 0 60px rgba(255, 0, 128, 0.8)); }
+      50% { transform: scale(1.2); filter: drop-shadow(0 0 50px rgba(255, 215, 0, 1.5)) drop-shadow(0 0 100px rgba(255, 0, 128, 1)); }
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50% { transform: translateY(-15px) rotate(5deg); }
+    }
+
+    @keyframes iconRotate {
+      0% { filter: hue-rotate(0deg) drop-shadow(0 0 30px rgba(255, 215, 0, 1)); }
+      50% { filter: hue-rotate(180deg) drop-shadow(0 0 50px rgba(255, 0, 128, 1)); }
+      100% { filter: hue-rotate(360deg) drop-shadow(0 0 30px rgba(255, 215, 0, 1)); }
     }
 
     .cover-title {
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 700;
-      color: #ffd700;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-      margin-bottom: 12px;
-      letter-spacing: 4px;
+      background: linear-gradient(135deg, #ffd700, #ff6b6b, #ffd700);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      margin-bottom: 15px;
+      letter-spacing: 6px;
+      animation: titleShine 3s ease-in-out infinite;
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes titleShine {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
 
     .cover-subtitle {
       font-size: 14px;
-      color: rgba(255,215,0,0.7);
-      letter-spacing: 6px;
-      margin-bottom: 30px;
+      color: rgba(255,215,0,0.8);
+      letter-spacing: 8px;
+      margin-bottom: 35px;
+      animation: subtitlePulse 2s infinite;
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes subtitlePulse {
+      0%, 100% { opacity: 0.6; letter-spacing: 8px; }
+      50% { opacity: 1; letter-spacing: 10px; }
     }
 
     .cover-hint {
-      font-size: 14px;
-      color: rgba(255,215,0,0.5);
-      animation: bounce 2s infinite;
+      font-size: 15px;
+      color: rgba(138, 43, 226, 0.9);
+      animation: hintBounce 1.5s infinite, hintGlow 2s infinite;
+      position: relative;
+      z-index: 1;
     }
 
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+    @keyframes hintBounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.05); }
+    }
+
+    @keyframes hintGlow {
+      0%, 100% { text-shadow: 0 0 10px rgba(138, 43, 226, 0.5); }
+      50% { text-shadow: 0 0 30px rgba(138, 43, 226, 1), 0 0 50px rgba(255, 0, 128, 0.5); }
+    }
+
+    /* 魔法粒子效果 */
+    .magic-particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: magicFloat 3s ease-out infinite;
+    }
+
+    @keyframes magicFloat {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-100px) scale(0) rotate(360deg); opacity: 0; }
     }
 
     /* 书页内容 */
     .book-content {
       display: none;
+      perspective: 1500px;
     }
 
     .book-content.show {
       display: block;
+      animation: pageOpen 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes pageOpen {
+      0% { 
+        transform: rotateY(-90deg) scale(0.8);
+        opacity: 0;
+        filter: blur(20px);
+      }
+      100% { 
+        transform: rotateY(0deg) scale(1);
+        opacity: 1;
+        filter: blur(0);
+      }
     }
 
     .book-page {
-      background: linear-gradient(145deg, #f5f0e6 0%, #e8e0d0 100%);
-      border-radius: 16px;
-      padding: 40px 30px;
-      color: #333;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      background: linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+      border-radius: 20px;
+      padding: 45px 35px;
+      color: #fff;
+      box-shadow: 
+        0 30px 80px rgba(0,0,0,0.6),
+        0 0 0 2px rgba(138, 43, 226, 0.3),
+        0 0 50px rgba(138, 43, 226, 0.2),
+        inset 0 0 80px rgba(138, 43, 226, 0.1);
       position: relative;
+      overflow: hidden;
+      transform-style: preserve-3d;
     }
 
     .book-page::before {
@@ -183,9 +420,9 @@
       right: 0;
       top: 20px;
       bottom: 20px;
-      width: 30px;
-      background: linear-gradient(90deg, rgba(0,0,0,0.05), transparent);
-      border-radius: 0 16px 16px 0;
+      width: 40px;
+      background: linear-gradient(90deg, rgba(138, 43, 226, 0.1), transparent);
+      border-radius: 0 20px 20px 0;
     }
 
     .book-page::after {
@@ -195,78 +432,135 @@
       top: 20px;
       bottom: 20px;
       width: 3px;
-      background: linear-gradient(180deg, #8B4513, #654321, #8B4513);
+      background: linear-gradient(180deg, #ffd700, #ff6b6b, #ffd700);
+    }
+
+    .book-page::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(138, 43, 226, 0.05) 0%, transparent 50%);
+      animation: pageShine 5s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pageShine {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .page-header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 35px;
+      position: relative;
+      z-index: 1;
     }
 
     .page-title {
-      font-size: 24px;
-      color: #8B4513;
-      margin-bottom: 8px;
+      font-size: 26px;
+      background: linear-gradient(135deg, #ffd700, #ff6b6b, #ffd700);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+      animation: titleShine 3s ease-in-out infinite;
     }
 
     .page-subtitle {
-      font-size: 12px;
-      color: #999;
-      letter-spacing: 2px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      letter-spacing: 3px;
+      animation: subtitleFade 3s ease-in-out infinite;
+    }
+
+    @keyframes subtitleFade {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
     }
 
     .question-input {
       width: 100%;
-      padding: 16px;
+      padding: 18px;
       font-size: 16px;
       font-family: inherit;
-      background: rgba(0,0,0,0.05);
-      border: 2px solid transparent;
-      border-radius: 12px;
-      color: #333;
-      margin-bottom: 20px;
-      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(138, 43, 226, 0.3);
+      border-radius: 15px;
+      color: #fff;
+      margin-bottom: 22px;
+      transition: all 0.4s ease;
       resize: none;
       height: 100px;
+      position: relative;
+      z-index: 1;
     }
 
     .question-input:focus {
       outline: none;
-      border-color: #8B4513;
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+      border-color: rgba(138, 43, 226, 0.8);
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 0 4px rgba(138, 43, 226, 0.2), 0 0 30px rgba(138, 43, 226, 0.3);
     }
 
     .question-input::placeholder {
-      color: #aaa;
+      color: rgba(255, 255, 255, 0.4);
     }
 
     .get-answer-btn {
       width: 100%;
-      padding: 16px;
+      padding: 18px;
       font-size: 18px;
       font-weight: 600;
       font-family: inherit;
       color: #fff;
-      background: linear-gradient(145deg, #8B4513, #654321);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f64f59 100%);
+      background-size: 200% 200%;
       border: none;
-      border-radius: 12px;
+      border-radius: 15px;
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 6px 20px rgba(139, 69, 19, 0.4);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 8px 25px rgba(118, 75, 162, 0.4);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+      animation: btnGradient 3s ease infinite;
+    }
+
+    @keyframes btnGradient {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .get-answer-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .get-answer-btn:hover::before {
+      left: 100%;
     }
 
     .get-answer-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(139, 69, 19, 0.5);
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 12px 35px rgba(118, 75, 162, 0.5), 0 0 50px rgba(118, 75, 162, 0.3);
     }
 
     .get-answer-btn:active {
-      transform: translateY(0);
+      transform: translateY(0) scale(0.98);
     }
 
     .get-answer-btn:disabled {
@@ -280,163 +574,233 @@
       display: none;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
-      padding: 40px 0;
+      gap: 20px;
+      padding: 50px 0;
+      position: relative;
+      z-index: 1;
     }
 
     .loading.show {
       display: flex;
+      animation: loadingAppear 0.5s ease forwards;
+    }
+
+    @keyframes loadingAppear {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
     }
 
     .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(139, 69, 19, 0.2);
-      border-top-color: #8B4513;
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(138, 43, 226, 0.2);
+      border-top-color: #ffd700;
+      border-right-color: #ff6b6b;
+      border-bottom-color: #667eea;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
+      animation: spin 1s linear infinite, spinnerColor 2s linear infinite;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
+    @keyframes spinnerColor {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+
     .loading-text {
-      font-size: 16px;
-      color: #8B4513;
+      font-size: 18px;
+      color: rgba(255, 215, 0, 0.9);
+      animation: loadingPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes loadingPulse {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
     }
 
     /* 答案展示 */
     .answer-display {
       display: none;
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
 
     .answer-display.show {
       display: block;
-      animation: fadeIn 0.6s ease;
+      animation: answerReveal 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes answerReveal {
+      0% { opacity: 0; transform: scale(0.3) rotateY(120deg) translateZ(-100px); filter: blur(30px); }
+      40% { opacity: 0.5; transform: scale(1.1) rotateY(30deg) translateZ(50px); filter: blur(10px); }
+      70% { opacity: 0.8; transform: scale(0.95) rotateY(-10deg) translateZ(20px); filter: blur(3px); }
+      100% { opacity: 1; transform: scale(1) rotateY(0deg) translateZ(0); filter: blur(0); }
     }
 
     .answer-label {
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 16px;
-      letter-spacing: 3px;
+      font-size: 14px;
+      color: rgba(255, 215, 0, 0.8);
+      margin-bottom: 20px;
+      letter-spacing: 5px;
+      animation: labelGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes labelGlow {
+      0%, 100% { text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+      50% { text-shadow: 0 0 25px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 0, 128, 0.4); }
     }
 
     .answer-text {
-      font-size: 28px;
+      font-size: 30px;
       font-weight: 600;
-      color: #8B4513;
+      background: linear-gradient(135deg, #fff 0%, #ffd700 50%, #ff6b6b 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       line-height: 1.6;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: rgba(139, 69, 19, 0.1);
-      border-radius: 12px;
+      margin-bottom: 35px;
+      padding: 25px;
+      background-color: rgba(138, 43, 226, 0.1);
+      border-radius: 15px;
+      border: 1px solid rgba(138, 43, 226, 0.3);
+      box-shadow: 0 0 40px rgba(138, 43, 226, 0.2);
+      animation: textGlow 2s ease-in-out infinite, textShine 4s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .answer-text::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 50%);
+      animation: answerShine 3s linear infinite;
+    }
+
+    @keyframes answerShine {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes textGlow {
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3)); }
+      50% { filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8)) drop-shadow(0 0 50px rgba(255, 0, 128, 0.5)); }
+    }
+
+    @keyframes textShine {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
     }
 
     .btn-group {
       display: flex;
-      gap: 12px;
+      gap: 15px;
       justify-content: center;
+      animation: btnGroupAppear 0.8s ease 0.5s both;
+    }
+
+    @keyframes btnGroupAppear {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
 
     .replay-btn, .back-cover-btn {
-      padding: 12px 24px;
-      font-size: 14px;
+      padding: 14px 28px;
+      font-size: 15px;
       font-family: inherit;
       border: none;
-      border-radius: 25px;
+      border-radius: 30px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
     }
 
     .replay-btn {
       color: #fff;
-      background: linear-gradient(145deg, #667eea, #764ba2);
+      background: linear-gradient(135deg, #667eea, #764ba2, #f64f59);
+      background-size: 200% 200%;
+      box-shadow: 0 5px 20px rgba(118, 75, 162, 0.4);
+      animation: btnGradient 3s ease infinite;
     }
 
     .replay-btn:hover {
-      transform: scale(1.05);
+      transform: scale(1.1) rotate(2deg);
+      box-shadow: 0 8px 30px rgba(118, 75, 162, 0.6), 0 0 40px rgba(118, 75, 162, 0.3);
     }
 
     .back-cover-btn {
-      color: #8B4513;
-      background: rgba(139, 69, 19, 0.1);
-      border: 2px solid #8B4513;
+      color: #fff;
+      background: transparent;
+      border: 2px solid rgba(138, 43, 226, 0.6);
+      box-shadow: 0 0 20px rgba(138, 43, 226, 0.2);
     }
 
     .back-cover-btn:hover {
-      background: rgba(139, 69, 19, 0.2);
-    }
-
-    /* 翻页动画遮罩 */
-    .page-flip-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #2c1810;
-      z-index: 1000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .page-flip-overlay.show {
-      display: flex;
-      animation: flipOverlay 0.8s ease forwards;
-    }
-
-    @keyframes flipOverlay {
-      0% { clip-path: inset(0 0 0 0); }
-      50% { clip-path: inset(0 50% 0 50%); }
-      100% { clip-path: inset(50% 0 0 0); }
-    }
-
-    .flip-book-icon {
-      font-size: 100px;
-      animation: flipIcon 0.8s ease;
-    }
-
-    @keyframes flipIcon {
-      0% { transform: rotateY(0deg); }
-      50% { transform: rotateY(90deg); }
-      100% { transform: rotateY(0deg); }
-    }
-
-    /* 动画效果 */
-    .flip-out {
-      animation: flipOut 0.4s ease forwards;
-    }
-
-    @keyframes flipOut {
-      0% { transform: scale(1) rotateY(0); opacity: 1; }
-      100% { transform: scale(0.8) rotateY(-30deg); opacity: 0; }
-    }
-
-    .flip-in {
-      animation: flipIn 0.4s ease forwards;
-    }
-
-    @keyframes flipIn {
-      0% { transform: scale(0.8) rotateY(30deg); opacity: 0; }
-      100% { transform: scale(1) rotateY(0); opacity: 1; }
+      background: rgba(138, 43, 226, 0.2);
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(138, 43, 226, 0.4);
     }
 
     .hidden {
       display: none !important;
     }
+
+    /* 粒子爆发动画 */
+    .explosion-particle {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* 打字机效果 */
+    .typing-cursor {
+      display: inline-block;
+      width: 3px;
+      height: 1em;
+      background: #ffd700;
+      margin-left: 2px;
+      animation: cursorBlink 0.8s infinite;
+    }
+
+    @keyframes cursorBlink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    /* 魔法光环 */
+    .magic-circle {
+      position: fixed;
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes magicCircle {
+      0% { transform: scale(0.5) rotate(0deg); opacity: 0.8; }
+      100% { transform: scale(4) rotate(360deg); opacity: 0; }
+    }
   </style>
 </head>
 <body>
+  <div class="aurora"></div>
+  <div class="stars" id="stars"></div>
   <div class="particles" id="particles"></div>
+  <div id="meteors"></div>
+  <div id="orbs"></div>
+  <div id="magicCircles"></div>
 
   <a href="javascript:history.go(-1)" class="back-btn">
     <span>←</span>
@@ -489,24 +853,158 @@
     </div>
   </div>
 
-  <!-- 翻页动画遮罩 -->
-  <div class="page-flip-overlay" id="pageFlipOverlay">
-    <div class="flip-book-icon">📖</div>
-  </div>
-
   <script>
-    // 生成粒子背景
+    // 生成星星背景
+    function createStars() {
+      const container = document.getElementById('stars');
+      const colors = ['#ffd700', '#fff', '#ff6b6b', '#667eea', '#00ffff', '#ff00ff'];
+      for (let i = 0; i < 80; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.animationDelay = Math.random() * 3 + 's';
+        star.style.animationDuration = (Math.random() * 1.5 + 1) + 's';
+        const size = Math.random() * 3 + 2;
+        star.style.width = size + 'px';
+        star.style.height = size + 'px';
+        star.style.color = colors[Math.floor(Math.random() * colors.length)];
+        star.style.background = colors[Math.floor(Math.random() * colors.length)];
+        container.appendChild(star);
+      }
+    }
+
+    // 生成流星雨
+    function createMeteors() {
+      const container = document.getElementById('meteors');
+      setInterval(() => {
+        const meteor = document.createElement('div');
+        meteor.className = 'meteor';
+        meteor.style.left = Math.random() * 100 + '%';
+        meteor.style.animationDuration = (Math.random() * 1 + 2) + 's';
+        const colors = ['#ffd700', '#fff', '#ff6b6b', '#00ffff'];
+        meteor.style.background = `linear-gradient(to bottom, transparent, ${colors[Math.floor(Math.random() * colors.length)]}, transparent)`;
+        container.appendChild(meteor);
+        setTimeout(() => meteor.remove(), 3000);
+      }, 800);
+    }
+
+    // 生成浮动光球
+    function createOrbs() {
+      const container = document.getElementById('orbs');
+      const colors = ['rgba(255, 0, 128, 0.3)', 'rgba(0, 255, 255, 0.2)', 'rgba(138, 43, 226, 0.3)', 'rgba(255, 215, 0, 0.2)'];
+      for (let i = 0; i < 8; i++) {
+        const orb = document.createElement('div');
+        orb.className = 'orb';
+        orb.style.width = (Math.random() * 100 + 50) + 'px';
+        orb.style.height = orb.style.width;
+        orb.style.left = Math.random() * 100 + '%';
+        orb.style.top = Math.random() * 100 + '%';
+        orb.style.background = colors[Math.floor(Math.random() * colors.length)];
+        orb.style.animationDelay = Math.random() * 5 + 's';
+        orb.style.animationDuration = (Math.random() * 4 + 6) + 's';
+        container.appendChild(orb);
+      }
+    }
+
+    // 生成魔法光环
+    function createMagicCircles() {
+      const container = document.getElementById('magicCircles');
+      setInterval(() => {
+        const circle = document.createElement('div');
+        circle.className = 'magic-circle';
+        circle.style.width = (Math.random() * 50 + 30) + 'px';
+        circle.style.height = circle.style.width;
+        circle.style.left = Math.random() * 100 + '%';
+        circle.style.top = Math.random() * 100 + '%';
+        circle.style.borderColor = `rgba(${Math.random() > 0.5 ? '255, 215, 0' : '138, 43, 226'}, 0.3)`;
+        circle.style.animation = 'magicCircle 4s ease-out forwards';
+        container.appendChild(circle);
+        setTimeout(() => circle.remove(), 4000);
+      }, 2000);
+    }
+
+    // 生成炫酷粒子背景
     function createParticles() {
       const container = document.getElementById('particles');
-      for (let i = 0; i < 30; i++) {
+      const colors = ['#ffd700', '#ff6b6b', '#667eea', '#764ba2', '#ff00ff', '#00ffff', '#ff9f43'];
+      
+      for (let i = 0; i < 50; i++) {
         const particle = document.createElement('div');
         particle.className = 'particle';
+        const size = Math.random() * 8 + 4;
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
         particle.style.left = Math.random() * 100 + '%';
-        particle.style.animationDelay = Math.random() * 8 + 's';
-        particle.style.animationDuration = (Math.random() * 4 + 6) + 's';
+        particle.style.top = Math.random() * 100 + 100 + '%';
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.background = `radial-gradient(circle, ${color}, transparent)`;
+        particle.style.boxShadow = `0 0 ${size * 2}px ${color}, 0 0 ${size * 4}px ${color}`;
+        particle.style.animationDelay = Math.random() * 10 + 's';
+        particle.style.animationDuration = (Math.random() * 5 + 7) + 's';
         container.appendChild(particle);
       }
     }
+
+    // 粒子爆发效果
+    function createExplosion(x, y) {
+      const colors = ['#ffd700', '#ff6b6b', '#667eea', '#764ba2', '#00ffff', '#ff00ff', '#fff'];
+      for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'explosion-particle';
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.background = color;
+        particle.style.boxShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
+        const angle = (Math.PI * 2 * i) / 30;
+        const velocity = Math.random() * 200 + 100;
+        const vx = Math.cos(angle) * velocity;
+        const vy = Math.sin(angle) * velocity;
+        document.body.appendChild(particle);
+        
+        let posX = x, posY = y, opacity = 1;
+        const animate = () => {
+          posX += vx * 0.02;
+          posY += vy * 0.02 + 2;
+          opacity -= 0.03;
+          particle.style.left = posX + 'px';
+          particle.style.top = posY + 'px';
+          particle.style.opacity = opacity;
+          if (opacity > 0) {
+            requestAnimationFrame(animate);
+          } else {
+            particle.remove();
+          }
+        };
+        requestAnimationFrame(animate);
+      }
+    }
+
+    // 打字机效果
+    function typeWriter(element, text, speed = 50) {
+      let i = 0;
+      element.innerHTML = '';
+      const cursor = document.createElement('span');
+      cursor.className = 'typing-cursor';
+      
+      function type() {
+        if (i < text.length) {
+          element.innerHTML = text.substring(0, i + 1);
+          element.appendChild(cursor);
+          i++;
+          setTimeout(type, speed + Math.random() * 50);
+        } else {
+          setTimeout(() => cursor.remove(), 1000);
+        }
+      }
+      type();
+    }
+
+    createStars();
+    createMeteors();
+    createOrbs();
+    createMagicCircles();
     createParticles();
 
     const API_KEY = 'ak_4e467bef570aafa08c488b57bd3c54946e25f2b0ff2064a1';
@@ -523,37 +1021,31 @@
     const replayBtn = document.getElementById('replayBtn');
     const backCoverBtn = document.getElementById('backCoverBtn');
     const questionInput = document.getElementById('questionInput');
-    const pageFlipOverlay = document.getElementById('pageFlipOverlay');
 
     // 翻开书
-    function openBook() {
-      bookCover.classList.add('flip-out');
+    function openBook(e) {
+      // 封面点击粒子爆发
+      createExplosion(e.clientX, e.clientY);
       setTimeout(() => {
-        bookCover.classList.add('hidden');
-        bookContent.classList.add('show');
-        bookPage.classList.add('flip-in');
-        setTimeout(() => {
-          bookPage.classList.remove('flip-in');
-          questionInput.focus();
-        }, 400);
-      }, 400);
+        createExplosion(e.clientX + 30, e.clientY - 20);
+      }, 100);
+      setTimeout(() => {
+        createExplosion(e.clientX - 30, e.clientY + 20);
+      }, 200);
+      
+      bookCover.classList.add('hidden');
+      bookContent.classList.add('show');
+      questionInput.focus();
     }
 
     // 合上书
     function closeBook() {
-      pageFlipOverlay.classList.add('show');
-      setTimeout(() => {
-        bookContent.classList.remove('show');
-        bookCover.classList.remove('hidden', 'flip-out');
-        answerDisplay.classList.remove('show');
-        inputSection.style.display = 'block';
-        questionInput.value = '';
-        questionInput.focus();
-        
-        setTimeout(() => {
-          pageFlipOverlay.classList.remove('show');
-        }, 100);
-      }, 400);
+      bookContent.classList.remove('show');
+      bookCover.classList.remove('hidden');
+      answerDisplay.classList.remove('show');
+      inputSection.style.display = 'block';
+      questionInput.value = '';
+      questionInput.focus();
     }
 
     // 获取答案
@@ -570,14 +1062,15 @@
 
         if (result.success && result.data) {
           loading.classList.remove('show');
+          // 粒子爆发动画
+          const rect = loading.getBoundingClientRect();
+          createExplosion(rect.left + rect.width / 2, rect.top + rect.height / 2);
           
-          // 翻页动画效果
-          pageFlipOverlay.classList.add('show');
+          answerDisplay.classList.add('show');
+          // 打字机效果显示答案
           setTimeout(() => {
-            pageFlipOverlay.classList.remove('show');
-            answerText.textContent = result.data.answer;
-            answerDisplay.classList.add('show');
-          }, 400);
+            typeWriter(answerText, result.data.answer, 60);
+          }, 800);
         } else {
           alert('获取答案失败，请重试');
           loading.classList.remove('show');
@@ -593,14 +1086,10 @@
 
     // 再问一次
     function replay() {
-      pageFlipOverlay.classList.add('show');
-      setTimeout(() => {
-        pageFlipOverlay.classList.remove('show');
-        answerDisplay.classList.remove('show');
-        inputSection.style.display = 'block';
-        questionInput.value = '';
-        questionInput.focus();
-      }, 400);
+      answerDisplay.classList.remove('show');
+      inputSection.style.display = 'block';
+      questionInput.value = '';
+      questionInput.focus();
     }
 
     // 事件绑定
