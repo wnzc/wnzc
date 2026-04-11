@@ -16,64 +16,14 @@
     body {
       font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
-      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 25%, #ff9a9e 50%, #fecfef 75%, #e0c3fc 100%);
-      background-size: 400% 400%;
-      animation: gradientShift 15s ease infinite;
-      color: #2d3436;
+      background: linear-gradient(135deg, #f3e8ff 0%, #e8deff 50%, #f0e6ff 100%);
+      color: #1a1a1a;
       overflow-x: hidden;
       position: relative;
     }
 
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* 光晕效果 */
-    .glow-orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 0;
-      animation: orbPulse 8s ease-in-out infinite;
-    }
-
-    .glow-orb:nth-child(1) {
-      width: 400px;
-      height: 400px;
-      background: rgba(255, 154, 158, 0.4);
-      top: -100px;
-      right: -100px;
-    }
-
-    .glow-orb:nth-child(2) {
-      width: 350px;
-      height: 350px;
-      background: rgba(224, 195, 252, 0.4);
-      bottom: -50px;
-      left: -100px;
-      animation-delay: -4s;
-    }
-
-    .glow-orb:nth-child(3) {
-      width: 300px;
-      height: 300px;
-      background: rgba(252, 182, 159, 0.35);
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      animation-delay: -2s;
-    }
-
-    @keyframes orbPulse {
-      0%, 100% { transform: scale(1); opacity: 0.6; }
-      50% { transform: scale(1.15); opacity: 0.8; }
-    }
-
-    /* 粒子装饰 */
-    .particles {
+    /* 背景装饰 */
+    .bg-decoration {
       position: fixed;
       top: 0;
       left: 0;
@@ -84,19 +34,57 @@
       overflow: hidden;
     }
 
-    .particle {
+    .bg-circle {
       position: absolute;
-      width: 8px;
-      height: 8px;
       border-radius: 50%;
-      animation: particleFloat 12s ease-in-out infinite;
+      opacity: 0.5;
     }
 
-    @keyframes particleFloat {
-      0%, 100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.6; }
-      25% { transform: translateY(-30px) translateX(15px) scale(1.2); opacity: 1; }
-      50% { transform: translateY(-15px) translateX(-10px) scale(0.9); opacity: 0.8; }
-      75% { transform: translateY(-40px) translateX(20px) scale(1.1); opacity: 0.9; }
+    .bg-circle:nth-child(1) {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(139, 92, 246, 0.15));
+      top: -100px;
+      right: -50px;
+    }
+
+    .bg-circle:nth-child(2) {
+      width: 250px;
+      height: 250px;
+      background: linear-gradient(135deg, rgba(196, 181, 253, 0.2), rgba(167, 139, 250, 0.12));
+      bottom: 100px;
+      left: -80px;
+    }
+
+    .bg-circle:nth-child(3) {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(135deg, rgba(233, 213, 255, 0.2), rgba(192, 132, 252, 0.12));
+      top: 40%;
+      right: -60px;
+    }
+
+    /* 浮动星星 */
+    .floating-stars {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .floating-star {
+      position: absolute;
+      font-size: 14px;
+      animation: starFloat 6s ease-in-out infinite;
+      opacity: 0.4;
+    }
+
+    @keyframes starFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.4; }
+      50% { transform: translateY(-20px) rotate(15deg); opacity: 0.7; }
     }
 
     .container {
@@ -119,20 +107,20 @@
       padding: 12px 20px;
       font-size: 14px;
       font-family: inherit;
-      color: #fff;
-      background: rgba(45, 52, 54, 0.25);
-      backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #1a1a1a;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #d8b4fe;
       border-radius: 30px;
       cursor: pointer;
       text-decoration: none;
       transition: all 0.3s ease;
       z-index: 100;
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1);
     }
 
     .back-btn:hover {
-      background: rgba(45, 52, 54, 0.4);
+      background: rgba(255, 255, 255, 1);
+      border-color: #a855f7;
       transform: translateX(-3px);
     }
 
@@ -157,24 +145,21 @@
     .header h1 {
       font-size: 28px;
       font-weight: 700;
-      color: #fff;
-      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+      color: #1a1a1a;
       letter-spacing: 3px;
       margin-bottom: 8px;
     }
 
     .header p {
       font-size: 14px;
-      color: rgba(255, 255, 255, 0.85);
-      font-weight: 300;
+      color: #1a1a1a;
+      font-weight: 400;
       letter-spacing: 1px;
     }
 
     /* 选择器 */
     .selector-card {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: #ffffff;
       border-radius: 20px;
       padding: 24px;
       margin-bottom: 20px;
@@ -186,7 +171,7 @@
       align-items: center;
       gap: 8px;
       font-size: 13px;
-      color: #636e72;
+      color: #1a1a1a;
       margin-bottom: 14px;
       font-weight: 500;
       letter-spacing: 0.5px;
@@ -201,10 +186,10 @@
       padding: 16px 20px;
       font-size: 16px;
       font-family: inherit;
-      border: 2px solid rgba(255, 154, 158, 0.3);
+      border: 2px solid #e2e8f0;
       border-radius: 14px;
-      background: #fff;
-      color: #2d3436;
+      background: #ffffff;
+      color: #1a1a1a;
       cursor: pointer;
       appearance: none;
       -webkit-appearance: none;
@@ -212,18 +197,18 @@
     }
 
     .constellation-select:hover {
-      border-color: rgba(255, 154, 158, 0.6);
+      border-color: #667eea;
     }
 
     .constellation-select:focus {
       outline: none;
-      border-color: #ff9a9e;
-      box-shadow: 0 0 0 4px rgba(255, 154, 158, 0.15);
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
     }
 
     .constellation-select option {
-      background: #fff;
-      color: #2d3436;
+      background: #ffffff;
+      color: #1a1a1a;
       padding: 12px;
     }
 
@@ -232,8 +217,9 @@
       right: 16px;
       top: 50%;
       transform: translateY(-50%);
-      color: #ff9a9e;
+      color: #667eea;
       pointer-events: none;
+      font-size: 12px;
     }
 
     /* 加载状态 */
@@ -250,10 +236,9 @@
       width: 56px;
       height: 56px;
       border-radius: 50%;
-      border: 3px solid rgba(255, 154, 158, 0.2);
-      border-top-color: #ff9a9e;
-      border-right-color: #e0c3fc;
-      border-bottom-color: #fcb69f;
+      border: 3px solid #e2e8f0;
+      border-top-color: #667eea;
+      border-right-color: #764ba2;
       animation: spin 1s linear infinite;
     }
 
@@ -262,15 +247,13 @@
     }
 
     .loading p {
-      color: #636e72;
+      color: #1a1a1a;
       font-size: 14px;
     }
 
     /* 结果卡片 */
     .result-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: #ffffff;
       border-radius: 24px;
       padding: 28px 24px;
       margin-bottom: 20px;
@@ -287,7 +270,7 @@
     .card-header {
       text-align: center;
       padding-bottom: 24px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      border-bottom: 1px solid #f0f0f0;
       margin-bottom: 24px;
     }
 
@@ -306,7 +289,7 @@
     .constellation-name {
       font-size: 30px;
       font-weight: 700;
-      color: #2d3436;
+      color: #1a1a1a;
       margin-bottom: 12px;
       letter-spacing: 2px;
     }
@@ -315,33 +298,27 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: linear-gradient(135deg, #ffecd2, #fcb69f);
-      color: #d35400;
+      background: #f0f6ff;
+      color: #667eea;
       padding: 8px 18px;
       border-radius: 20px;
       font-size: 14px;
       font-weight: 500;
+      border: 1px solid #e2e8f0;
     }
 
     /* 整体运势 */
     .overall-section {
       text-align: center;
       padding: 28px 20px;
-      background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ff9a9e 100%);
-      background-size: 200% 200%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
       border-radius: 18px;
       margin-bottom: 22px;
-      animation: gradientBg 6s ease infinite;
-    }
-
-    @keyframes gradientBg {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
     }
 
     .overall-label {
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.85);
+      color: rgba(255, 255, 255, 0.9);
       text-transform: uppercase;
       letter-spacing: 2px;
       margin-bottom: 14px;
@@ -351,9 +328,8 @@
     .overall-text {
       font-size: 15px;
       line-height: 1.9;
-      color: #fff;
+      color: #ffffff;
       margin-bottom: 16px;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
     .stars-row {
@@ -368,13 +344,13 @@
     }
 
     .star.active {
-      color: #fff;
+      color: #ffd700;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
       animation: starPop 0.4s ease backwards;
     }
 
     .star.inactive {
-      color: rgba(255, 255, 255, 0.35);
+      color: rgba(255, 255, 255, 0.4);
     }
 
     @keyframes starPop {
@@ -400,9 +376,9 @@
     }
 
     .section-item:hover {
-      background: #fff;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+      background: #f0f4ff;
       transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.1);
     }
 
     .section-icon {
@@ -412,21 +388,22 @@
 
     .section-label {
       font-size: 11px;
-      color: #b2bec3;
+      color: #667eea;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 6px;
+      font-weight: 600;
     }
 
     .section-value {
       font-size: 13px;
-      color: #2d3436;
+      color: #1a1a1a;
       font-weight: 500;
     }
 
     /* 幸运提示 */
     .luck-card {
-      background: linear-gradient(135deg, #e0c3fc, #8ec5fc);
+      background: linear-gradient(135deg, #ff9f43, #feca57);
       border-radius: 18px;
       padding: 22px;
       margin-bottom: 22px;
@@ -442,7 +419,7 @@
 
     .luck-title {
       font-size: 15px;
-      color: #fff;
+      color: #ffffff;
       font-weight: 600;
       letter-spacing: 1px;
     }
@@ -458,8 +435,6 @@
       border-radius: 14px;
       padding: 16px 10px;
       text-align: center;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
       transition: transform 0.3s ease;
     }
 
@@ -474,13 +449,13 @@
 
     .luck-label {
       font-size: 11px;
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.9);
       margin-bottom: 6px;
     }
 
     .luck-value {
       font-size: 14px;
-      color: #fff;
+      color: #ffffff;
       font-weight: 600;
     }
 
@@ -494,8 +469,7 @@
     }
 
     .detail-section:hover {
-      background: #fff;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+      background: #f0f4ff;
     }
 
     .detail-header {
@@ -511,20 +485,20 @@
 
     .detail-title {
       font-size: 15px;
-      color: #2d3436;
+      color: #667eea;
       font-weight: 600;
     }
 
     .detail-text {
       font-size: 14px;
       line-height: 1.85;
-      color: #636e72;
+      color: #1a1a1a;
       padding-left: 36px;
     }
 
     /* 关键词 */
     .keyword-card {
-      background: linear-gradient(135deg, #fcb69f, #ff9a9e);
+      background: linear-gradient(135deg, #00d9ff, #0099cc);
       border-radius: 16px;
       padding: 20px;
       text-align: center;
@@ -533,7 +507,7 @@
 
     .keyword-label {
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.85);
+      color: rgba(255, 255, 255, 0.9);
       margin-bottom: 10px;
       letter-spacing: 1px;
     }
@@ -541,15 +515,13 @@
     .keyword-text {
       font-size: 20px;
       font-weight: 700;
-      color: #fff;
+      color: #ffffff;
       letter-spacing: 3px;
     }
 
     /* 提示卡片 */
     .tip-card {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: #ffffff;
       border-radius: 20px;
       padding: 40px 24px;
       text-align: center;
@@ -563,28 +535,28 @@
 
     .tip-text {
       font-size: 16px;
-      color: #2d3436;
+      color: #1a1a1a;
       margin-bottom: 8px;
       font-weight: 500;
     }
 
     .tip-hint {
       font-size: 13px;
-      color: #b2bec3;
+      color: #1a1a1a;
     }
 
     /* 页脚 */
     .footer {
       text-align: center;
       padding: 30px 0;
-      color: rgba(255, 255, 255, 0.8);
+      color: #1a1a1a;
       font-size: 13px;
       letter-spacing: 1px;
     }
 
     /* 错误 */
     .error-card {
-      background: rgba(255, 255, 255, 0.95);
+      background: #ffffff;
       border-radius: 20px;
       padding: 40px 24px;
       text-align: center;
@@ -598,7 +570,7 @@
 
     .error-text {
       font-size: 15px;
-      color: #636e72;
+      color: #1a1a1a;
     }
 
     /* 响应式 */
@@ -613,13 +585,15 @@
   </style>
 </head>
 <body>
-  <!-- 背景光晕 -->
-  <div class="glow-orb"></div>
-  <div class="glow-orb"></div>
-  <div class="glow-orb"></div>
+  <!-- 背景装饰 -->
+  <div class="bg-decoration">
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+    <div class="bg-circle"></div>
+  </div>
 
-  <!-- 粒子 -->
-  <div class="particles" id="particles"></div>
+  <!-- 浮动星星 -->
+  <div class="floating-stars" id="floatingStars"></div>
 
   <a href="javascript:history.go(-1)" class="back-btn">
     <span>←</span>
@@ -679,24 +653,22 @@
       '射手座': '♐', '摩羯座': '♑', '水瓶座': '♒', '双鱼座': '♓'
     };
 
-    // 生成粒子
-    function createParticles() {
-      const container = document.getElementById('particles');
-      const colors = ['#ffecd2', '#fcb69f', '#ff9a9e', '#fecfef', '#e0c3fc', '#8ec5fc'];
+    // 生成浮动星星
+    function createFloatingStars() {
+      const container = document.getElementById('floatingStars');
+      const stars = ['⭐', '✨', '🌟', '💫'];
       for (let i = 0; i < 15; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.top = Math.random() * 100 + '%';
-        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-        particle.style.animationDelay = Math.random() * 6 + 's';
-        particle.style.animationDuration = (Math.random() * 4 + 10) + 's';
-        particle.style.width = (Math.random() * 6 + 4) + 'px';
-        particle.style.height = particle.style.width;
-        container.appendChild(particle);
+        const star = document.createElement('div');
+        star.className = 'floating-star';
+        star.textContent = stars[Math.floor(Math.random() * stars.length)];
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        star.style.animationDelay = Math.random() * 3 + 's';
+        star.style.animationDuration = (Math.random() * 2 + 5) + 's';
+        container.appendChild(star);
       }
     }
-    createParticles();
+    createFloatingStars();
 
     const STORAGE_KEY = 'selected_constellation';
     const CACHE_KEY = 'fortune_cache';
@@ -786,11 +758,10 @@
 
     function renderFortune(data, isCached = false) {
       const icon = constellationIcons[data.constellation] || '✨';
-      const cacheTip = isCached ? '<span style="font-size:10px;margin-left:8px;color:#b2bec3;">(缓存)</span>' : '';
-      const totalStars = 5;
+      const cacheTip = isCached ? '<span style="font-size:10px;margin-left:8px;color:#999;">(缓存)</span>' : '';
 
       let starsHtml = '';
-      for (let i = 1; i <= totalStars; i++) {
+      for (let i = 1; i <= 5; i++) {
         const isActive = i <= parseInt(data.overall_stars);
         starsHtml += `<span class="star ${isActive ? 'active' : 'inactive'}" style="animation-delay: ${(i-1) * 0.1}s">${isActive ? '★' : '☆'}</span>`;
       }
