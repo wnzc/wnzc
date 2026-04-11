@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- 紫色渐变背景圆 -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="120" fill="url(#bg)"/>
+  <!-- 爱心 -->
+  <path d="M128 180 C128 180, 60 130, 60 90 C60 60, 90 40, 110 60 C120 72, 128 85, 128 85 C128 85, 136 72, 146 60 C166 40, 196 60, 196 90 C196 130, 128 180, 128 180 Z" fill="white"/>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- 红色背景圆 -->
+  <circle cx="128" cy="128" r="120" fill="#E4002B"/>
+  <!-- 白色K字母 -->
+  <text x="128" y="165" font-family="Arial Black, sans-serif" font-size="130" font-weight="bold" fill="white" text-anchor="middle">K</text>
+</svg>

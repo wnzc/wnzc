@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>KFC疯狂星期四文案</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #ff4500 0%, #ff6b35 50%, #ff8c00 100%);
+      display: flex;
+      flex-direction: column;
+      color: #ffffff;
+    }
+
+    /* 头部 */
+    .header {
+      text-align: center;
+      padding: 30px 20px 20px;
+    }
+
+    .logo {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+      letter-spacing: 2px;
+    }
+
+    /* 内容区域 */
+    .content {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .text-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 30px 25px;
+      margin-bottom: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .text-content {
+      flex: 1;
+      font-size: 18px;
+      line-height: 2;
+      color: #333333;
+      word-break: break-all;
+      text-align: justify;
+    }
+
+    .copy-btn {
+      margin-top: 20px;
+      padding: 14px;
+      background: linear-gradient(135deg, #ff4500, #ff6b35);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .copy-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 69, 0, 0.4);
+    }
+
+    .copy-btn:active {
+      transform: translateY(0);
+    }
+
+    .copy-btn.copied {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    /* 底部生成按钮 */
+    .footer {
+      padding: 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #ffffff, #f0f0f0);
+      color: #ff4500;
+      border: none;
+      border-radius: 16px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    .generate-btn:active {
+      transform: translateY(0);
+    }
+
+    .generate-btn.loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
+    .generate-btn i {
+      font-size: 20px;
+    }
+
+    /* 加载动画 */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .loading-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .loading-dots span {
+      width: 8px;
+      height: 8px;
+      background: #ff4500;
+      border-radius: 50%;
+      animation: bounce 1.4s ease-in-out infinite;
+    }
+
+    .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+
+    /* Toast提示 */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #ffffff;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🍗</div>
+    <h1 class="title">疯狂星期四</h1>
+    <p class="subtitle">V我50，分享文案</p>
+  </div>
+
+  <div class="content">
+    <div class="text-card">
+      <div class="text-content" id="textContent">
+        点击下方按钮生成文案
+      </div>
+      <button class="copy-btn" id="copyBtn" onclick="copyText()">
+        <i class="fas fa-copy"></i>
+        <span>复制文案</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="generate-btn" id="generateBtn" onclick="generateText()">
+      <div class="loading" id="loadingIcon" style="display: none;">
+        <div class="loading-dots">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+      <i class="fas fa-magic" id="generateIcon"></i>
+      <span id="generateText">生成新文案</span>
+    </button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API_URL = 'https://apis.uctb.cn/api/v50';
+    let currentText = '';
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function setLoading(loading) {
+      const btn = document.getElementById('generateBtn');
+      const icon = document.getElementById('generateIcon');
+      const text = document.getElementById('generateText');
+      const loadingIcon = document.getElementById('loadingIcon');
+
+      if (loading) {
+        btn.classList.add('loading');
+        icon.style.display = 'none';
+        loadingIcon.style.display = 'flex';
+        text.textContent = '生成中...';
+      } else {
+        btn.classList.remove('loading');
+        icon.style.display = 'inline';
+        loadingIcon.style.display = 'none';
+        text.textContent = '生成新文案';
+      }
+    }
+
+    async function generateText() {
+      setLoading(true);
+      try {
+        const response = await fetch(API_URL);
+        const text = await response.text();
+        currentText = text;
+        document.getElementById('textContent').textContent = text;
+      } catch (error) {
+        console.error('获取文案失败:', error);
+        showToast('获取失败，请重试');
+      }
+      setLoading(false);
+    }
+
+    async function copyText() {
+      if (!currentText) {
+        showToast('请先生成文案');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(currentText);
+        const btn = document.getElementById('copyBtn');
+        btn.classList.add('copied');
+        btn.innerHTML = '<i class="fas fa-check"></i><span>已复制</span>';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<i class="fas fa-copy"></i><span>复制文案</span>';
+        }, 2000);
+      } catch (error) {
+        showToast('复制失败，请手动选择复制');
+      }
+    }
+
+    // 首次加载自动生成
+    generateText();
+  </script>
+</body>
+</html>
