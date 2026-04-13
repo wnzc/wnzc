@@ -503,7 +503,7 @@
         const itemClass = isVideoType ? 'is-video' : '';
         return `
           <div class="image-item ${itemClass} ${isLandscape ? 'landscape' : ''}" data-index="${startIndex + index}">
-            <img src="${src}" alt="" loading="lazy">
+            <img src="${src}" alt="">
             <div class="tag">${img.tag || ''}</div>
           </div>
         `;
