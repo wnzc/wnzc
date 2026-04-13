@@ -498,12 +498,12 @@
       const isVideoType = currentScreen === 2;
       
       const itemsHtml = images.map((img, index) => {
-        const isLandscape = img.width > img.height * 1.5;
+        const isLandscape = img.width && img.height && img.width > img.height * 1.5;
         const src = isVideoType ? img.cover : img.url;
         const itemClass = isVideoType ? 'is-video' : '';
         return `
           <div class="image-item ${itemClass} ${isLandscape ? 'landscape' : ''}" data-index="${startIndex + index}">
-            <img src="${src}" alt="">
+            <img src="${src}" alt="" onerror="this.style.display='none'">
             <div class="tag">${img.tag || ''}</div>
           </div>
         `;
@@ -516,8 +516,7 @@
         // 加载更多时，在loadMore前插入
         const loadMoreEl = document.getElementById('loadMore');
         if (loadMoreEl) {
-          const fragment = document.createRange().createContextualFragment(itemsHtml);
-          imageGrid.insertBefore(fragment, loadMoreEl);
+          loadMoreEl.insertAdjacentHTML('beforebegin', itemsHtml);
         } else {
           imageGrid.innerHTML += itemsHtml;
         }
