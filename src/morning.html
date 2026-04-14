@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>每日早安</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 16px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .main-card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .card-header .sun {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .card-header h1 {
+      font-size: 22px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .card-header .date {
+      font-size: 13px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .content-box {
+      background: linear-gradient(135deg, #f8f4ff 0%, #fff5f5 100%);
+      border-radius: 16px;
+      padding: 24px;
+      min-height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .content-box .quote {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #555;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .content-box .placeholder {
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .get-btn,
+    .copy-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .get-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .get-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    .get-btn:active {
+      transform: translateY(0);
+    }
+
+    .get-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .copy-btn {
+      background: #555;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .copy-btn:hover {
+      background: #666;
+    }
+
+    .copy-btn.hidden {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+      .main-card {
+        padding: 24px 16px;
+      }
+      .card-header h1 {
+        font-size: 18px;
+      }
+      .content-box {
+        padding: 16px;
+        min-height: 120px;
+      }
+      .content-box .quote {
+        font-size: 14px;
+      }
+      .copy-btn {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="javascript:history.go(-1)" class="back-btn">← 返回</a>
+
+    <div class="main-card">
+      <div class="card-header">
+        <div class="sun">🌅</div>
+        <h1>每日早安</h1>
+        <div class="date" id="dateDisplay"></div>
+      </div>
+
+      <div class="content-box">
+        <div class="quote" id="quoteText">
+          <span class="placeholder">点击下方按钮，获取每日励志语录</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="get-btn" id="getBtn" onclick="fetchQuote()">
+          🌸 获取今日励志语
+        </button>
+        <button class="copy-btn hidden" id="copyBtn" onclick="copyText()">
+          📋 复制
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ==================== 接口配置（自行修改） ====================
+    const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+    const API_HEADER = {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq"
+    };
+    const API_BODY = {
+      "model": "glm-4.7-flash",
+      "messages": [
+        {
+          "role": "user",
+          "content": "帮我生成一个每日早安的温暖、理智、激励的短语。字数在80-100字左右。时间是当天的时间，如果中午12点以后请求，返回明天时间的早上，前边的时间日期是固定的格式，直接返回生成的文本，不要返回其他无用的东西，下面是例子：今天是4月14日，星期二，早安。前路漫漫亦灿烂，余生不负心所盼。\n人生没有重来，只有后来，我们最该做的事，就是好好爱自己，爱自己的不完美，爱自己的每一份坚持。"
+        }
+      ],//多位早晨+日期星期+核心观点（对比或短句强化）+行动引//国绕自我感受优先、对抗焦虑、温和前行避免空泛//日常交流语气，不使用生僻词，可适当用短句排比增强节奏//要求正能量、正确价值观,要符合抖音社区规定 
+      "stream": true,
+      "thinking": {
+        "type": "disabled"
+      },
+      "max_tokens": 65536,
+      "temperature": 1.0
+    };
+    // ============================================================
+
+    let currentQuote = '';
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    async function fetchQuote() {
+      if (!API_URL) {
+        showToast('请先在代码中配置 API_URL');
+        return;
+      }
+
+      const btn = document.getElementById('getBtn');
+      const quoteText = document.getElementById('quoteText');
+      const copyBtn = document.getElementById('copyBtn');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ 输出中...';
+      quoteText.textContent = '';
+      copyBtn.classList.add('hidden');
+      currentQuote = '';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: API_HEADER,
+          body: JSON.stringify(API_BODY)
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                copyBtn.classList.remove('hidden');
+                showToast('获取成功');
+                btn.disabled = false;
+                btn.textContent = '🌸 获取今日励志语';
+                return;
+              }
+              try {
+                const json = JSON.parse(data);
+                const content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+                if (content) {
+                  currentQuote += content;
+                  quoteText.textContent = currentQuote;
+                }
+              } catch (e) {}
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        quoteText.innerHTML = '<span class="placeholder">请求失败，请检查接口配置</span>';
+        showToast('请求失败');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🌸 获取今日励志语';
+      }
+    }
+
+    function copyText() {
+      if (!currentQuote) {
+        showToast('暂无内容可复制');
+        return;
+      }
+      navigator.clipboard.writeText(currentQuote).then(() => {
+        showToast('复制成功');
+      }).catch(() => {
+        showToast('复制失败');
+      });
+    }
+  </script>
+</body>
+</html>
