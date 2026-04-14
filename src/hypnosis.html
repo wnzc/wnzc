@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>催眠小故事</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 16px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .main-card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .card-header .icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .card-header h1 {
+      font-size: 22px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .card-header .subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .content-box {
+      background: linear-gradient(135deg, #e8f4f8 0%, #f0f7ff 100%);
+      border-radius: 16px;
+      padding: 24px;
+      min-height: 200px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .content-box .story {
+      font-size: 15px;
+      line-height: 2;
+      color: #444;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .content-box .placeholder {
+      color: #aaa;
+      font-size: 14px;
+      text-align: center;
+      padding: 60px 0;
+    }
+
+    .loading-dots {
+      display: inline-block;
+    }
+
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.5s infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .get-btn,
+    .copy-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .get-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .get-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    .get-btn:active {
+      transform: translateY(0);
+    }
+
+    .get-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .copy-btn {
+      background: #555;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .copy-btn:hover {
+      background: #666;
+    }
+
+    .copy-btn.hidden {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+      .main-card {
+        padding: 24px 16px;
+      }
+      .card-header h1 {
+        font-size: 18px;
+      }
+      .content-box {
+        padding: 16px;
+        min-height: 150px;
+      }
+      .content-box .story {
+        font-size: 14px;
+      }
+      .copy-btn {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="javascript:history.go(-1)" class="back-btn">← 返回</a>
+
+    <div class="main-card">
+      <div class="card-header">
+        <div class="icon">🧚</div>
+        <h1>催眠童话故事</h1>
+        <div class="subtitle" id="dateDisplay"></div>
+      </div>
+
+      <div class="content-box">
+        <div class="story" id="storyText">
+          <span class="placeholder">点击下方按钮，生成催眠小故事<br>帮助您放松身心，进入宁静状态</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="get-btn" id="getBtn" onclick="fetchStory()">
+          🌟 生成催眠故事
+        </button>
+        <button class="copy-btn hidden" id="copyBtn" onclick="copyText()">
+          📋 复制故事
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ==================== 接口配置（自行修改） ====================
+    const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+    const API_HEADER = {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq"
+    };
+    // ============================================================
+
+    let currentStory = '';
+
+    function updateDate() {
+      const now = new Date();
+      const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      document.getElementById('dateDisplay').textContent = 
+        `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${days[now.getDay()]}`;
+    }
+    updateDate();
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function getAPIBody() {
+      const now = new Date();
+      if (now.getHours() < 12) {
+        var dateStr = `${now.getFullYear()}年${String(now.getMonth() + 1).padStart(2, '0')}月${String(now.getDate()).padStart(2, '0')}日`;
+      } else {
+        var tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        var dateStr = `${tomorrow.getFullYear()}年${String(tomorrow.getMonth() + 1).padStart(2, '0')}月${String(tomorrow.getDate()).padStart(2, '0')}日`;
+      }
+      
+      return {
+        "model": "glm-4.7-flash",
+        "messages": [
+          {
+            "role": "system",
+            "content": "你是一位温暖的童话故事讲述者，擅长创作温馨可爱的睡前催眠童话故事。请为用户创作一段催眠童话故事。\n\n**创作要求**：\n1. **开头**：以'在遥远的童话王国里...'或'月亮升起来了，星星们眨着眼睛...'等可爱的童话开篇\n2. **内容**：编写一段温馨的催眠童话故事，大约300-500字，包含：\n   - 可爱的角色（小兔子、小熊、小精灵、云朵宝宝、萤火虫等）\n   - 温馨的场景（月光下的森林、星星花园、棉花糖云朵城堡、梦幻池塘等）\n   - 温暖的剧情（帮助、陪伴、勇气、梦想、友谊等主题）\n   - 缓慢的引导语（深呼吸、闭上眼睛、慢慢入睡等）\n3. **风格**：语言温柔可爱，像妈妈讲故事一样，节奏缓慢轻柔，富有画面感\n4. **格式**：纯文本故事，不需要标题或其他格式标注\n\n**示例**：\n在遥远的童话王国里，住着一只叫小糖豆的小兔子。今晚，月亮姐姐带着星星们出来散步，小糖豆躺在柔软的草地上...\n\n请直接输出故事内容，不要有其他说明。"
+          },
+          {
+            "role": "user", 
+            "content": dateStr
+          }
+        ],
+        "stream": true,
+        "thinking": {
+          "type": "disabled"
+        },
+        "max_tokens": 65536,
+        "temperature": 1.0
+      };
+    }
+
+    async function fetchStory() {
+      if (!API_URL) {
+        showToast('请先在代码中配置 API_URL');
+        return;
+      }
+
+      const btn = document.getElementById('getBtn');
+      const storyText = document.getElementById('storyText');
+      const copyBtn = document.getElementById('copyBtn');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ 创作中...';
+      storyText.innerHTML = '<span class="placeholder"><span class="loading-dots">正在构思故事</span></span>';
+      copyBtn.classList.add('hidden');
+      currentStory = '';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: API_HEADER,
+          body: JSON.stringify(getAPIBody())
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                copyBtn.classList.remove('hidden');
+                showToast('创作完成');
+                btn.disabled = false;
+                btn.textContent = '🌟 重新生成';
+                return;
+              }
+              try {
+                const json = JSON.parse(data);
+                const content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+                if (content) {
+                  currentStory += content;
+                  storyText.textContent = currentStory;
+                }
+              } catch (e) {}
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        storyText.innerHTML = '<span class="placeholder">请求失败，请检查接口配置</span>';
+        showToast('请求失败');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🌟 生成催眠故事';
+      }
+    }
+
+    function copyText() {
+      if (!currentStory) {
+        showToast('暂无内容可复制');
+        return;
+      }
+      navigator.clipboard.writeText(currentStory).then(() => {
+        showToast('复制成功');
+      }).catch(() => {
+        showToast('复制失败');
+      });
+    }
+  </script>
+</body>
+</html>

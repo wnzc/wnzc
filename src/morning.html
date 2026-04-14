@@ -98,7 +98,8 @@
     }
 
     .get-btn,
-    .copy-btn {
+    .copy-btn,
+    .voice-btn {
       width: 100%;
       padding: 16px;
       border: none;
@@ -144,6 +145,58 @@
       pointer-events: none;
     }
 
+    .voice-btn {
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+      box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+    }
+
+    .voice-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+    }
+
+    .voice-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .voice-btn.hidden {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .audio-section {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .audio-section.show {
+      display: block;
+    }
+
+    .audio-section audio {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .download-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 25px;
+      background: #555;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .download-btn:hover {
+      background: #666;
+    }
+
     .toast {
       position: fixed;
       bottom: 30px;
@@ -181,7 +234,8 @@
       .content-box .quote {
         font-size: 14px;
       }
-      .copy-btn {
+      .copy-btn,
+      .voice-btn {
         opacity: 1;
       }
     }
@@ -211,6 +265,16 @@
         <button class="copy-btn hidden" id="copyBtn" onclick="copyText()">
           📋 复制
         </button>
+        <button class="voice-btn hidden" id="voiceBtn" onclick="generateVoice()">
+          🔊 生成语音
+        </button>
+      </div>
+
+      <div class="audio-section" id="audioSection">
+        <audio id="audioEl" controls></audio>
+        <button class="download-btn" id="downloadBtn" onclick="downloadAudio()">
+          ⬇️ 下载音频
+        </button>
       </div>
     </div>
   </div>
@@ -224,30 +288,56 @@
       "Content-Type": "application/json",
       "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq"
     };
-    const API_BODY = {
-      "model": "glm-4.7-flash",
-      "messages": [
-        {
-          "role": "user",
-          "content": "帮我生成一个每日早安的温暖、理智、激励的短语。围绕自我感受优先、对抗焦虑、温和前行避免空泛。日常交流语气，不使用生僻词，可适当用短句排比增强节奏。字数在80-100字左右。时间是当天的时间，如果中午12点以后请求，返回明天时间的早上，前边的时间日期是固定的格式，直接返回生成的文本，不要返回其他无用的东西，下面是例子：今天是4月14日，星期二，早安。前路漫漫亦灿烂，余生不负心所盼。\n人生没有重来，只有后来，我们最该做的事，就是好好爱自己，爱自己的不完美，爱自己的每一份坚持。"
-        }
-      ],//多位早晨+日期星期+核心观点（对比或短句强化）+行动引//围绕自我感受优先、对抗焦虑、温和前行避免空泛//日常交流语气，不使用生僻词，可适当用短句排比增强节奏//要求正能量、正确价值观,要符合抖音社区规定 
-      "stream": true,
-      "thinking": {
-        "type": "disabled"
-      },
-      "max_tokens": 65536,
-      "temperature": 1.0
-    };
     // ============================================================
 
     let currentQuote = '';
+    let currentAudioUrl = '';
+
+    function updateDate() {
+      const now = new Date();
+      const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+      document.getElementById('dateDisplay').textContent = getDatePrefix()
+    }
+    updateDate();
 
     function showToast(msg) {
       const toast = document.getElementById('toast');
       toast.textContent = msg;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function getDatePrefix() {
+      const now = new Date();
+      if (now.getHours() < 12) {
+        return `${now.getFullYear()}年${String(now.getMonth() + 1).padStart(2, '0')}月${String(now.getDate()).padStart(2, '0')}日`;
+      } else {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return `${tomorrow.getFullYear()}年${String(tomorrow.getMonth() + 1).padStart(2, '0')}月${String(tomorrow.getDate()).padStart(2, '0')}日`;
+      }
+    }
+
+    function getAPIBody() {
+      const dateStr = getDatePrefix();
+      return {
+        "model": "glm-4.7-flash",
+        "messages": [
+          {
+            "role": "system",
+            "content": "你是一位专业且温暖的早安文案创作者。请根据用户输入的日期，生成一段早安励志文案。\n\n**格式要求**：\n1. **开头固定**：'今天是[日期]，早安。'（日期格式：4月14日，星期二）\n2. **正文**：紧接着写一段简洁有力的励志话语\n3. **风格**：温暖治愈、积极向上、简短有力\n4. **主题**：自我成长、热爱生活、珍惜当下、勇敢前行等\n5. **长度**：总字数控制在60-80字之间\n6. **语气**：像朋友发微信一样自然，不要太正式\n\n**示例**：\n今天是4月14日，星期二，早安。\n生活有风有雨是常态，但请你相信，雨过天晴后，一定会有更好的风景等着你。做一个内心温暖的人，眼里有光，心中有爱，把每一天都过得热气腾腾。\n\n请直接输出文案，不要有标题或其他说明。"
+          },{
+            "role": "user",
+            "content": dateStr
+          }
+        ],
+        "stream": true,
+        "thinking": {
+          "type": "disabled"
+        },
+        "max_tokens": 65536,
+        "temperature": 1.0
+      };
     }
 
     async function fetchQuote() {
@@ -259,18 +349,22 @@
       const btn = document.getElementById('getBtn');
       const quoteText = document.getElementById('quoteText');
       const copyBtn = document.getElementById('copyBtn');
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioSection = document.getElementById('audioSection');
 
       btn.disabled = true;
-      btn.textContent = '⏳ 输出中...';
+      btn.textContent = '⏳ 思考中...';
       quoteText.textContent = '';
       copyBtn.classList.add('hidden');
+      voiceBtn.classList.add('hidden');
+      audioSection.classList.remove('show');
       currentQuote = '';
 
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
           headers: API_HEADER,
-          body: JSON.stringify(API_BODY)
+          body: JSON.stringify(getAPIBody())
         });
 
         const reader = response.body.getReader();
@@ -288,6 +382,7 @@
               const data = line.slice(6);
               if (data === '[DONE]') {
                 copyBtn.classList.remove('hidden');
+                voiceBtn.classList.remove('hidden');
                 showToast('获取成功');
                 btn.disabled = false;
                 btn.textContent = '🌸 获取今日励志语';
@@ -324,6 +419,83 @@
       }).catch(() => {
         showToast('复制失败');
       });
+    }
+
+    async function generateVoice() {
+      if (!currentQuote) {
+        showToast('暂无内容可生成语音');
+        return;
+      }
+
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioSection = document.getElementById('audioSection');
+      const audioEl = document.getElementById('audioEl');
+
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 生成中...';
+
+      try {
+        const VOICE_API_URLS = [
+        'https://tts.wangwangit.com/v1/audio/speech',
+        'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
+      ];
+
+      let audioBlob = null;
+
+      for (const apiUrl of VOICE_API_URLS) {
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              input: currentQuote,
+              voice: "zh-CN-XiaoqiuNeural",
+              speed: 1.0,
+              pitch: 0,
+              style: "general"
+            })
+          });
+
+          if (response.ok) {
+            audioBlob = await response.blob();
+            console.log(audioBlob)
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+
+      if (!audioBlob) throw new Error('请求失败');
+
+    //   if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+      currentAudioUrl = URL.createObjectURL(audioBlob);
+      audioEl.src = currentAudioUrl;
+      audioSection.classList.add('show');
+      showToast('语音生成成功');
+
+      voiceBtn.disabled = false;
+      voiceBtn.textContent = '🔊 重新生成';
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('语音生成失败');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 生成语音';
+      }
+    }
+
+    function downloadAudio() {
+      if (!currentAudioUrl) {
+        showToast('暂无音频可下载');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = currentAudioUrl;
+      a.download = `morning_${Date.now()}.mp3`;
+      a.click();
+      showToast('开始下载');
     }
   </script>
 </body>
