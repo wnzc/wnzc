@@ -195,43 +195,6 @@
       opacity: 1;
     }
 
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 200;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .loading-overlay.show {
-      display: flex;
-    }
-
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    .loading-text {
-      color: #fff;
-      font-size: 16px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
     @media (max-width: 480px) {
       body {
         padding: 12px;
@@ -293,11 +256,6 @@
 
   <div class="toast" id="toast"></div>
 
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">生成中，请稍候...</div>
-  </div>
-
   <script>
     // ==================== 接口配置（自行修改） ====================
     const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
@@ -322,16 +280,6 @@
       toast.textContent = msg;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2000);
-    }
-
-    function showLoading(text = '生成中，请稍候...') {
-      const overlay = document.getElementById('loadingOverlay');
-      overlay.querySelector('.loading-text').textContent = text;
-      overlay.classList.add('show');
-    }
-
-    function hideLoading() {
-      document.getElementById('loadingOverlay').classList.remove('show');
     }
 
     function getDatePrefix() {
@@ -386,7 +334,6 @@
     //   voiceBtn.classList.add('hidden');
       audioSection.classList.remove('show');
       currentQuote = '';
-      showLoading();
 
       try {
         const response = await fetch(API_URL, {
@@ -425,13 +372,13 @@
           }
         }
       } catch (error) {
+        btn.disabled = false;
+        btn.textContent = '🌸 获取今日励志语';
         console.error('Error:', error);
         quoteText.innerHTML = '<span class="placeholder">请求失败，请检查接口配置</span>';
         showToast('请求失败');
-        hideLoading();
       } finally {
-        btn.disabled = false;
-        btn.textContent = '🌸 获取今日励志语';
+        
       }
     }
 
@@ -453,9 +400,12 @@
         return;
       }
 
+      const btn = document.getElementById('getBtn');
       const audioSection = document.getElementById('audioSection');
       const audioEl = document.getElementById('audioEl');
 
+      btn.disabled = true;
+      btn.textContent = '⏳ 生成中...';
       showToast('⏳ 语音生成中...');
 
       try {
@@ -496,11 +446,13 @@
       currentAudioUrl = URL.createObjectURL(audioBlob);
       audioEl.src = currentAudioUrl;
       audioSection.classList.add('show');
-      hideLoading();
+      btn.disabled = false;
+      btn.textContent = '🌸 获取今日励志语';
       } catch (error) {
         console.error('Error:', error);
         showToast('语音生成失败');
-        hideLoading();
+        btn.disabled = false;
+        btn.textContent = '🌸 获取今日励志语';
       }
     }
 
