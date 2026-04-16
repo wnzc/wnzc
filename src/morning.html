@@ -283,14 +283,17 @@
     }
 
     function getDatePrefix() {
+      const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
       const now = new Date();
+      let targetDate;
       if (now.getHours() < 12) {
-        return `${now.getFullYear()}年${String(now.getMonth() + 1).padStart(2, '0')}月${String(now.getDate()).padStart(2, '0')}日`;
+        targetDate = now;
       } else {
-        const tomorrow = new Date(now);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        return `${tomorrow.getFullYear()}年${String(tomorrow.getMonth() + 1).padStart(2, '0')}月${String(tomorrow.getDate()).padStart(2, '0')}日`;
+        targetDate = new Date(now);
+        targetDate.setDate(targetDate.getDate() + 1);
       }
+      const weekday = weekdays[targetDate.getDay()];
+      return `${targetDate.getFullYear()}年${String(targetDate.getMonth() + 1).padStart(2, '0')}月${String(targetDate.getDate()).padStart(2, '0')}日，${weekday}`;
     }
 
     function getAPIBody() {
@@ -300,7 +303,7 @@
         "messages": [
           {
             "role": "system",
-            "content": "你是一位专业且温暖的早安文案创作者。请根据用户输入的日期，生成一段早安励志文案。\n\n**格式要求**：\n1. **开头固定**：'今天是[日期]，早安。'（日期格式：4月14日，星期二）\n2. **正文**：紧接着写一段简洁有力的励志话语\n3. **风格**：温暖治愈、积极向上、简短有力\n4. **主题**：自我成长、热爱生活、珍惜当下、勇敢前行等\n5. **长度**：总字数控制在60-80字之间\n6. **语气**：像朋友发微信一样自然，不要太正式\n\n**示例**：\n今天是4月14日，星期二，早安。\n生活有风有雨是常态，但请你相信，雨过天晴后，一定会有更好的风景等着你。做一个内心温暖的人，眼里有光，心中有爱，把每一天都过得热气腾腾。\n\n请直接输出文案，不要有标题或其他说明。"
+            "content": "你是一位专业且温暖的早安文案创作者。请根据用户输入的日期，生成一段早安励志文案。\n\n**格式要求**：\n1. **开头固定**：'今天是[日期]，早安。'（日期格式：4月14日，星期二。保证日期和星期是对应的，中国时间）\n2. **正文**：紧接着写一段简洁有力的励志话语\n3. **风格**：温暖治愈、积极向上、简短有力\n4. **主题**：自我成长、热爱生活、珍惜当下、勇敢前行等\n5. **长度**：总字数控制在60-80字之间\n6. **语气**：像朋友发微信一样自然，不要太正式\n\n**示例**：\n今天是4月14日，星期二，早安。\n生活有风有雨是常态，但请你相信，雨过天晴后，一定会有更好的风景等着你。做一个内心温暖的人，眼里有光，心中有爱，把每一天都过得热气腾腾。\n\n请直接输出文案，不要有标题或其他说明。"
           },{
             "role": "user",
             "content": dateStr
