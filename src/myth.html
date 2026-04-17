@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>民间故事</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #c9a227;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 16px;
+      padding: 8px 12px;
+      background: rgba(201, 162, 39, 0.1);
+      border: 1px solid rgba(201, 162, 39, 0.3);
+      border-radius: 20px;
+    }
+
+    .main-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .card-header .icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .card-header h1 {
+      font-size: 22px;
+      color: #1a1a2e;
+      font-weight: 600;
+    }
+
+    .card-header .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .content-box {
+      background: linear-gradient(135deg, #faf5eb 0%, #f5f0e6 100%);
+      border: 1px solid #d4c5a9;
+      border-radius: 16px;
+      padding: 24px;
+      min-height: 300px;
+      margin-bottom: 20px;
+    }
+
+    .content-box .story {
+      font-size: 15px;
+      line-height: 2;
+      color: #3d3d3d;
+      white-space: pre-wrap;
+      word-break: break-word;
+      text-align: justify;
+    }
+
+    .content-box .placeholder {
+      color: #999;
+      font-size: 14px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 250px;
+      gap: 12px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .get-btn,
+    .copy-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .get-btn {
+      background: linear-gradient(135deg, #8b4513, #a0522d);
+      box-shadow: 0 4px 15px rgba(139, 69, 19, 0.4);
+    }
+
+    .get-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 69, 19, 0.5);
+    }
+
+    .get-btn:active {
+      transform: translateY(0);
+    }
+
+    .get-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .copy-btn {
+      background: #555;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .copy-btn:hover {
+      background: #666;
+    }
+
+    .copy-btn.hidden,
+    .voice-btn.hidden {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .voice-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #4a4a4a, #5a5a5a);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .voice-btn:hover {
+      background: linear-gradient(135deg, #5a5a5a, #6a6a6a);
+    }
+
+    .voice-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .audio-section {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .audio-section.show {
+      display: block;
+    }
+
+    .audio-section audio {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .download-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 25px;
+      background: #555;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .download-btn:hover {
+      background: #666;
+    }
+
+    .formatted-section {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .formatted-section.show {
+      display: block;
+    }
+
+    .formatted-section .label {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .formatted-box {
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 16px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .formatted-box .line {
+      font-size: 15px;
+      line-height: 1.8;
+      color: #333;
+    }
+
+    .copy-formatted-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 25px;
+      background: #777;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+
+    .copy-formatted-btn:hover {
+      background: #888;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+      .main-card {
+        padding: 24px 16px;
+      }
+      .card-header h1 {
+        font-size: 18px;
+      }
+      .content-box {
+        padding: 16px;
+      }
+      .content-box .story {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="javascript:history.go(-1)" class="back-btn">← 返回</a>
+
+    <div class="main-card">
+      <div class="card-header">
+        <div class="icon">📜</div>
+        <h1>民间故事</h1>
+        <div class="subtitle">神话传说 · 鬼怪奇谈</div>
+      </div>
+
+      <div class="content-box">
+        <div class="story" id="storyText">
+          <div class="placeholder">
+            <span style="font-size: 48px;">🏮</span>
+            <span>点击下方按钮，开启一段尘封的故事</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="get-btn" id="getBtn" onclick="fetchStory()">
+          📖 开启故事
+        </button>
+        <button class="copy-btn hidden" id="copyBtn" onclick="copyText()">
+          📋 复制故事
+        </button>
+        <button class="voice-btn hidden" id="voiceBtn" onclick="generateVoice()">
+          🔊 生成音频
+        </button>
+      </div>
+
+      <div class="audio-section" id="audioSection">
+        <audio id="audioEl" controls></audio>
+        <button class="download-btn" id="downloadBtn" onclick="downloadAudio()">
+          ⬇️ 下载音频
+        </button>
+      </div>
+
+      <div class="formatted-section" id="formattedSection">
+        <div class="label">📝 排版文本</div>
+        <div class="formatted-box" id="formattedBox"></div>
+        <button class="copy-formatted-btn" id="copyFormattedBtn" onclick="copyFormattedText()">
+          📋 复制排版文本
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ==================== 接口配置（自行修改） ====================
+    const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+    const API_HEADER = {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq"
+    };
+    // ============================================================
+
+    let currentStory = '';
+    let currentFormattedText = '';
+    let currentAudioUrl = '';
+    let isRequesting = false;
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    const storyTypes = [
+      '民间神话', '古代鬼怪', '志怪传说', '地方怪谈', '古籍奇闻'
+    ];
+
+    function getRandomType() {
+      return storyTypes[Math.floor(Math.random() * storyTypes.length)];
+    }
+
+    function getSystemPrompt() {
+      const type = getRandomType();
+      return `你是一位精通中国民间故事的讲述者，擅长讲述${type}。
+
+**故事要求**：
+1. **题材**：神话传说、鬼怪故事、民间奇谈皆可，可以是古籍记载的，也可以是民间口口相传的
+2. **风格**：古朴、神秘、有代入感
+3. **内容**：要有起承转合，有悬念，有细节描写
+4. **背景**：可以是山川地理、历史人物、古籍文献等
+5. **字数**：800-1200字左右
+6. **格式**：纯故事正文，不要标题、不要署名，直接开始讲故事
+
+**故事开头示例**：
+- "从前..."
+- "在很久以前..."
+- "据说在..."
+- "古籍记载..."
+
+请直接开始讲述故事，不要有任何前缀说明。`;
+    }
+
+    async function fetchStory() {
+      if (!API_URL) {
+        showToast('请先在代码中配置 API_URL');
+        return;
+      }
+
+      if (isRequesting) {
+        showToast('请求中，请稍候...');
+        return;
+      }
+      isRequesting = true;
+
+      const btn = document.getElementById('getBtn');
+      const storyText = document.getElementById('storyText');
+      const copyBtn = document.getElementById('copyBtn');
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioSection = document.getElementById('audioSection');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ 聆听中...';
+      storyText.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">🕯️</span><span>故事正在徐徐展开...</span></div>';
+      copyBtn.classList.add('hidden');
+      voiceBtn.classList.add('hidden');
+      audioSection.classList.remove('show');
+      currentStory = '';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: API_HEADER,
+          body: JSON.stringify({
+            "model": "glm-4.7-flash",
+            "messages": [
+              { "role": "system", "content": getSystemPrompt() },
+              { "role": "user", "content": "请讲一个民间故事" }
+            ],
+            "stream": true,
+            "thinking": { "type": "disabled" },
+            "max_tokens": 65536,
+            "temperature": 1.0
+          })
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                copyBtn.classList.remove('hidden');
+                voiceBtn.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = '📖 再听一个';
+                displayFormattedText();
+                isRequesting = false;
+                return;
+              }
+              try {
+                const json = JSON.parse(data);
+                const content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+                if (content) {
+                  currentStory += content;
+                  storyText.textContent = currentStory;
+                }
+              } catch (e) {}
+            }
+          }
+        }
+      } catch (error) {
+        btn.disabled = false;
+        btn.textContent = '📖 开启故事';
+        console.error('Error:', error);
+        storyText.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">💨</span><span>故事暂时讲不下去了...</span></div>';
+        showToast('请求失败');
+        isRequesting = false;
+      }
+    }
+
+    function copyText() {
+      if (!currentStory) {
+        showToast('暂无内容可复制');
+        return;
+      }
+      navigator.clipboard.writeText(currentStory).then(() => {
+        showToast('复制成功');
+      }).catch(() => {
+        showToast('复制失败');
+      });
+    }
+
+    function formatText(text) {
+      const chars = text.replace(/\s+/g, '');
+      const lines = [];
+      for (let i = 0; i < chars.length; i += 10) {
+        lines.push(chars.slice(i, i + 10));
+      }
+      return lines.join('\n');
+    }
+
+    function displayFormattedText() {
+      const formattedBox = document.getElementById('formattedBox');
+      const formattedSection = document.getElementById('formattedSection');
+      currentFormattedText = formatText(currentStory);
+      formattedBox.innerHTML = currentFormattedText.split('\n').map(line => `<div class="line">${line}</div>`).join('');
+      formattedSection.classList.add('show');
+    }
+
+    function copyFormattedText() {
+      if (!currentFormattedText) {
+        showToast('暂无内容可复制');
+        return;
+      }
+      navigator.clipboard.writeText(currentFormattedText).then(() => {
+        showToast('复制成功');
+      }).catch(() => {
+        showToast('复制失败');
+      });
+    }
+
+    async function generateVoice() {
+      if (!currentStory) {
+        showToast('暂无内容可生成语音');
+        return;
+      }
+
+      if (isRequesting) {
+        showToast('请求中，请稍候...');
+        return;
+      }
+      isRequesting = true;
+
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioSection = document.getElementById('audioSection');
+      const audioEl = document.getElementById('audioEl');
+
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 生成中...';
+      showToast('⏳ 语音生成中...');
+
+      try {
+        const VOICE_API_URLS = [
+          'https://tts.wangwangit.com/v1/audio/speech',
+          'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
+        ];
+
+        let audioBlob = null;
+
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: currentStory,
+                voice: 'zh-CN-XiaomengNeural',
+                speed: 0.85,
+                pitch: 0,
+                style: 'general'
+              })
+            });
+
+            if (response.ok) {
+              audioBlob = await response.blob();
+              break;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+
+        if (!audioBlob) throw new Error('请求失败');
+
+        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = URL.createObjectURL(audioBlob);
+        audioEl.src = currentAudioUrl;
+        audioSection.classList.add('show');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 重新生成';
+        isRequesting = false;
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('语音生成失败');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 生成音频';
+        isRequesting = false;
+      }
+    }
+
+    function downloadAudio() {
+      if (!currentAudioUrl) {
+        showToast('暂无音频可下载');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = currentAudioUrl;
+      a.download = `myth_${Date.now()}.mp3`;
+      a.click();
+      showToast('开始下载');
+    }
+  </script>
+</body>
+</html>
