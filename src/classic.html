@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>古籍趣解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #2d1f1a 0%, #1a1512 50%, #0f0d0b 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 600px; margin: 0 auto; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #c9a227; text-decoration: none; font-size: 14px;
+      margin-bottom: 16px; padding: 8px 12px;
+      background: rgba(201, 162, 39, 0.1);
+      border: 1px solid rgba(201, 162, 39, 0.3);
+      border-radius: 20px;
+    }
+    .main-card {
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 24px; padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+    .card-header { text-align: center; margin-bottom: 24px; }
+    .card-header .icon { font-size: 48px; margin-bottom: 8px; }
+    .card-header h1 { font-size: 22px; color: #2d1f1a; font-weight: 600; }
+    .card-header .subtitle { font-size: 13px; color: #666; margin-top: 4px; }
+    .book-select, .chapter-select {
+      width: 100%; padding: 14px 16px;
+      border: 2px solid #d4a574; border-radius: 12px;
+      font-size: 16px; color: #2d1f1a; background: #faf5ef;
+      cursor: pointer; margin-bottom: 12px; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238B4513' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 16px center;
+    }
+    .book-select:focus, .chapter-select:focus { outline: none; border-color: #8B4513; }
+    .chapter-select:disabled { opacity: 0.6; cursor: not-allowed; }
+    .content-box {
+      background: linear-gradient(135deg, #faf5ef 0%, #f5efe6 100%);
+      border: 1px solid #d4c5a9; border-radius: 16px;
+      padding: 24px; min-height: 280px; margin-bottom: 20px;
+    }
+    .content-box .explanation {
+      font-size: 15px; line-height: 1.9; color: #3d3d3d;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .content-box .placeholder {
+      color: #999; font-size: 14px; text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 220px; gap: 12px;
+    }
+    .btn-group { display: flex; flex-direction: column; gap: 12px; }
+    .get-btn, .copy-btn {
+      width: 100%; padding: 16px; border: none; border-radius: 50px;
+      color: #fff; font-size: 16px; font-weight: 500; cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .get-btn {
+      background: linear-gradient(135deg, #8B4513, #a0522d);
+      box-shadow: 0 4px 15px rgba(139, 69, 19, 0.4);
+    }
+    .get-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 69, 19, 0.5); }
+    .get-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    .copy-btn { background: #666; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+    .copy-btn:hover { background: #777; }
+    .copy-btn.hidden, .voice-btn.hidden { opacity: 0.5; pointer-events: none; }
+    .voice-btn {
+      width: 100%; padding: 16px; border: none; border-radius: 50px;
+      color: #fff; font-size: 16px; font-weight: 500; cursor: pointer;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #5a5a5a, #6a6a6a);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .voice-btn:hover { background: linear-gradient(135deg, #6a6a6a, #7a7a7a); }
+    .voice-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .audio-section { margin-top: 16px; display: none; }
+    .audio-section.show { display: block; }
+    .audio-section audio { width: 100%; border-radius: 10px; margin-bottom: 10px; }
+    .download-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 25px;
+      background: #555; color: #fff; font-size: 14px; cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .download-btn:hover { background: #666; }
+    .formatted-section { margin-top: 16px; display: none; }
+    .formatted-section.show { display: block; }
+    .formatted-section .label {
+      font-size: 13px; color: #888; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .formatted-box {
+      background: #f5f5f5; border-radius: 12px;
+      padding: 16px; max-height: 300px; overflow-y: auto;
+    }
+    .formatted-box .line { font-size: 15px; line-height: 1.8; color: #333; }
+    .copy-formatted-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 25px;
+      background: #777; color: #fff; font-size: 14px; cursor: pointer;
+      transition: all 0.3s ease; margin-top: 10px;
+    }
+    .copy-formatted-btn:hover { background: #888; }
+    .toast {
+      position: fixed; bottom: 30px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0, 0, 0, 0.8); color: #fff;
+      padding: 12px 24px; border-radius: 25px; font-size: 14px;
+      opacity: 0; transition: all 0.3s ease; z-index: 100;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    @media (max-width: 480px) {
+      body { padding: 12px; }
+      .main-card { padding: 24px 16px; }
+      .card-header h1 { font-size: 18px; }
+      .content-box { padding: 16px; }
+      .content-box .explanation { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="javascript:history.go(-1)" class="back-btn">← 返回</a>
+    <div class="main-card">
+      <div class="card-header">
+        <div class="icon">📚</div>
+        <h1>古籍趣解</h1>
+        <div class="subtitle">通俗解读 · 幽默风趣</div>
+      </div>
+      <select class="book-select" id="bookSelect" onchange="onBookChange()">
+        <option value="">-- 选择书籍 --</option>
+        <option value="jpm">金瓶梅（100回）</option>
+        <option value="xy">西游记（100回）</option>
+        <option value="sgyy">三国演义（120回）</option>
+        <option value="shz">水浒传（120回）</option>
+      </select>
+      <select class="chapter-select" id="chapterSelect" disabled>
+        <option value="">-- 请先选择书籍 --</option>
+      </select>
+      <div class="content-box">
+        <div class="explanation" id="explanationText">
+          <div class="placeholder">
+            <span style="font-size: 48px;">🏛️</span>
+            <span>选择书籍和章节，开启古籍趣解之旅</span>
+          </div>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="get-btn" id="getBtn" onclick="fetchExplanation()">📖 开始解读</button>
+        <button class="copy-btn hidden" id="copyBtn" onclick="copyText()">📋 复制全文</button>
+        <button class="voice-btn hidden" id="voiceBtn" onclick="generateVoice()">🔊 生成音频</button>
+      </div>
+      <div class="audio-section" id="audioSection">
+        <audio id="audioEl" controls></audio>
+        <button class="download-btn" id="downloadBtn" onclick="downloadAudio()">⬇️ 下载音频</button>
+      </div>
+      <div class="formatted-section" id="formattedSection">
+        <div class="label">📝 排版文本</div>
+        <div class="formatted-box" id="formattedBox"></div>
+        <button class="copy-formatted-btn" id="copyFormattedBtn" onclick="copyFormattedText()">📋 复制排版文本</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const API_HEADER = { "Content-Type": "application/json", "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq" };
+
+const BOOK_DATA = {
+  jpm: {
+    name: '金瓶梅',
+    chapters: {
+      1:'第一回 西门庆热结十弟兄 武松冷遇亲哥嫂',2:'第二回 俏潘娘帘下勾情 老王婆茶坊说技',3:'第三回 定挨光王婆受贿 设圈套浪子败兴',4:'第四回 赴巫山潘氏幽欢 闹茶坊郓哥义愤',5:'第五回 捉奸情郓哥定计 饮鸩药武大遭殃',6:'第六回 狭路相逢武二遇嫂 昏头转向金莲勾郎',7:'第七回 薛媒婆说娶孟三儿 西门庆梳拢李桂姐',8:'第八回 盼情郎佳人体贴 填肠毒金莲撒娇',9:'第九回 鬼怪缠身迎春儿 药物毒害武大郎',10:'第十回 英雄好汉狮子楼 侠义之士十字坡',11:'第十一回 潘金莲激打孙雪娥 西门庆大哭李瓶儿',12:'第十二回 潘金莲私仆受辱 西门庆摔镜架',13:'第十三回 李瓶姐墙头密约 迎春儿窥探情郎',14:'第十四回 花子虚因气丧命 李瓶儿许嫁西门',15:'第十五回 佳人笑观花灯会 浪子玩灯在妓家',16:'第十六回 西门庆谋娶李瓶儿 官哥儿穿大红衫',17:'第十七回 宇给事劾倒杨提督 西门庆拜请李瓶儿',18:'第十八回 包子铺里说风情 伯爵官衔得双回',19:'第十九回 西门庆算账娶李瓶 蒋竹山详说太医',20:'第二十回 西门庆大闹葡萄架 潘金莲私仆受苦',21:'第二十一回 吴月娘扫地焚香 潘金莲雪夜弹琴',22:'第二十二回 西门庆私仆受辱 蕙莲儿烧脚',23:'第二十三回 玉皇庙里打平安 开源当铺多利息',24:'第二十四回 惠莲儿含酸觅短见 金莲儿剪发传书',25:'第二十五回 雪洞里请太医 糊突桶问病',26:'第二十六回 来旺儿被陷害 宋蕙莲自缢',27:'第二十七回 潘金莲炎天闹浴 西门庆私仆受辱',28:'第二十八回 陈经济守御所 周守备府',29:'第二十九回 吴神仙冰鉴定终身 潘金莲游戏春秋',30:'第三十回 西门庆生子加官 李瓶儿生子亡身',31:'第三十一回 琴童儿藏壶构畔 西门庆开宴赏灯',32:'第三十二回 玉盒儿金瓶庆生辰 李瓶儿因淫哭官哥',33:'第三十三回 陈经济守御所 周守备府',34:'第三十四回 西门庆包占王六儿 贲地传放声哭泣',35:'第三十五回 桂姐计较高枝儿 伯爵唱名问平安',36:'第三十六回 西门庆帮功得双妻 翟谦寄书结姻亲',37:'第三十七回 冯妈妈说嫁韩氏女 西门庆迎娶蓝氏',38:'第三十八回 西门庆踏雪访郑月 贲四嫂打工说情',39:'第三十九回 西门庆玉皇庙打醮 吴月娘听僧讲道',40:'第四十回 抱孩童瓶儿希宠 妆丫鬟金莲竞赛',41:'第四十一回 西门庆结亲云峰楼 李瓶儿静房怀鬼胎',42:'第四十二回 逞豪华门前放烟火 赏元宵醉闹葡萄架',43:'第四十三回 争宠爱金莲惹气 献温情瓶儿贪欢',44:'第四十四回 翟谦寄书结姻亲 西门庆开宴吃喜酒',45:'第四十五回 桂姐留客在院 伯爵帮嫖丽春院',46:'第四十六回 妻妾宴赏凤凰亭 瓶儿梦泄幽情',47:'第四十七回 苗青杀主案 陈经济卖床',48:'第四十八回 曾御史劾提刑官 西门庆贿赂太师',49:'第四十九回 西门庆迎接蔡御史 来保行贿提刑所',50:'第五十回 西门庆偷奸要情 李瓶儿病终血崩',51:'第五十一回 西门庆打死了人 应伯爵说情',52:'第五十二回 应伯爵帮闲中取乐 西门庆热结兄弟',53:'第五十三回 潘金莲鼓乐庆弄璋 西门庆获偷情',54:'第五十四回 西门庆乘舟看风景 应伯爵割红绦',55:'第五十五回 西门庆过生日 翟谦寄书',56:'第五十六回 西门庆周济常时节 应伯爵举荐水秀才',57:'第五十七回 西门庆集子卖窗房 李瓶儿病亡',58:'第五十八回 潘金莲烫鬼激打孙雪娥',59:'第五十九回 西门庆大哭李瓶儿 官哥儿受惊而亡',60:'第六十回 潘金莲梦诉幽情 西门庆大哭情殇',61:'第六十一回 西门庆书房赏雪 李瓶儿再病亡',62:'第六十二回 西门庆大哭情殇 李瓶儿托梦',63:'第六十三回 西门庆开丧送殡 李瓶儿身染重病',64:'第六十四回 西门庆集子发丧 玉箫传书',65:'第六十五回 西门庆开丧送葬 吴道官迎殡',66:'第六十六回 西门庆梦入内室 吴道官阴符',67:'第六十七回 西门庆迎娶李娇儿 陈经济遇故人',68:'第六十八回 西门庆得子加官 郑月儿卖弄',69:'第六十九回 西门庆得子加官 林氏滴泪',70:'第七十回 西门庆迎娶李瓶儿 春梅得子',71:'第七十一回 西门庆开宴赏灯 应伯爵贺喜',72:'第七十二回 潘金莲私仆受辱 来旺儿被陷害',73:'第七十三回 潘金莲含酸觅短见 西门庆私仆',74:'第七十四回 宋蕙莲自缢 西门庆大闹',75:'第七十五回 潘金莲剪发传书 西门庆私仆',76:'第七十六回 西门庆私仆受辱 蕙莲儿烧脚',77:'第七十七回 玉皇庙里打平安 开源当铺',78:'第七十八回 惠莲儿含酸觅短见 金莲儿剪发',79:'第七十九回 雪洞里请太医 糊突桶问病',80:'第八十回 来旺儿被陷害 宋蕙莲自缢',81:'第八十一回 潘金莲炎天闹浴 西门庆私仆',82:'第八十二回 陈经济守御所 周守备府',83:'第八十三回 西门庆包占王六儿 贲地传',84:'第八十四回 桂姐计较高枝儿 伯爵唱名',85:'第八十五回 西门庆帮功得双妻 翟谦寄书',86:'第八十六回 冯妈妈说嫁韩氏女 西门庆迎娶',87:'第八十七回 西门庆踏雪访郑月 贲四嫂',88:'第八十八回 西门庆玉皇庙打醮 吴月娘',89:'第八十九回 抱孩童瓶儿希宠 妆丫鬟金莲',90:'第九十回 西门庆结亲云峰楼 李瓶儿',91:'第九十一回 逞豪华门前放烟火 赏元宵',92:'第九十二回 争宠爱金莲惹气 献温情瓶儿',93:'第九十三回 翟谦寄书结姻亲 西门庆',94:'第九十四回 桂姐留客在院 伯爵帮嫖',95:'第九十五回 妻妾宴赏凤凰亭 瓶儿',96:'第九十六回 苗青杀主案 陈经济卖床',97:'第九十七回 曾御史劾提刑官 西门庆',98:'第九十八回 西门庆迎接蔡御史 来保',99:'第九十九回 西门庆大哭李瓶儿 官哥儿',100:'第一百回 西门庆因气丧命 春梅守备府'
+    }
+  },
+  xy: {
+    name: '西游记',
+    chapters: {
+      1:'第一回 灵根育孕源流出 心性修持大道生',2:'第二回 悟彻菩提真妙理 断魔归本合元神',3:'第三回 四海千山皆拱伏 九幽十类尽除名',4:'第四回 官封弼马心何足 名注齐天意未宁',5:'第五回 乱蟠桃大圣偷丹 反天宫诸神捉怪',6:'第六回 观音赴会问原因 小圣施威降大圣',7:'第七回 八卦炉中逃大圣 五行山下定心猿',8:'第八回 我佛造经传极乐 观音奉旨上长安',9:'第九回 袁守诚妙算无私曲 老龙王拙计犯天条',10:'第十回 二将军宫门镇鬼 唐太宗地府还魂',11:'第十一回 还受生唐王遵善果 度孤魂萧瑀正空门',12:'第十二回 玄奘秉诚建大会 观音显象化金蝉',13:'第十三回 陷虎穴金星解厄 双叉岭伯钦留僧',14:'第十四回 心猿归正 六贼无踪',15:'第十五回 蛇盘山诸神暗佑 鹰愁涧意马收缰',16:'第十六回 观音院僧谋宝贝 黑风山怪窃袈裟',17:'第十七回 孙行者大闹黑风山 观世音收伏熊罴怪',18:'第十八回 观音院唐僧脱难 高老庄大圣除妖',19:'第十九回 猪八戒义激猴王 孙行者智降妖怪',20:'第二十回 黄风岭唐僧有难 半山中八戒争先',21:'第二十一回 护法设庄留大圣 须弥灵吉定风魔',22:'第二十二回 八戒大战流沙河 木叉奉法收悟净',23:'第二十三回 三藏不忘本 四圣试禅心',24:'第二十四回 万寿山大仙留故友 五庄观行者窃人参',25:'第二十五回 镇元仙赶捉取经僧 孙行者大闹五庄观',26:'第二十六回 孙悟空三岛求方 观世音甘泉活树',27:'第二十七回 尸魔三戏唐三藏 圣僧恨逐美猴王',28:'第二十八回 花果山群猴聚义 黑松林三藏逢魔',29:'第二十九回 脱难江流来国土 承恩八戒转山林',30:'第三十回 邪魔侵正法 意马忆心猿',31:'第三十一回 猪八戒义激猴王 孙行者智降妖怪',32:'第三十二回 平顶山功曹传信 莲花洞木母逢灾',33:'第三十三回 外道迷真性 元神助本心',34:'第三十四回 魔王巧算困心猿 大圣腾挪骗宝贝',35:'第三十五回 外道施威欺正性 心猿获宝伏邪魔',36:'第三十六回 心猿正处诸缘伏 劈破傍门见月明',37:'第三十七回 鬼王夜谒唐三藏 悟空神化引婴儿',38:'第三十九回 一粒金丹天上得 三年故主世间生',39:'第四十回 婴儿戏化禅心乱 猿马刀归木母空',40:'第四十一回 心猿遭火败 木母被魔擒',41:'第四十二回 大圣殷勤拜南海 观音慈善缚红孩',42:'第四十三回 黑河妖孽擒僧去 西洋龙子捉鼍回',43:'第四十四回 法身元运逢车力 心正妖邪度脊关',44:'第四十五回 三清观大圣留名 车迟国猴王显法',45:'第四十六回 外道弄强欺正法 心猿显圣灭诸邪',46:'第四十七回 圣僧夜阻通天水 金木垂慈救小童',47:'第四十八回 魔弄寒风飘大雪 僧思拜佛履层冰',48:'第四十九回 三藏有灾沉水宅 观音救难现鱼篮',49:'第五十回 情乱性从因爱欲 神昏心动遇魔头',50:'第五十一回 心猿空用千般计 水火无功难炼魔',51:'第五十二回 悟空大闹金山兜洞 如来暗示主人公',52:'第五十三回 禅主吞餐怀鬼孕 黄婆运水解邪胎',53:'第五十四回 法性西来逢女国 心猿定计脱烟花',54:'第五十五回 色邪淫戏唐三藏 性正修持不坏身',55:'第五十六回 神狂诛草寇 道昧放心猿',56:'第五十七回 真行者落伽山诉苦 假猴王水帘洞誊文',57:'第五十八回 二心搅乱大乾坤 一体难修真寂灭',58:'第五十九回 唐三藏路阻火焰山 孙行者一调芭蕉扇',59:'第六十回 牛魔王罢战赴华筵 孙行者二调芭蕉扇',60:'第六十一回 猪八戒助力破魔王 孙行者三调芭蕉扇',61:'第六十二回 涤垢洗心惟扫塔 缚魔归正乃修身',62:'第六十三回 二僧荡怪闹龙宫 群圣除邪获宝贝',63:'第六十四回 荆棘岭悟能努力 木仙庵三藏谈诗',64:'第六十五回 妖邪假设小雷音 四众皆逢大厄难',65:'第六十六回 诸神遭毒手 弥勒缚妖魔',66:'第六十七回 拯救驼罗禅性稳 脱离秽污道心清',67:'第六十八回 朱紫国唐僧论前世 孙行者施为三折肱',68:'第六十九回 心主夜间修药物 君王筵上论妖邪',69:'第七十回 妖魔宝放烟沙火 悟空计盗紫金铃',70:'第七十一回 行者假名降怪犼 观音现象伏妖王',71:'第七十二回 盘丝洞七情迷本 濯垢泉八戒忘形',72:'第七十三回 情因旧恨生灾毒 心主遭魔幸破光',73:'第七十四回 长庚传报魔头势 行者施为变化能',74:'第七十五回 心猿钻透阴阳窍 魔王还归大道真',75:'第七十六回 心神居舍魔归性 木母同降怪体真',76:'第七十七回 群魔欺本性 一体拜真如',77:'第七十九回 寻洞擒妖逢老寿 当朝正主见婴儿',78:'第八十回 姹女育阳求配偶 心猿护主识妖邪',79:'第八十一回 镇海寺心猿知怪 黑松林三众寻师',80:'第八十二回 姹女求阳 元神护道',81:'第八十三回 心猿识得丹头 姹女还归本性',82:'第八十四回 难灭伽持圆大觉 法王成正体天然',83:'第八十五回 心猿妒木母 魔王计吞禅',84:'第八十六回 木母助威征怪物 金公施法灭妖邪',85:'第八十七回 凤仙郡冒天止雨 孙大圣劝善施霖',86:'第八十八回 禅到玉华施法会 心猿木母授门人',87:'第八十九回 黄狮精虚设钉钯宴 金木土计闹豹头山',88:'第九十回 师狮授受同归一 盗道缠禅静九灵',89:'第九十一回 金平府元夜观灯 玄英洞唐僧供状',90:'第九十二回 三僧大战青龙山 四星挟捉犀牛怪',91:'第九十三回 给孤园问古谈因 天竺国朝王遇偶',92:'第九十四回 四僧宴乐御花园 一怪空怀情欲喜',93:'第九十五回 假合真形擒玉兔 真阴归顺会灵元',94:'第九十六回 寇员外喜待高僧 唐长老不贪富贵',95:'第九十七回 金酬外护遭魔蛰 圣显幽魂救本原',96:'第九十九回 九九数完魔刬尽 三三行满道归根',97:'第一百回 径回东土 五圣成真'
+    }
+  },
+  sgyy: {
+    name: '三国演义',
+    chapters: {
+      1:'第一回 宴桃园豪杰三结义 斩黄巾英雄首立功',2:'第二回 张翼德挥鞭挞督邮 贼董卓行凶匿玉玺',3:'第三回 议温明董卓叱丁原 馈金珠李肃说吕布',4:'第四回 废汉帝陈留践位 谋董贼孟德献刀',5:'第五回 发矫诏诸镇应曹公 破关兵三英战吕布',6:'第六回 焚金阙董卓行凶 匿玉玺孙坚背约',7:'第七回 袁绍磐河战公孙 孙坚跨江击刘表',8:'第八回 王司徒巧使连环计 董太师大闹凤仪亭',9:'第九回 除暴凶吕布助司徒 犯长安李傕听贾诩',10:'第十回 勤王室马腾举义 报父仇曹操兴师',11:'第十一回 刘皇叔北海救孔融 吕温侯濮阳破曹操',12:'第十二回 陶恭祖三让徐州 曹孟德大战吕布',13:'第十三回 李傕郭汜大交兵 杨奉董承双救驾',14:'第十四回 曹孟德移驾幸许都 吕奉先乘夜袭徐郡',15:'第十五回 太史慈酣斗小霸王 孙伯符大战严白虎',16:'第十六回 吕奉先射戟解围 宋公明大战鄱阳',17:'第十七回 袁公路大会兵 曹孟德小师战',18:'第十八回 贾文和料敌决胜 夏侯惇拔矢啖睛',19:'第十九回 下邳城曹操鏖兵 白门楼吕布殒命',20:'第二十回 曹阿瞒许田打围 董国舅内阁受诏',21:'第二十一回 曹操煮酒论英雄 关公赚城斩车胄',22:'第二十二回 袁曹各起马步三军 关张共擒王刘二将',23:'第二十三回 祢正平裸衣骂贼 吉太医下毒遭刑',24:'第二十四回 贼逼危驾 义臣严刑',25:'第二十五回 屯土山关公约三事 救白马曹操解重围',26:'第二十六回 袁本初败兵折将 关云长挂印封金',27:'第二十七回 美髯公千里走单骑 汉寿侯五关斩六将',28:'第二十八回 斩蔡阳兄弟释疑 会古城主臣聚义',29:'第二十九回 小霸王怒斩于吉 碧眼儿坐领江东',30:'第三十回 战官渡本初败绩 劫乌巢孟德烧粮',31:'第三十一回 曹操仓亭破本初 玄德荆州依刘表',32:'第三十二回 夺冀州袁尚争锋 决漳河许攸献计',33:'第三十三回 曹丕乘乱纳甄氏 郭嘉遗计定辽东',34:'第三十四回 蔡夫人隔屏听密语 刘皇叔跃马过檀溪',35:'第三十五回 玄德南漳逢隐沦 单福新野遇英主',36:'第三十六回 元直走马荐诸葛 玄德三顾草庐',37:'第三十七回 司马徽再荐名士 刘玄德三顾草庐',38:'第三十八回 定三分隆中决策 战长江孙氏报仇',39:'第三十九回 荆州城公子三求计 博望坡军师初用兵',40:'第四十回 蔡夫人议献荆州 诸葛亮火烧新野',41:'第四十一回 刘玄德携民渡江 赵子龙单骑救主',42:'第四十二回 张翼德大闹长坂桥 刘豫州败走汉津口',43:'第四十三回 诸葛亮舌战群儒 鲁子敬力排众议',44:'第四十四回 孔明用智激周瑜 孙权决计破曹操',45:'第四十五回 三江口曹操折兵 群英会蒋干中计',46:'第四十六回 用奇谋孔明借箭 献密计黄盖受刑',47:'第四十七回 阚泽密献诈降书 庞统巧授连环计',48:'第四十八回 宴长江曹操赋诗 锁战船北军用武',49:'第四十九回 七星坛诸葛祭风 三江口周瑜纵火',50:'第五十回 诸葛亮智算华容 关云长义释曹操',51:'第五十一回 曹仁大战东吴兵 孔明一气周公瑾',52:'第五十二回 玄德智激孙夫人 孔明二气周公瑾',53:'第五十三回 关云长义释黄汉升 孙仲谋大战张文远',54:'第五十四回 吴国太佛寺看新郎 刘皇叔洞房续佳偶',55:'第五十五回 玄德智激孙夫人 孔明二气周公瑾',56:'第五十六回 曹操大宴铜雀台 孔明三气周公瑾',57:'第五十七回 柴桑口卧龙吊丧 耒阳县凤雏理事',58:'第五十八回 马孟起兴兵雪恨 曹阿瞒割须弃袍',59:'第五十九回 许褚裸衣斗马超 曹操抹书问韩遂',60:'第六十回 张永年反难杨修 庞士元议取西蜀',61:'第六十一回 赵云截江夺阿斗 孙权遗书退老瞒',62:'第六十二回 取涪关杨高授首 攻雒城黄魏争功',63:'第六十三回 诸葛亮痛哭庞统 张翼德义释严颜',64:'第六十四回 孔明定计捉张任 杨阜借兵破马超',65:'第六十五回 马超大战葭萌关 刘备自领益州牧',66:'第六十六回 关云长单刀赴会 伏皇后为国捐生',67:'第六十七回 曹操平定汉中地 张辽威震逍遥津',68:'第六十八回 甘露寺新郎宴尔 曹孟德合兵一处',69:'第六十九回 卜周易管辂知机 讨汉贼五臣死节',70:'第七十回 猛张飞智取瓦口隘 老黄忠计夺天荡山',71:'第七十一回 占对山黄忠逸待劳 据汉水赵云寡胜众',72:'第七十二回 诸葛亮智取汉中 曹阿瞒兵退斜谷',73:'第七十三回 玄德进位汉中王 云长攻拔襄阳郡',74:'第七十四回 庞令明抬榇决死战 关云长放水淹七军',75:'第七十五回 关云长刮骨疗毒 吕子明白衣渡江',76:'第七十六回 徐公明大战沔水 关云长败走麦城',77:'第七十七回 玉泉山关公显圣 洛阳城曹操感神',78:'第七十八回 治风疾神医身死 传遗命奸雄数终',79:'第七十九回 兄逼弟曹植赋诗 侄陷叔刘封伏法',80:'第八十回 曹丕废帝篡炎刘 汉王正位续大统',81:'第八十一回 急兄仇张飞遇害 雪弟恨先主兴兵',82:'第八十二回 孙权降魏受九锡 先主征吴赏六军',83:'第八十三回 战猇亭先主得仇人 守江口书生拜大将',84:'第八十四回 陆逊营烧七百里 孔明巧布八阵图',85:'第八十五回 刘先主遗诏托孤儿 诸葛亮安居平五路',86:'第八十六回 难张温秦宓逞天辩 破曹丕徐盛用火攻',87:'第八十七回 征南寇丞相大兴师 抗天兵蛮王初受执',88:'第八十八回 渡泸水再缚番王 识诈降三擒孟获',89:'第八十九回 武侯驭蛮再渡泸水 诸葛营中设伏兵',90:'第九十回 驱巨兽六破蛮兵 烧藤甲七擒孟获',91:'第九十一回 伐中原武侯上表 破曹兵姜维诈降',92:'第九十二回 赵子龙力斩五将 诸葛亮智取三郡',93:'第九十三回 姜伯约归降孔明 武乡侯骂死王朗',94:'第九十四回 诸葛亮乘雪破羌兵 司马懿克日擒孟达',95:'第九十五回 马谡拒谏失街亭 武侯弹琴退仲达',96:'第九十六回 孔明挥泪斩马谡 周鲂断发赚曹休',97:'第九十七回 讨魏国武侯再上表 破曹兵姜维诈献书',98:'第九十八回 追汉军王双受诛 袭陈仓武侯取胜',99:'第九十九回 诸葛亮大破魏兵 司马懿入寇西蜀',100:'第一百回 汉兵劫寨破曹真 武侯斗阵辱仲达',101:'第一百一回 出陇上诸葛妆神 奔剑阁张郃中计',102:'第一百二回 司马懿占北原渭桥 诸葛亮造木牛流马',103:'第一百三回 上方谷司马受困 五丈原诸葛禳星',104:'第一百四回 陨大星汉丞相归天 见木像魏都督丧胆',105:'第一百五回 武侯预伏锦囊计 魏主拆取承露盘',106:'第一百六回 公孙渊兵败死襄平 司马懿诈病赚曹爽',107:'第一百七回 魏主政归司马氏 姜维兵败牛头山',108:'第一百八回 丁奉雪中奋短兵 孙峻席间施密计',109:'第一百九回 困司马汉将奇谋 废曹芳魏家果报',110:'第一百十回 文鸯单骑退雄兵 姜维背水破大敌',111:'第一百十一回 邓士载智败姜伯约 诸葛诞义讨司马昭',112:'第一百十二回 救寿春于诠死节 取长城伯约鏖兵',113:'第一百十三回 救寿春牛金拒敌 战东吴丁奉雪恨',114:'第一百十四回 曹髦驱车死南阙 姜维弃粮胜魏兵',115:'第一百十五回 诏班师后主信谗 托屯田姜维避祸',116:'第一百十六回 钟会分兵汉中道 武侯显圣定军山',117:'第一百十七回 邓士载偷度阴平 廖化追姜维',118:'第一百十八回 哭祖庙一王死孝 入西川二士争功',119:'第一百十九回 假投降巧计成虚话 再受禅依样画葫芦',120:'第一百二十回 荐杜预老将献新谋 降孙皓三分归一统'
+    }
+  },
+  shz: {
+    name: '水浒传',
+    chapters: {
+      1:'第一回 王教头私走延安府 九纹龙大闹史家村',2:'第二回 史大郎夜走华阴县 鲁提辖拳打镇关西',3:'第三回 赵员外重修文殊院 鲁智深大闹五台山',4:'第四回 小霸王醉入销金帐 花和尚大闹桃花村',5:'第五回 九纹龙翦径赤松林 鲁智深火烧瓦罐寺',6:'第六回 花和尚倒拔垂杨柳 豹子头误入白虎堂',7:'第七回 林教头刺配沧州道 鲁智深大闹野猪林',8:'第八回 柴进门招天下客 林冲棒打洪教头',9:'第九回 林教头风雪山神庙 陆虞候火烧草料场',10:'第十回 朱贵水亭施号箭 林冲雪夜上梁山',11:'第十一回 梁山泊林冲落草 汴京城杨志卖刀',12:'第十二回 急先锋东郭争功 青面兽北京斗武',13:'第十三回 赤发鬼醉卧灵官殿 晁天王认义东溪村',14:'第十四回 吴学究说三阮撞筹 公孙胜应七星聚义',15:'第十五回 杨志押送金银担 吴用智取生辰纲',16:'第十六回 花和尚单打二龙山 青面兽双夺宝珠寺',17:'第十七回 美髯公智稳插翅虎 宋公明义释晁天王',18:'第十八回 林冲水寨大并火 晁盖梁山小夺泊',19:'第十九回 梁山泊义士尊晁盖 郓城县月夜走刘唐',20:'第二十回 虔婆醉打唐牛儿 宋江怒杀阎婆惜',21:'第二十一回 阎婆大闹郓城县 朱仝义释宋公明',22:'第二十二回 横海郡柴进留宾 景阳冈武松打虎',23:'第二十三回 王婆贪贿说风情 郓哥不忿闹茶肆',24:'第二十四回 王婆计啜西门庆 淫妇药鸩武大郎',25:'第二十五回 偷骨殖何九送丧 供人头武二设祭',26:'第二十六回 母药叉孟州道卖人肉 武都头十字坡遇张青',27:'第二十七回 武松威震平安寨 施恩义夺快活林',28:'第二十八回 施恩重霸孟州道 武松醉打蒋门神',29:'第二十九回 施恩三入死囚牢 武松大闹飞云浦',30:'第三十回 张都监血溅鸳鸯楼 武行者夜走蜈蚣岭',31:'第三十一回 武行者醉打孔亮 锦毛虎义释宋江',32:'第三十二回 宋江夜看小鳌山 花荣大闹清风寨',33:'第三十三回 镇三山大闹青州道 霹雳火夜走瓦砾场',34:'第三十四回 花荣大闹清风寨 宋江信步看月台',35:'第三十五回 及时雨会神行太保 黑旋风斗浪里白条',36:'第三十六回 揭阳岭李俊遇张横 浔阳江宋江逢张顺',37:'第三十七回 没遮拦追赶及时雨 船火儿大闹浔阳江',38:'第三十八回 及时雨会神行太保 黑旋风斗浪里白条',39:'第三十九回 浔阳楼宋江吟反诗 梁山泊戴宗传假信',40:'第四十回 梁山泊好汉劫法场 白龙庙英雄小聚义',41:'第四十一回 宋江智取无为军 张顺活捉黄文炳',42:'第四十二回 还道村受三卷天书 宋公明遇九天玄女',43:'第四十三回 假李逵翦径劫单人 黑旋风沂岭杀四虎',44:'第四十四回 锦豹子小径逢戴宗 病关索长街遇石秀',45:'第四十五回 杨雄醉骂潘巧云 石秀智杀裴如海',46:'第四十六回 病关索大闹翠屏山 拼命三火烧祝家店',47:'第四十七回 扑天雕双修生死书 宋公明一打祝家庄',48:'第四十八回 一打祝家庄 宋公明三番调将',49:'第四十九回 解珍解宝双越狱 孙立孙新大劫牢',50:'第五十回 吴学究双掌连环计 宋公明三打祝家庄',51:'第五十一回 插翅虎枷打白秀英 美髯公误失小衙内',52:'第五十二回 李逵打死殷天锡 柴进失陷高唐州',53:'第五十三回 戴宗智取公孙胜 李逵斧劈罗真人',54:'第五十四回 入云龙斗法破高廉 黑旋风探穴救柴进',55:'第五十五回 高太尉大兴三路兵 呼延灼摆布连环马',56:'第五十六回 吴用使时迁盗甲 汤隆赚徐宁上山',57:'第五十七回 徐宁教使钩镰枪 宋江大破连环马',58:'第五十八回 三山聚义打青州 众虎同心归水泊',59:'第五十九回 吴用赚金铃吊挂 宋江闹西岳华山',60:'第六十回 公孙胜芒砀山降魔 晁天王曾头市中箭',61:'第六十一回 吴用智赚卢俊义 张顺夜闹金沙渡',62:'第六十二回 放冷箭燕青救主 劫法场石秀跳楼',63:'第六十三回 宋江兵打北京城 关胜议取梁山泊',64:'第六十四回 呼延灼夜打连环马 姚盖众将闹西京',65:'第六十五回 托塔天王梦中显圣 浪里白条水上报冤',66:'第六十六回 时迁火烧翠云楼 吴用智取大名府',67:'第六十七回 宋江赏马步三军 关胜降水火二将',68:'第六十八回 宋公明夜打曾头市 卢俊义活捉史文恭',69:'第六十九回 东平府误陷九纹龙 宋公明义释双枪将',70:'第七十回 没羽箭飞石打英雄 宋公明弃粮擒壮士',71:'第七十一回 忠义堂石碣受天文 梁山泊英雄排座次',72:'第七十二回 柴进簪花入禁院 李逵元夜闹东京',73:'第七十三回 黑旋风乔捉鬼 梁山泊双献头',74:'第七十四回 燕青智扑擎天柱 李逵寿张乔坐衙',75:'第七十五回 活阎罗倒船偷御酒 黑旋风扯诏骂钦差',76:'第七十六回 吴加亮布四斗五方旗 宋公明排九宫八卦阵',77:'第七十七回 梁山泊十面埋伏 宋公明两赢童贯',78:'第七十八回 十节度议取梁山泊 宋公明一败高太尉',79:'第七十九回 刘唐放火烧战船 宋江两败高太尉',80:'第八十回 张顺凿漏海鳅船 宋江三败高太尉',81:'第八十一回 燕青月夜遇道君 戴宗定计出乐和',82:'第八十二回 梁山泊分金大买市 宋公明全伙受招安',83:'第八十三回 宋公明奉诏破大辽 陈桥驿滴泪斩小卒',84:'第八十四回 宋公明兵打蓟州城 卢俊义大战玉田县',85:'第八十五回 宋公明夜度益津关 吴学究智取文安县',86:'第八十六回 宋公明大战独鹿山 卢俊义兵陷青石峪',87:'第八十七回 宋公明大战幽州 呼延灼力擒番将',88:'第八十八回 颜统军阵列混天象 宋公明梦授玄女法',89:'第八十九回 宋公明破阵成功 宿太尉颁恩降诏',90:'第九十回 五台山宋江参禅 双林镇燕青遇故',91:'第九十一回 宋公明兵渡黄河 卢俊义赚城黑夜',92:'第九十二回 振军威连夺三关 兵智取东川太安',93:'第九十三回 混江龙太湖小结义 宋公明苏州大会垓',94:'第九十四回 宁海军宋江吊孝 涌金门张顺归神',95:'第九十五回 张顺魂捉方天定 宋江智取宁海军',96:'第九十六回 卢俊义分兵歙州道 宋公明大战乌龙岭',97:'第九十七回 睦州城箭射邓元觉 乌龙岭神助宋公明',98:'第九十八回 卢俊义大战昱岭关 宋公明智取清溪洞',99:'第九十九回 鲁智深浙江坐化 宋公明衣锦还乡',100:'第一百回 宋公明神聚蓼儿洼 徽宗帝梦游梁山泊'
+    }
+  }
+};
+
+let currentBook = '';
+let currentChapter = '';
+let currentExplanation = '';
+let currentFormattedText = '';
+let currentAudioUrl = '';
+let isRequesting = false;
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function onBookChange() {
+  const bookSelect = document.getElementById('bookSelect');
+  const chapterSelect = document.getElementById('chapterSelect');
+  const selectedBook = bookSelect.value;
+  if (!selectedBook) {
+    chapterSelect.innerHTML = '<option value="">-- 请先选择书籍 --</option>';
+    chapterSelect.disabled = true;
+    return;
+  }
+  const bookData = BOOK_DATA[selectedBook];
+  let options = '<option value="">-- 选择章节 --</option>';
+  for (const [num, title] of Object.entries(bookData.chapters)) {
+    options += `<option value="${num}">${title}</option>`;
+  }
+  chapterSelect.innerHTML = options;
+  chapterSelect.disabled = false;
+  currentBook = selectedBook;
+  currentChapter = '';
+}
+
+function getSystemPrompt(chapterNum) {
+  const bookData = BOOK_DATA[currentBook];
+  const chapter = bookData.chapters[chapterNum];
+  const bookName = bookData.name;
+  return `你是一位幽默风趣的古籍解读专家，擅长用现代、通俗、接地气的语言解读古典名著。
+
+**任务**：
+请用幽默风趣、通俗易懂的语言，详细解读《${bookName}》${chapter}的内容。
+
+**风格要求**：
+1. 语言幽默诙谐，适当使用网络流行语和调侃语气
+2. 讲解要通俗，让现代人也能轻松理解
+3. 可以加入适当的吐槽和点评
+4. 对人物心理和行为进行有趣的解读
+5. 可以联系现代生活做类比
+6. 内容越详细越好，尽可能展开讲解
+
+**格式要求**：
+1. 先整体介绍本章大致情节
+2. 然后分段详细讲解，重点解读人物关系和心理
+3. **重要**：在适当的时候，要说明该人物的性格特点和主要特征
+4. 最后可以来个总结吐槽
+5. 不要标题，直接开始讲解，不要有任何引导性内容`;
+}
+
+async function fetchExplanation() {
+  if (!API_URL) { showToast('请先在代码中配置 API_URL'); return; }
+  if (!currentBook) { showToast('请先选择书籍'); return; }
+  const chapterNum = document.getElementById('chapterSelect').value;
+  if (!chapterNum) { showToast('请先选择章节'); return; }
+  if (isRequesting) { showToast('请求中，请稍候...'); return; }
+  isRequesting = true;
+  currentChapter = chapterNum;
+
+  const btn = document.getElementById('getBtn');
+  const explanationText = document.getElementById('explanationText');
+  const copyBtn = document.getElementById('copyBtn');
+  const voiceBtn = document.getElementById('voiceBtn');
+  const audioSection = document.getElementById('audioSection');
+  const formattedSection = document.getElementById('formattedSection');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 解读中...';
+  explanationText.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">📜</span><span>正在为您趣解古籍...</span></div>';
+  copyBtn.classList.add('hidden');
+  voiceBtn.classList.add('hidden');
+  audioSection.classList.remove('show');
+  formattedSection.classList.remove('show');
+  currentExplanation = '';
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: API_HEADER,
+      body: JSON.stringify({
+        "model": "glm-4.7-flash",
+        "messages": [
+          { "role": "system", "content": getSystemPrompt(chapterNum) },
+          { "role": "user", "content": `请解读《${BOOK_DATA[currentBook].name}》${BOOK_DATA[currentBook].chapters[chapterNum]}` }
+        ],
+        "stream": true,
+        "thinking": { "type": "disabled" },
+        "max_tokens": 65536,
+        "temperature": 1.0
+      })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            copyBtn.classList.remove('hidden');
+            voiceBtn.classList.remove('hidden');
+            btn.disabled = false;
+            btn.textContent = '📖 重新解读';
+            displayFormattedText();
+            isRequesting = false;
+            return;
+          }
+          try {
+            const json = JSON.parse(data);
+            const content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+            if (content) {
+              currentExplanation += content;
+              explanationText.textContent = currentExplanation;
+            }
+          } catch (e) {}
+        }
+      }
+    }
+  } catch (error) {
+    btn.disabled = false;
+    btn.textContent = '📖 开始解读';
+    console.error('Error:', error);
+    explanationText.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">💨</span><span>解读遇到了一些问题...</span></div>';
+    showToast('请求失败');
+    isRequesting = false;
+  }
+}
+
+function copyText() {
+  if (!currentExplanation) { showToast('暂无内容可复制'); return; }
+  navigator.clipboard.writeText(currentExplanation).then(() => showToast('复制成功')).catch(() => showToast('复制失败'));
+}
+
+function formatText(text) {
+  const chars = text.replace(/\s+/g, '');
+  const lines = [];
+  for (let i = 0; i < chars.length; i += 10) {
+    lines.push(chars.slice(i, i + 10));
+  }
+  return lines.join('\n');
+}
+
+function displayFormattedText() {
+  const formattedBox = document.getElementById('formattedBox');
+  const formattedSection = document.getElementById('formattedSection');
+  currentFormattedText = formatText(currentExplanation);
+  formattedBox.innerHTML = currentFormattedText.split('\n').map(line => `<div class="line">${line}</div>`).join('');
+  formattedSection.classList.add('show');
+}
+
+function copyFormattedText() {
+  if (!currentFormattedText) { showToast('暂无内容可复制'); return; }
+  navigator.clipboard.writeText(currentFormattedText).then(() => showToast('复制成功')).catch(() => showToast('复制失败'));
+}
+
+async function generateVoice() {
+  if (!currentExplanation) { showToast('暂无内容可生成语音'); return; }
+  if (isRequesting) { showToast('请求中，请稍候...'); return; }
+  isRequesting = true;
+
+  const voiceBtn = document.getElementById('voiceBtn');
+  const audioSection = document.getElementById('audioSection');
+  const audioEl = document.getElementById('audioEl');
+
+  voiceBtn.disabled = true;
+  voiceBtn.textContent = '⏳ 生成中...';
+  showToast('⏳ 语音生成中...');
+
+  try {
+    const VOICE_API_URLS = [
+      'https://tts.wangwangit.com/v1/audio/speech',
+      'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
+    ];
+    let audioBlob = null;
+    for (const apiUrl of VOICE_API_URLS) {
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: currentExplanation, voice: 'zh-CN-XiaomengNeural', speed: 0.85, pitch: 0, style: 'general' })
+        });
+        if (response.ok) { audioBlob = await response.blob(); break; }
+      } catch (e) { continue; }
+    }
+    if (!audioBlob) throw new Error('请求失败');
+    if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+    currentAudioUrl = URL.createObjectURL(audioBlob);
+    audioEl.src = currentAudioUrl;
+    audioSection.classList.add('show');
+    voiceBtn.disabled = false;
+    voiceBtn.textContent = '🔊 重新生成';
+    isRequesting = false;
+  } catch (error) {
+    console.error('Error:', error);
+    showToast('语音生成失败');
+    voiceBtn.disabled = false;
+    voiceBtn.textContent = '🔊 生成音频';
+    isRequesting = false;
+  }
+}
+
+function downloadAudio() {
+  if (!currentAudioUrl) { showToast('暂无音频可下载'); return; }
+  const a = document.createElement('a');
+  a.href = currentAudioUrl;
+  a.download = `classic_${Date.now()}.mp3`;
+  a.click();
+  showToast('开始下载');
+}
+</script>
+</body>
+</html>
