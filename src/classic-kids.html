@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>儿童3D分镜剧本</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #c9a227; text-decoration: none; font-size: 14px;
+      margin-bottom: 16px; padding: 8px 12px;
+      background: rgba(201, 162, 39, 0.1);
+      border: 1px solid rgba(201, 162, 39, 0.3);
+      border-radius: 20px;
+    }
+    .main-card {
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 24px; padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+    .card-header { text-align: center; margin-bottom: 24px; }
+    .card-header .icon { font-size: 48px; margin-bottom: 8px; }
+    .card-header h1 { font-size: 22px; color: #2d4a3e; font-weight: 600; }
+    .card-header .subtitle { font-size: 13px; color: #666; margin-top: 4px; }
+    .form-group { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+    .input-label {
+      font-size: 14px; color: #444; font-weight: 500; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .input-label .hint { font-weight: normal; color: #888; font-size: 12px; }
+    .text-input {
+      width: 100%; padding: 14px 16px;
+      border: 2px solid #c9a227; border-radius: 12px;
+      font-size: 16px; color: #333; background: #faf8f0;
+      transition: border-color 0.3s;
+    }
+    .text-input:focus { outline: none; border-color: #8B4513; }
+    .text-input::placeholder { color: #aaa; }
+    textarea.text-input { min-height: 120px; resize: vertical; line-height: 1.6; }
+    .get-btn {
+      width: 100%; padding: 16px; border: none; border-radius: 50px;
+      background: linear-gradient(135deg, #4a6741, #2d4a3e);
+      color: #fff; font-size: 16px; font-weight: 500; cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(45, 74, 62, 0.4);
+    }
+    .get-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(45, 74, 62, 0.5); }
+    .get-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    .script-container { display: none; }
+    .script-container.show { display: block; }
+    .scene {
+      background: linear-gradient(135deg, #faf8f0 0%, #f5f0e0 100%);
+      border: 1px solid #d4c5a9; border-radius: 16px;
+      padding: 20px; margin-bottom: 16px;
+      position: relative;
+    }
+    .scene-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; padding-bottom: 10px;
+      border-bottom: 2px dashed #c9a227;
+    }
+    .scene-number {
+      background: linear-gradient(135deg, #4a6741, #2d4a3e);
+      color: #fff; padding: 4px 12px; border-radius: 20px;
+      font-size: 14px; font-weight: 600;
+    }
+    .scene-duration {
+      color: #666; font-size: 13px; background: #fff;
+      padding: 4px 10px; border-radius: 15px;
+    }
+    .scene-content { display: flex; flex-direction: column; gap: 12px; }
+    .content-block {
+      background: #fff; border-radius: 10px; padding: 14px;
+      position: relative;
+    }
+    .content-block.narration { border-left: 4px solid #4a6741; }
+    .content-block.image-prompt { border-left: 4px solid #c9a227; }
+    .content-block.video-prompt { border-left: 4px solid #8B4513; }
+    .block-label {
+      font-size: 12px; font-weight: 600; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .narration .block-label { color: #4a6741; }
+    .image-prompt .block-label { color: #c9a227; }
+    .video-prompt .block-label { color: #8B4513; }
+    .block-text {
+      font-size: 14px; line-height: 1.7; color: #333;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .copy-btn-small {
+      position: absolute; top: 10px; right: 10px;
+      background: #f1f3f5; border: none; border-radius: 6px;
+      padding: 4px 8px; font-size: 11px; color: #666;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .copy-btn-small:hover { background: #e9ecef; color: #333; }
+    .copy-btn-small.copied { background: #4a6741; color: #fff; }
+    .copy-all-section {
+      display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;
+    }
+    .copy-all-btn {
+      flex: 1; min-width: 140px; padding: 12px;
+      border: none; border-radius: 25px;
+      color: #fff; font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: all 0.3s;
+    }
+    .copy-all-btn.narration { background: #4a6741; }
+    .copy-all-btn.narration:hover { background: #3d5636; }
+    .copy-all-btn.image { background: #c9a227; }
+    .copy-all-btn.image:hover { background: #b8922a; }
+    .copy-all-btn.video { background: #8B4513; }
+    .copy-all-btn.video:hover { background: #7a3c10; }
+    .copy-all-btn.all { background: #2d4a3e; }
+    .copy-all-btn.all:hover { background: #243d32; }
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: #333; color: #fff; padding: 12px 24px; border-radius: 25px;
+      font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .placeholder {
+      color: #999; font-size: 14px; text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; min-height: 200px; gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-btn">← 返回首页</a>
+    <div class="main-card">
+      <div class="card-header">
+        <div class="icon">🎬</div>
+        <h1>儿童3D卡通分镜剧本</h1>
+        <p class="subtitle">3D卡通风格 · 古典故事动画分镜 · 可复制提示词</p>
+      </div>
+      <div class="form-group">
+        <div>
+          <div class="input-label">📜 故事内容 <span class="hint">（输入一段故事内容或事件描述，细节不够会自动补充）</span></div>
+          <textarea id="contentInput" class="text-input" placeholder="请输入故事内容或历史事件的描述，越详细越好，细节不够的会自动补充..."></textarea>
+        </div>
+      </div>
+      <button id="getBtn" class="get-btn">🎬 生成分镜剧本</button>
+      <div id="scriptContainer" class="script-container">
+        <!-- 分镜内容将在这里生成 -->
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let isRequesting = false;
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function copyToClipboard(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '已复制!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = '复制';
+          btn.classList.remove('copied');
+        }, 1500);
+      }).catch(() => showToast('复制失败'));
+    }
+
+    function copyAllNarration() {
+      const container = document.getElementById('scriptContainer');
+      const narrations = container.querySelectorAll('.narration .block-text');
+      const text = Array.from(narrations).map(n => n.textContent).join('\n\n');
+      copyToClipboard(text, document.querySelector('.copy-all-btn.narration'));
+    }
+
+    function copyAllImage() {
+      const container = document.getElementById('scriptContainer');
+      const prompts = container.querySelectorAll('.image-prompt .block-text');
+      const text = Array.from(prompts).map(p => p.textContent).join('\n\n');
+      copyToClipboard(text, document.querySelector('.copy-all-btn.image'));
+    }
+
+    function copyAllVideo() {
+      const container = document.getElementById('scriptContainer');
+      const prompts = container.querySelectorAll('.video-prompt .block-text');
+      const text = Array.from(prompts).map(p => p.textContent).join('\n\n');
+      copyToClipboard(text, document.querySelector('.copy-all-btn.video'));
+    }
+
+    function copyAllContent() {
+      const container = document.getElementById('scriptContainer');
+      const blocks = container.querySelectorAll('.content-block');
+      let text = '';
+      let sceneNum = 1;
+      blocks.forEach(block => {
+        const isNarration = block.classList.contains('narration');
+        const isImage = block.classList.contains('image-prompt');
+        const isVideo = block.classList.contains('video-prompt');
+        if (isNarration) {
+          text += `【场景${sceneNum} 旁白】\n${block.querySelector('.block-text').textContent}\n\n`;
+        } else if (isImage) {
+          text += `【场景${sceneNum} 图生图提示词】\n${block.querySelector('.block-text').textContent}\n\n`;
+        } else if (isVideo) {
+          text += `【场景${sceneNum} 图生视频提示词】\n${block.querySelector('.block-text').textContent}\n\n`;
+        }
+      });
+      copyToClipboard(text, document.querySelector('.copy-all-btn.all'));
+    }
+
+    function getSystemPrompt(content) {
+      return `你是一位专业的儿童动画分镜编剧，擅长为古典故事和历史事件创作适合儿童观看的分镜头剧本。你的作品不仅要有趣，更要能给小朋友带来智慧和启发。
+
+**原始素材**：
+${content}
+
+**任务**：
+1. 先阅读以上素材，理解故事的核心内容
+2. 根据素材自动生成一个适合的故事标题
+3. 如果素材中缺少细节（如人物外貌、场景描写、对话等），请自动补充丰富的细节，让故事更生动完整
+4. 创作一集完整的儿童版3D卡通分镜剧本
+
+**内容补充要求**：
+- 如果人物外貌描写不足，补充人物发型、表情、服装颜色、性格特点等
+- 如果场景描写不足，补充环境细节、天气、光线、物品摆设等
+- 如果对话或动作不足，补充具体的言行举止
+- 补充的内容要符合儿童理解水平，不能太复杂
+
+**目标受众**：6-12岁儿童
+
+**教育意义要求**：
+故事要融入以下教育元素（通过故事情节自然呈现，不要生硬说教）：
+1. 品德培养：诚实守信、勇敢善良、友爱互助、勤俭节约
+2. 智慧启发：善于思考、明辨是非、遇到困难想办法解决
+3. 传统文化：展现中华传统美德和文化魅力
+4. 积极向上：传递正能量，故事结局要温馨美好
+
+**画面风格要求**：
+重要：画面风格必须是3D卡通风格，具体要求如下：
+- 3D cartoon style, Pixar style, animated film character
+- 人物必须是3D建模的卡通小人造型，圆润可爱，表情夸张生动
+- 人物比例协调，头身比约为1:3或1:4，头部较大显得萌萌哒
+- 材质：光滑的卡通材质，轻微的边缘光，柔和的阴影
+- 色彩：鲜艳明亮，饱和度高，适合儿童
+- 细节：人物要有清晰的表情（大笑、惊讶、生气等）、手势动作、服饰细节
+- 场景：3D渲染的背景环境，有层次感，有光影效果
+- 整体感觉：像皮克斯动画或梦工厂动画那种3D卡通风格
+
+**故事讲述要求**：
+1. 语言简单易懂，用小朋友能理解的词汇
+2. 故事讲述要生动有趣，吸引小朋友注意力
+3. 适当简化复杂情节，保留核心故事线
+4. 人物出场时要介绍其性格特点（用儿童能理解的方式描述）
+5. 避免血腥暴力内容，用温和的方式表达
+6. 可以加入一些可爱有趣的比喻和联想
+7. 通过角色的选择和行为，让小朋友自然理解什么是对的、什么是好的
+
+**分镜结构要求**（共12个场景）：
+1. 【开场】介绍故事标题和主角出场，建立场景氛围
+2. 【第2-10场】讲述故事主体，层层递进，展现冲突和成长
+3. 【结尾】故事高潮后的温馨结局，点明故事告诉我们的道理
+
+**每个场景需要输出**：
+1. 【旁白文案】- 讲解员说的故事内容，要简洁生动，适合配音，字数控制在50-80字左右
+2. 【文生图提示词】- 用于生成这个场景画面的英文提示词，必须详细描述：
+   - 人物：具体描述3D卡通小人的外貌特征（发型、表情、服装颜色、动作姿态）、人物数量、人物关系
+   - 场景：描述背景环境（室内/室外、具体地点、时间）
+   - 光线：描述光线效果（暖色调、冷色调、逆光等）
+   - 视角：描述镜头角度（正面、侧面、俯视、仰视等）
+   - 风格标签：3D cartoon, Pixar style, animated, CGI, high quality, 8K
+3. 【图生视频提示词】- 用于将图片转成视频的提示词，要详细描述：
+   - 人物动作：具体描述人物要做的动作（如：character turns head and smiles, waves hand）
+   - 表情变化：人物表情的动态变化
+   - 场景动态：背景环境有无动态元素（飘动的云、摇曳的树叶、流动的水等）
+   - 摄像机运动：是否有镜头移动（zoom in, zoom out, pan left/right）
+   - 风格：保持3D卡通风格
+
+**格式要求**：
+请按以下格式输出（每个场景之间用"====="分隔）：
+
+【场景1 开场】（5秒）
+【旁白文案】
+（开场旁白，介绍故事标题，引入主角出场，营造期待感）
+【文生图提示词】
+（英文提示词）
+【图生视频提示词】
+（视频动态描述）
+=====
+【场景2】...（中间场景依次展开）
+...（共12个场景）
+=====
+【场景12 结尾】（5秒）
+【旁白文案】
+（结尾旁白，总结故事，点明道理，让小朋友有所收获）
+【文生图提示词】
+（英文提示词）
+【图生视频提示词】
+（视频动态描述）`;
+
+    }
+
+    async function fetchScript() {
+      const content = document.getElementById('contentInput').value.trim();
+      
+      if (!content) { showToast('请输入故事内容'); return; }
+      if (isRequesting) { showToast('生成中，请稍候...'); return; }
+      isRequesting = true;
+
+      const btn = document.getElementById('getBtn');
+      const container = document.getElementById('scriptContainer');
+      btn.disabled = true;
+      btn.textContent = '⏳ 生成分镜中...';
+      container.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">🎬</span><span>正在为小朋友创作3D卡通分镜剧本...</span></div>';
+      container.classList.add('show');
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq" },
+          body: JSON.stringify({
+            "model": "glm-4-flash",
+            "messages": [
+              { "role": "system", "content": getSystemPrompt(content) },
+              { "role": "user", "content": `请根据以下内容创作儿童版3D卡通分镜剧本：` + content }
+            ],
+            "stream": false,
+            "thinking": { "type": "disabled" },
+            "max_tokens": 65536,
+            "temperature": 1.0
+          })
+        });
+
+        const data = await response.json();
+        const result = data.choices[0].message.content;
+
+        renderScript(result);
+
+      } catch (error) {
+        console.error(error);
+        container.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">❌</span><span>生成失败，请检查API配置</span></div>';
+      }
+
+      isRequesting = false;
+      btn.disabled = false;
+      btn.textContent = '🎋 生成分镜剧本';
+    }
+
+    function renderScript(result) {
+      const container = document.getElementById('scriptContainer');
+      
+      // 解析分镜内容
+      const scenes = result.split('=====').filter(s => s.trim());
+      let html = '';
+      let sceneIndex = 1;
+
+      for (const scene of scenes) {
+        if (!scene.trim()) continue;
+        
+        // 提取场景编号（如果有）
+        let sceneTitle = `场景 ${sceneIndex}`;
+        const sceneMatch = scene.match(/【场景\s*(\d+)】/);
+        if (sceneMatch) {
+          sceneTitle = `场景 ${sceneMatch[1]}`;
+        }
+
+        // 提取旁白
+        const narrationMatch = scene.match(/【旁白文案】\s*\n*([\s\S]*?)(?=【文生图提示词】|$)/i);
+        const narration = narrationMatch ? narrationMatch[1].trim() : '';
+
+        // 提取文生图提示词
+        const imageMatch = scene.match(/【文生图提示词】\s*\n*([\s\S]*?)(?=【图生视频提示词】|$)/i);
+        const imagePrompt = imageMatch ? imageMatch[1].trim() : '';
+
+        // 提取图生视频提示词
+        const videoMatch = scene.match(/【图生视频提示词】\s*\n*([\s\S]*?)$/i);
+        const videoPrompt = videoMatch ? videoMatch[1].trim() : '';
+
+        if (!narration && !imagePrompt && !videoPrompt) continue;
+
+        html += `
+          <div class="scene">
+            <div class="scene-header">
+              <span class="scene-number">${sceneTitle}</span>
+              <span class="scene-duration">⏱ 5秒</span>
+            </div>
+            <div class="scene-content">
+              ${narration ? `
+                <div class="content-block narration">
+                  <div class="block-label">🎤 旁白文案</div>
+                  <div class="block-text">${escapeHtml(narration)}</div>
+                  <button class="copy-btn-small" onclick="copyToClipboard(this.previousElementSibling.textContent, this)">复制</button>
+                </div>
+              ` : ''}
+              ${imagePrompt ? `
+                <div class="content-block image-prompt">
+                  <div class="block-label">🖼️ 文生图提示词</div>
+                  <div class="block-text">${escapeHtml(imagePrompt)}</div>
+                  <button class="copy-btn-small" onclick="copyToClipboard(this.previousElementSibling.textContent, this)">复制</button>
+                </div>
+              ` : ''}
+              ${videoPrompt ? `
+                <div class="content-block video-prompt">
+                  <div class="block-label">🎬 图生视频提示词</div>
+                  <div class="block-text">${escapeHtml(videoPrompt)}</div>
+                  <button class="copy-btn-small" onclick="copyToClipboard(this.previousElementSibling.textContent, this)">复制</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+        sceneIndex++;
+      }
+
+      if (html) {
+        container.innerHTML = html + `
+          <div class="copy-all-section">
+            <button class="copy-all-btn narration" onclick="copyAllNarration()">📋 复制全部旁白</button>
+            <button class="copy-all-btn image" onclick="copyAllImage()">📋 复制全部图生图</button>
+            <button class="copy-all-btn video" onclick="copyAllVideo()">📋 复制全部图生视频</button>
+            <button class="copy-all-btn all" onclick="copyAllContent()">📋 复制全部内容</button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">❌</span><span>解析分镜内容失败，请重试</span></div>';
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    document.getElementById('getBtn').addEventListener('click', fetchScript);
+  </script>
+
+  <!-- 请在这里配置你的智谱AI API地址 -->
+  <script>
+    const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'; // 例如: https://open.bigmodel.cn/api/paas/v4/chat/completions
+  </script>
+</body>
+</html>
