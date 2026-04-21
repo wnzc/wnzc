@@ -82,6 +82,7 @@
       position: relative;
     }
     .content-block.narration { border-left: 4px solid #4a6741; }
+    .content-block.dialogue { border-left: 4px solid #e91e63; }
     .content-block.image-prompt { border-left: 4px solid #c9a227; }
     .content-block.video-prompt { border-left: 4px solid #8B4513; }
     .block-label {
@@ -89,6 +90,7 @@
       display: flex; align-items: center; gap: 6px;
     }
     .narration .block-label { color: #4a6741; }
+    .dialogue .block-label { color: #e91e63; }
     .image-prompt .block-label { color: #c9a227; }
     .video-prompt .block-label { color: #8B4513; }
     .block-text {
@@ -114,6 +116,8 @@
     }
     .copy-all-btn.narration { background: #4a6741; }
     .copy-all-btn.narration:hover { background: #3d5636; }
+    .copy-all-btn.dialogue { background: #e91e63; }
+    .copy-all-btn.dialogue:hover { background: #c2185b; }
     .copy-all-btn.image { background: #c9a227; }
     .copy-all-btn.image:hover { background: #b8922a; }
     .copy-all-btn.video { background: #8B4513; }
@@ -198,6 +202,13 @@
       copyToClipboard(text, document.querySelector('.copy-all-btn.video'));
     }
 
+    function copyAllDialogue() {
+      const container = document.getElementById('scriptContainer');
+      const dialogs = container.querySelectorAll('.dialogue .block-text');
+      const text = Array.from(dialogs).map(d => d.textContent).join('\n\n');
+      copyToClipboard(text, document.querySelector('.copy-all-btn.dialogue'));
+    }
+
     function copyAllContent() {
       const container = document.getElementById('scriptContainer');
       const blocks = container.querySelectorAll('.content-block');
@@ -205,10 +216,13 @@
       let sceneNum = 1;
       blocks.forEach(block => {
         const isNarration = block.classList.contains('narration');
+        const isDialogue = block.classList.contains('dialogue');
         const isImage = block.classList.contains('image-prompt');
         const isVideo = block.classList.contains('video-prompt');
         if (isNarration) {
           text += `【场景${sceneNum} 旁白】\n${block.querySelector('.block-text').textContent}\n\n`;
+        } else if (isDialogue) {
+          text += `【场景${sceneNum} 对话】\n${block.querySelector('.block-text').textContent}\n\n`;
         } else if (isImage) {
           text += `【场景${sceneNum} 图生图提示词】\n${block.querySelector('.block-text').textContent}\n\n`;
         } else if (isVideo) {
@@ -265,20 +279,21 @@ ${content}
 6. 可以加入一些可爱有趣的比喻和联想
 7. 通过角色的选择和行为，让小朋友自然理解什么是对的、什么是好的
 
-**分镜结构要求**（共12个场景）：
+**分镜结构要求**（共20多个场景）：
 1. 【开场】介绍故事标题和主角出场，建立场景氛围
-2. 【第2-10场】讲述故事主体，层层递进，展现冲突和成长
-3. 【结尾】故事高潮后的温馨结局，点明故事告诉我们的道理
+2. 【第2-n-1场】讲述故事主体，层层递进，展现冲突和成长
+3. 【结尾】故事高潮后的温馨结局，点明故事告诉我们的道理，通过这个小故事要学会什么道理。
 
 **每个场景需要输出**：
 1. 【旁白文案】- 讲解员说的故事内容，要简洁生动，适合配音，字数控制在50-80字左右
-2. 【文生图提示词】- 用于生成这个场景画面的英文提示词，必须详细描述：
+2. 【对话文案】- 角色之间的对话，用"角色名："的格式，要符合角色性格，语言简洁有趣，字数控制在30-60字左右。如果没有对话可不写。
+3. 【文生图提示词】- 用于生成这个场景画面的英文提示词，必须详细描述：
    - 人物：具体描述3D卡通小人的外貌特征（发型、表情、服装颜色、动作姿态）、人物数量、人物关系
    - 场景：描述背景环境（室内/室外、具体地点、时间）
    - 光线：描述光线效果（暖色调、冷色调、逆光等）
    - 视角：描述镜头角度（正面、侧面、俯视、仰视等）
    - 风格标签：3D cartoon, Pixar style, animated, CGI, high quality, 8K
-3. 【图生视频提示词】- 用于将图片转成视频的提示词，要详细描述：
+4. 【图生视频提示词】- 用于将图片转成视频的提示词，10秒钟，要详细描述：
    - 人物动作：具体描述人物要做的动作（如：character turns head and smiles, waves hand）
    - 表情变化：人物表情的动态变化
    - 场景动态：背景环境有无动态元素（飘动的云、摇曳的树叶、流动的水等）
@@ -288,20 +303,25 @@ ${content}
 **格式要求**：
 请按以下格式输出（每个场景之间用"====="分隔）：
 
-【场景1 开场】（5秒）
+【场景1 开场】（10秒）
 【旁白文案】
 （开场旁白，介绍故事标题，引入主角出场，营造期待感）
+【对话文案】
+（小兔：今天天气真好呀！）
+（小熊：咱们一起去玩吧！）
 【文生图提示词】
 （英文提示词）
 【图生视频提示词】
 （视频动态描述）
 =====
 【场景2】...（中间场景依次展开）
-...（共12个场景）
+...（共n个场景）
 =====
-【场景12 结尾】（5秒）
+【场景n 结尾】（10秒）
 【旁白文案】
 （结尾旁白，总结故事，点明道理，让小朋友有所收获）
+【对话文案】
+（如果有对话就写，没有可不写）
 【文生图提示词】
 （英文提示词）
 【图生视频提示词】
@@ -374,8 +394,12 @@ ${content}
         }
 
         // 提取旁白
-        const narrationMatch = scene.match(/【旁白文案】\s*\n*([\s\S]*?)(?=【文生图提示词】|$)/i);
+        const narrationMatch = scene.match(/【旁白文案】\s*\n*([\s\S]*?)(?=【对话文案】|【文生图提示词】|$)/i);
         const narration = narrationMatch ? narrationMatch[1].trim() : '';
+
+        // 提取对话文案
+        const dialogueMatch = scene.match(/【对话文案】\s*\n*([\s\S]*?)(?=【文生图提示词】|$)/i);
+        const dialogue = dialogueMatch ? dialogueMatch[1].trim() : '';
 
         // 提取文生图提示词
         const imageMatch = scene.match(/【文生图提示词】\s*\n*([\s\S]*?)(?=【图生视频提示词】|$)/i);
@@ -385,7 +409,7 @@ ${content}
         const videoMatch = scene.match(/【图生视频提示词】\s*\n*([\s\S]*?)$/i);
         const videoPrompt = videoMatch ? videoMatch[1].trim() : '';
 
-        if (!narration && !imagePrompt && !videoPrompt) continue;
+        if (!narration && !dialogue && !imagePrompt && !videoPrompt) continue;
 
         html += `
           <div class="scene">
@@ -398,6 +422,13 @@ ${content}
                 <div class="content-block narration">
                   <div class="block-label">🎤 旁白文案</div>
                   <div class="block-text">${escapeHtml(narration)}</div>
+                  <button class="copy-btn-small" onclick="copyToClipboard(this.previousElementSibling.textContent, this)">复制</button>
+                </div>
+              ` : ''}
+              ${dialogue ? `
+                <div class="content-block dialogue">
+                  <div class="block-label">💬 对话文案</div>
+                  <div class="block-text">${escapeHtml(dialogue)}</div>
                   <button class="copy-btn-small" onclick="copyToClipboard(this.previousElementSibling.textContent, this)">复制</button>
                 </div>
               ` : ''}
@@ -425,6 +456,7 @@ ${content}
         container.innerHTML = html + `
           <div class="copy-all-section">
             <button class="copy-all-btn narration" onclick="copyAllNarration()">📋 复制全部旁白</button>
+            <button class="copy-all-btn dialogue" onclick="copyAllDialogue()">📋 复制全部对话</button>
             <button class="copy-all-btn image" onclick="copyAllImage()">📋 复制全部图生图</button>
             <button class="copy-all-btn video" onclick="copyAllVideo()">📋 复制全部图生视频</button>
             <button class="copy-all-btn all" onclick="copyAllContent()">📋 复制全部内容</button>

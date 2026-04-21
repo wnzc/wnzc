@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>教育童话故事</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 700px; margin: 0 auto; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: #e91e63; text-decoration: none; font-size: 14px;
+      margin-bottom: 16px; padding: 8px 12px;
+      background: rgba(233, 30, 99, 0.1);
+      border: 1px solid rgba(233, 30, 99, 0.3);
+      border-radius: 20px;
+    }
+    .back-btn:hover { background: rgba(233, 30, 99, 0.2); }
+    .main-card {
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 24px; padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+    .card-header { text-align: center; margin-bottom: 24px; }
+    .card-header .icon { font-size: 48px; margin-bottom: 8px; }
+    .card-header h1 { font-size: 22px; color: #e91e63; font-weight: 600; }
+    .card-header .subtitle { font-size: 13px; color: #666; margin-top: 4px; }
+    
+    .theme-section { margin-bottom: 20px; }
+    .theme-label {
+      font-size: 14px; color: #444; font-weight: 500; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .theme-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+    }
+    .theme-chip {
+      padding: 10px 14px; border: 2px solid #f8bbd0;
+      border-radius: 20px; background: #fff0f5;
+      font-size: 13px; color: #c2185b; cursor: pointer;
+      transition: all 0.3s; text-align: center;
+    }
+    .theme-chip:hover { background: #fce4ec; border-color: #e91e63; }
+    .theme-chip.selected { background: #e91e63; color: #fff; border-color: #e91e63; }
+    
+    .form-group { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+    .input-label {
+      font-size: 14px; color: #444; font-weight: 500; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .input-label .hint { font-weight: normal; color: #888; font-size: 12px; }
+    .text-input {
+      width: 100%; padding: 14px 16px;
+      border: 2px solid #f8bbd0; border-radius: 12px;
+      font-size: 16px; color: #333; background: #fff0f5;
+      transition: border-color 0.3s;
+    }
+    .text-input:focus { outline: none; border-color: #e91e63; }
+    .text-input::placeholder { color: #bbb; }
+    textarea.text-input { min-height: 80px; resize: vertical; line-height: 1.6; }
+    
+    .get-btn {
+      width: 100%; padding: 16px; border: none; border-radius: 50px;
+      background: linear-gradient(135deg, #e91e63, #c2185b);
+      color: #fff; font-size: 16px; font-weight: 500; cursor: pointer;
+      transition: all 0.3s; box-shadow: 0 4px 15px rgba(233, 30, 99, 0.4);
+    }
+    .get-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(233, 30, 99, 0.5); }
+    .get-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    
+    .story-container { display: none; margin-top: 24px; }
+    .story-container.show { display: block; }
+    .story-content {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      border: 2px solid #f8bbd0;
+    }
+    .story-title {
+      text-align: center;
+      font-size: 20px;
+      color: #c2185b;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 2px dashed #f8bbd0;
+    }
+    .story-text {
+      font-size: 16px;
+      line-height: 2;
+      color: #333;
+      white-space: pre-wrap;
+    }
+    .story-text p { margin-bottom: 16px; }
+    .cursor-blink {
+      display: inline-block;
+      width: 2px;
+      height: 1.2em;
+      background: #e91e63;
+      animation: blink 1s infinite;
+      vertical-align: middle;
+      margin-left: 2px;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .action-btn.copy { background: #f8bbd0; color: #c2185b; }
+    .action-btn.copy:hover { background: #f48fb1; }
+    .action-btn.new { background: #e91e63; color: #fff; }
+    .action-btn.new:hover { background: #c2185b; }
+    .action-btn.copied { background: #4caf50; color: #fff; }
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+      background: #333; color: #fff; padding: 12px 24px; border-radius: 25px;
+      font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .typing-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      padding: 20px;
+    }
+    .typing-dot {
+      width: 10px;
+      height: 10px;
+      background: #f48fb1;
+      border-radius: 50%;
+      animation: typing 1.4s infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-10px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="index.html" class="back-btn">← 返回首页</a>
+    <div class="main-card">
+      <div class="card-header">
+        <div class="icon">📚</div>
+        <h1>教育童话故事</h1>
+        <p class="subtitle">AI创作 · 有教育意义 · 温馨可爱风格</p>
+      </div>
+      
+      <div class="theme-section">
+        <div class="theme-label">💝 选择教育主题 <span class="hint">（可选多个）</span></div>
+        <div class="theme-grid">
+          <div class="theme-chip" data-theme="诚实">🤝 诚实</div>
+          <div class="theme-chip" data-theme="勇敢">🦁 勇敢</div>
+          <div class="theme-chip" data-theme="友爱">💕 友爱</div>
+          <div class="theme-chip" data-theme="分享">🎁 分享</div>
+          <div class="theme-chip" data-theme="智慧">🧠 智慧</div>
+          <div class="theme-chip" data-theme="环保">🌱 环保</div>
+          <div class="theme-chip" data-theme="勤奋">📖 勤奋</div>
+          <div class="theme-chip" data-theme="感恩">🙏 感恩</div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <div>
+          <div class="input-label">🎨 故事风格 <span class="hint">（可留空）</span></div>
+          <input type="text" id="styleInput" class="text-input" placeholder="如：森林小动物、魔法世界、海底世界...">
+        </div>
+        <div>
+          <div class="input-label">✨ 补充说明 <span class="hint">（可选）</span></div>
+          <textarea id="extraInput" class="text-input" placeholder="你想要的角色、情节或其他要求..."></textarea>
+        </div>
+      </div>
+      <button id="getBtn" class="get-btn">✨ 创作童话故事</button>
+      
+      <div id="storyContainer" class="story-container">
+        <div id="storyContent" class="story-content"></div>
+        <div class="actions" id="actionsContainer" style="display: none;">
+          <button class="action-btn copy" onclick="copyStory()">📋 复制故事</button>
+          <button class="action-btn new" onclick="newStory()">✨ 再来一个</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    let isRequesting = false;
+    let selectedThemes = [];
+    let fullStoryText = '';
+
+    document.querySelectorAll('.theme-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('selected');
+        const theme = chip.dataset.theme;
+        if (chip.classList.contains('selected')) {
+          selectedThemes.push(theme);
+        } else {
+          selectedThemes = selectedThemes.filter(t => t !== theme);
+        }
+      });
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function copyStory() {
+      navigator.clipboard.writeText(fullStoryText).then(() => {
+        const btn = document.querySelector('.action-btn.copy');
+        btn.textContent = '已复制!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = '📋 复制故事';
+          btn.classList.remove('copied');
+        }, 1500);
+      }).catch(() => showToast('复制失败'));
+    }
+
+    function newStory() {
+      document.getElementById('storyContainer').classList.remove('show');
+      document.getElementById('actionsContainer').style.display = 'none';
+      fetchStory();
+    }
+
+    function getSystemPrompt(style, extra, themes) {
+      const themeText = themes.length > 0 ? `主题：${themes.join('、')}，` : '';
+      
+      return `你是一位专业的儿童童话作家，擅长创作温馨可爱、富有教育意义的童话故事。
+
+**任务**：
+创作一个适合3-10岁儿童阅读的原创童话故事。
+
+${themeText}
+风格偏好：${style || '自由发挥，可以是森林动物、魔法世界、公主骑士、海底世界等温馨可爱的风格'}
+${extra ? `补充要求：${extra}` : ''}
+
+**故事创作要求**：
+
+1. **教育意义（核心）**：
+   - 故事要自然融入品德教育，通过故事情节和角色行为传达道理
+   - 不要生硬说教，让小朋友在故事中自己感受到什么是好的、什么是美的
+   - 结局要温馨美好，传递正能量
+
+2. **故事结构**：
+   - 【开头】：介绍故事发生的世界，引出主人公
+   - 【经过】：讲述一个小冲突或小困难，主人公通过某种美德来解决
+   - 【高潮】：故事最精彩的部分，主人公展现优秀品质
+   - 【结尾】：圆满解决问题，点明故事要告诉我们的道理
+
+3. **故事特点**：
+   - 语言简洁优美，适合儿童理解
+   - 有趣的情节和可爱的角色
+   - 适当使用拟人、比喻等修辞手法
+   - 避免恐怖、暴力、悲伤的情节
+   - 故事内容要丰富详尽，至少2000字
+
+4. **角色设计**：
+   - 设计2-4个可爱的角色
+   - 每个角色有外貌描写和性格特点
+   - 主人公要有成长和变化
+
+**输出要求**：
+只需要输出完整的童话故事正文，语言生动优美，段落清晰。
+不要输出标题、大纲、角色介绍等，直接开始讲故事。
+`;
+    }
+
+    async function fetchStory() {
+      const style = document.getElementById('styleInput').value.trim();
+      const extra = document.getElementById('extraInput').value.trim();
+      
+      if (isRequesting) { showToast('生成中，请稍候...'); return; }
+      isRequesting = true;
+
+      const btn = document.getElementById('getBtn');
+      const container = document.getElementById('storyContainer');
+      const contentDiv = document.getElementById('storyContent');
+      const actionsDiv = document.getElementById('actionsContainer');
+      
+      btn.disabled = true;
+      btn.textContent = '⏳ 创作中...';
+      
+      container.classList.add('show');
+      contentDiv.innerHTML = `
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+        <p style="text-align: center; color: #999;">正在为小朋友创作故事...</p>
+      `;
+      actionsDiv.style.display = 'none';
+
+      fullStoryText = '';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq" },
+          body: JSON.stringify({
+            "model": "glm-4-flash",
+            "messages": [
+              { "role": "system", "content": getSystemPrompt(style, extra, selectedThemes) },
+              { "role": "user", "content": "请创作一个适合儿童的童话故事" }
+            ],
+            "stream": true,
+            "thinking": { "type": "disabled" },
+            "max_tokens": 65536,
+            "temperature": 1.0
+          })
+        });
+
+        if (!response.ok) throw new Error('API请求失败');
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        contentDiv.innerHTML = '<div id="storyText" class="story-text"></div>';
+        const storyTextDiv = document.getElementById('storyText');
+        
+        let buffer = '';
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content || '';
+                
+                if (content) {
+                  buffer += content;
+                  fullStoryText += content;
+                  storyTextDiv.innerHTML = formatStoryText(buffer) + '<span class="cursor-blink"></span>';
+                  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+              } catch (e) {}
+            }
+          }
+        }
+        
+        // 移除光标，显示完成状态
+        storyTextDiv.innerHTML = formatStoryText(buffer);
+        actionsDiv.style.display = 'flex';
+
+      } catch (error) {
+        console.error(error);
+        contentDiv.innerHTML = `
+          <p style="text-align: center; color: #e91e63; font-size: 48px;">❌</p>
+          <p style="text-align: center; color: #999;">生成失败，请重试</p>
+        `;
+      }
+
+      isRequesting = false;
+      btn.disabled = false;
+      btn.textContent = '✨ 创作童话故事';
+    }
+
+    function formatStoryText(text) {
+      // 将文本按段落分隔并添加换行
+      const paragraphs = text.split('\n\n').filter(p => p.trim());
+      return paragraphs.map(p => `<p>${escapeHtml(p.trim())}</p>`).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    document.getElementById('getBtn').addEventListener('click', fetchStory);
+  </script>
+
+  <script>
+    const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+  </script>
+</body>
+</html>
