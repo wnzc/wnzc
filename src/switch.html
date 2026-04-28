@@ -209,6 +209,11 @@
             text-shadow: 0 0 5px rgba(0, 255, 170, 0.4);
         }
 
+        .rule.hint {
+            color: #ff6b6b;
+            font-style: italic;
+        }
+
         /* ===== 弹窗 ===== */
 
         .modal {
@@ -251,6 +256,26 @@
         button:hover {
             box-shadow: 0 0 12px #00ffaa;
         }
+        
+        /* 时间显示 */
+        .timer {
+            font-size: 16px;
+            color: #ff6b6b;
+            margin-top: 4px;
+        }
+        
+        /* 难度提示 */
+        .difficulty-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+        .difficulty-easy { background: #4caf50; color: #fff; }
+        .difficulty-medium { background: #ff9800; color: #fff; }
+        .difficulty-hard { background: #f44336; color: #fff; }
+        .difficulty-extreme { background: #9c27b0; color: #fff; }
     </style>
 </head>
 
@@ -260,7 +285,8 @@
         <button class="back-btn" id="backBtn" title="返回">&#8592;</button>
         <div class="title">LOGIC MATRIX</div>
         <div class="stability" id="stability">0%</div>
-        <div class="level">Level <span id="level">1</span></div>
+        <div class="level">Level <span id="level">1</span> <span id="difficultyBadge" class="difficulty-badge difficulty-easy">基础</span></div>
+        <div class="timer">用时: <span id="timer">0:00</span></div>
         <div class="progress">
             <div class="bar" id="bar"></div>
         </div>
@@ -275,6 +301,7 @@
     <div class="modal" id="modal">
         <div class="modal-content">
             <h2>关卡完成</h2>
+            <p>用时: <span id="finalTime">0:00</span></p>
             <button onclick="nextLevel()">下一关</button>
         </div>
     </div>
@@ -285,7 +312,40 @@
         let switches = {};
         let rules = [];
         let ruleText = [];
+        let hiddenRules = [];
+        let hiddenRuleText = [];
         let gameFinished = false;
+        let startTime = null;
+        let timerInterval = null;
+
+        /* ========= 难度配置 ========= */
+        
+        const DIFFICULTY_CONFIG = {
+            1: { switches: 4, visibleRules: 3, hiddenRules: 0, types: [0, 4], name: "基础", badge: "easy" },
+            2: { switches: 4, visibleRules: 3, hiddenRules: 1, types: [0, 4], name: "基础+", badge: "easy" },
+            3: { switches: 5, visibleRules: 4, hiddenRules: 0, types: [0, 1, 4], name: "入门", badge: "easy" },
+            4: { switches: 5, visibleRules: 4, hiddenRules: 1, types: [0, 1, 4], name: "入门+", badge: "medium" },
+            5: { switches: 5, visibleRules: 5, hiddenRules: 1, types: [0, 1, 2, 4], name: "进阶", badge: "medium" },
+            6: { switches: 6, visibleRules: 4, hiddenRules: 2, types: [0, 1, 2, 3, 4, 10, 11], name: "进阶+", badge: "medium" },
+            7: { switches: 6, visibleRules: 5, hiddenRules: 2, types: [0, 1, 2, 3, 4, 6, 7, 8, 10, 11], name: "困难", badge: "hard" },
+            8: { switches: 6, visibleRules: 6, hiddenRules: 2, types: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], name: "困难+", badge: "hard" },
+            9: { switches: 7, visibleRules: 5, hiddenRules: 3, types: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], name: "专家", badge: "hard" },
+            10: { switches: 7, visibleRules: 6, hiddenRules: 3, types: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], name: "专家+", badge: "extreme" },
+        };
+        
+        function getDifficulty(lvl) {
+            if (lvl <= 10) return DIFFICULTY_CONFIG[lvl];
+            // Level 11+: 继续增加难度
+            const extra = Math.floor((lvl - 10) / 2);
+            return {
+                switches: Math.min(9, 7 + extra),
+                visibleRules: Math.min(8, 6 + extra),
+                hiddenRules: Math.min(5, 3 + extra),
+                types: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+                name: "极难",
+                badge: "extreme"
+            };
+        }
 
         /* ========= 缓存机制 ========= */
 
@@ -306,41 +366,19 @@
         /* ========= 生成关卡 ========= */
 
         function generateLevel() {
-
-            let switchCount, ruleCount, difficulty;
-
-            if (level <= 2) {
-                switchCount = 4;
-                ruleCount = 4;
-                difficulty = "basic";
-            }
-            else if (level <= 5) {
-                switchCount = 6;
-                ruleCount = 6;
-                difficulty = "inverse";
-            }
-            else if (level <= 10) {
-                switchCount = 6;
-                ruleCount = 6;
-                difficulty = "mixed";
-            }
-            else {
-                switchCount = 8;
-                ruleCount = 8;
-                difficulty = "hard";
-            }
-
-            const letters = "ABCDEFGH".split("").slice(0, switchCount);
+            const config = getDifficulty(level);
+            const letters = "ABCDEFGHI".split("").slice(0, config.switches);
 
             let attempts = 0;
 
-            while (attempts < 500) {
-
+            while (attempts < 1000) {
                 attempts++;
 
                 switches = {};
                 rules = [];
                 ruleText = [];
+                hiddenRules = [];
+                hiddenRuleText = [];
 
                 let solution = {};
 
@@ -349,70 +387,199 @@
                     solution[l] = Math.random() > 0.5;
                 });
 
-                while (rules.length < ruleCount) {
-
-                    let type;
-
-                    if (difficulty === "basic") {
-                        type = Math.random() < 0.7 ? 0 : 4;
-                    }
-                    else if (difficulty === "inverse") {
-                        type = Math.random() < 0.5 ? 1 : 0;
-                    }
-                    else {
-                        type = Math.floor(Math.random() * 5);
-                    }
-
-                    if (type === 0) {
-                        let k = randomKey(letters);
-                        let val = solution[k];
-                        rules.push(s => s[k] === val);
-                        ruleText.push(k + " 必须" + (val ? "开启" : "关闭"));
-                    }
-
-                    if (type === 1) {
-                        let [a, b] = randomPair(letters);
-                        rules.push(s => s[a] !== s[b]);
-                        ruleText.push(a + " 与 " + b + " 必须相反");
-                    }
-
-                    if (type === 2) {
-                        let [a, b] = randomPair(letters);
-                        rules.push(s => s[a] === s[b]);
-                        ruleText.push(a + " 与 " + b + " 必须相同");
-                    }
-
-                    if (type === 3) {
-                        let [a, b] = randomPair(letters);
-                        let val = solution[b];
-                        rules.push(s => !s[a] || s[b] === val);
-                        ruleText.push("如果 " + a + " 开启，则 " + b + " 必须" + (val ? "开启" : "关闭"));
-                    }
-
-                    if (type === 4) {
-                        let need = Object.values(solution).filter(v => v).length;
-                        rules.push(s => Object.values(s).filter(v => v).length === need);
-                        ruleText.push("必须恰好有 " + need + " 个开启");
+                // 生成所有规则
+                let allRules = [];
+                let allRuleTexts = [];
+                
+                while (allRules.length < config.visibleRules + config.hiddenRules) {
+                    let type = config.types[Math.floor(Math.random() * config.types.length)];
+                    let result = generateRule(type, letters, solution);
+                    if (result) {
+                        allRules.push(result.rule);
+                        allRuleTexts.push(result.text);
                     }
                 }
 
-                if (uniqueCheck()) return;
+                // 分配显示和隐藏的规则
+                let indices = shuffleArray([...Array(allRules.length).keys()]);
+                for (let i = 0; i < allRules.length; i++) {
+                    if (i < config.visibleRules) {
+                        rules.push(allRules[indices[i]]);
+                        ruleText.push(allRuleTexts[indices[i]]);
+                    } else {
+                        hiddenRules.push(allRules[indices[i]]);
+                        hiddenRuleText.push(allRuleTexts[indices[i]]);
+                    }
+                }
+
+                if (uniqueCheck()) {
+                    updateDifficultyBadge(config);
+                    return;
+                }
             }
 
-            generateLevel();
+            // 如果找不到唯一解，降低难度重试
+            if (level > 1) {
+                level--;
+                generateLevel();
+                level++;
+            }
+        }
+        
+        function generateRule(type, letters, solution) {
+            switch (type) {
+                case 0: return generateBasicRule(letters, solution);
+                case 1: return generateXorRule(letters, solution);
+                case 2: return generateXnorRule(letters, solution);
+                case 3: return generateImplicationRule(letters, solution);
+                case 4: return generateCountRule(solution);
+                case 5: return generateTripleRule(letters, solution);
+                case 6: return generateChainRule(letters, solution);
+                case 7: return generateLoopChainRule(letters, solution);
+                case 8: return generateOrChainRule(letters, solution);
+                case 9: return generateLongChainRule(letters, solution);
+                case 10: return generateBidirectionalRule(letters, solution);
+                case 11: return generateReverseChainRule(letters, solution);
+                default: return null;
+            }
+        }
+        
+        function generateBasicRule(letters, solution) {
+            let k = randomKey(letters);
+            let val = solution[k];
+            return {
+                rule: s => s[k] === val,
+                text: k + " 必须" + (val ? "开启" : "关闭")
+            };
+        }
+        
+        function generateXorRule(letters, solution) {
+            let [a, b] = randomPair(letters);
+            return {
+                rule: s => s[a] !== s[b],
+                text: a + " 与 " + b + " 必须相反"
+            };
+        }
+        
+        function generateXnorRule(letters, solution) {
+            let [a, b] = randomPair(letters);
+            return {
+                rule: s => s[a] === s[b],
+                text: a + " 与 " + b + " 必须相同"
+            };
+        }
+        
+        function generateImplicationRule(letters, solution) {
+            let [a, b] = randomPair(letters);
+            let val = solution[b];
+            return {
+                rule: s => !s[a] || s[b] === val,
+                text: "如果 " + a + " 开启，则 " + b + " 必须" + (val ? "开启" : "关闭")
+            };
+        }
+        
+        function generateCountRule(solution) {
+            let need = Object.values(solution).filter(v => v).length;
+            return {
+                rule: s => Object.values(s).filter(v => v).length === need,
+                text: "恰好有 " + need + " 个开关开启"
+            };
+        }
+        
+        function generateTripleRule(letters, solution) {
+            if (letters.length < 3) return null;
+            let shuffled = shuffleArray([...letters]);
+            let a = shuffled[0], b = shuffled[1], c = shuffled[2];
+            let sum = (solution[a] ? 1 : 0) + (solution[b] ? 1 : 0) + (solution[c] ? 1 : 0);
+            return {
+                rule: s => (s[a] ? 1 : 0) + (s[b] ? 1 : 0) + (s[c] ? 1 : 0) === sum,
+                text: a + "、" + b + "、" + c + " 中恰好 " + sum + " 个开启"
+            };
+        }
+        
+        function generateChainRule(letters, solution) {
+            if (letters.length < 3) return null;
+            let shuffled = shuffleArray([...letters]);
+            let a = shuffled[0], b = shuffled[1], c = shuffled[2];
+            return {
+                rule: s => !s[a] || !s[b] || s[c],
+                text: "如果 " + a + " 和 " + b + " 都开启，则 " + c + " 也必须开启"
+            };
+        }
+        
+        // 环式连锁：如果A开启则B开启，如果B开启则C开启
+        function generateLoopChainRule(letters, solution) {
+            if (letters.length < 3) return null;
+            let shuffled = shuffleArray([...letters]);
+            let a = shuffled[0], b = shuffled[1], c = shuffled[2];
+            return {
+                rule: s => (!s[a] || s[b]) && (!s[b] || s[c]) && (!s[c] || s[a]),
+                text: a + "→" + b + "→" + c + " 形成连锁（A开则B开，B开则C开，C开则A开）"
+            };
+        }
+        
+        // 或连锁：如果A或B开启，则C必须开启
+        function generateOrChainRule(letters, solution) {
+            if (letters.length < 3) return null;
+            let shuffled = shuffleArray([...letters]);
+            let a = shuffled[0], b = shuffled[1], c = shuffled[2];
+            return {
+                rule: s => (!s[a] && !s[b]) || s[c],
+                text: "如果 " + a + " 或 " + b + " 开启，则 " + c + " 也必须开启"
+            };
+        }
+        
+        // 长链连锁：3级连锁 A→B→C
+        function generateLongChainRule(letters, solution) {
+            if (letters.length < 3) return null;
+            let shuffled = shuffleArray([...letters]);
+            let a = shuffled[0], b = shuffled[1], c = shuffled[2];
+            return {
+                rule: s => !s[a] || (s[b] && s[c]),
+                text: a + " 开启时，" + b + " 和 " + c + " 都必须开启"
+            };
+        }
+        
+        // 双向连锁：A和B要么同时开启，要么同时关闭
+        function generateBidirectionalRule(letters, solution) {
+            if (letters.length < 2) return null;
+            let [a, b] = randomPair(letters);
+            return {
+                rule: s => s[a] === s[b],
+                text: a + " 和 " + b + " 必须同开同关"
+            };
+        }
+        
+        // 反向连锁：如果A开启则B必须关闭
+        function generateReverseChainRule(letters, solution) {
+            if (letters.length < 2) return null;
+            let [a, b] = randomPair(letters);
+            return {
+                rule: s => !s[a] || !s[b],
+                text: "如果 " + a + " 开启，则 " + b + " 必须关闭"
+            };
+        }
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
         }
 
         function uniqueCheck() {
             let keys = Object.keys(switches);
             let total = 1 << keys.length;
             let count = 0;
+            let allRules = [...rules, ...hiddenRules];
 
             for (let i = 0; i < total; i++) {
                 let test = {};
                 keys.forEach((k, index) => {
                     test[k] = Boolean(i & (1 << index));
                 });
-                if (rules.every(r => r(test))) count++;
+                if (allRules.every(r => r(test))) count++;
                 if (count > 1) return false;
             }
             return count === 1;
@@ -463,12 +630,26 @@
         function renderRules() {
             const list = document.getElementById("ruleList");
             list.innerHTML = "";
+            
             ruleText.forEach(text => {
                 let div = document.createElement("div");
                 div.className = "rule";
-                div.innerText = text;
+                div.innerText = "▸ " + text;
                 list.appendChild(div);
             });
+            
+            if (hiddenRuleText.length > 0) {
+                let hint = document.createElement("div");
+                hint.className = "rule hint";
+                hint.innerText = "？还有 " + hiddenRuleText.length + " 条隐藏规则未显示...";
+                list.appendChild(hint);
+            }
+        }
+        
+        function updateDifficultyBadge(config) {
+            const badge = document.getElementById("difficultyBadge");
+            badge.className = "difficulty-badge difficulty-" + config.badge;
+            badge.innerText = config.name;
         }
 
         function update() {
@@ -480,47 +661,83 @@
 
             if (percent === 100 && !gameFinished) {
                 gameFinished = true;
+                stopTimer();
+                
+                document.getElementById("finalTime").innerText = document.getElementById("timer").innerText;
+                
+                // 显示隐藏规则
+                if (hiddenRuleText.length > 0) {
+                    let reveal = document.createElement("div");
+                    reveal.className = "rule";
+                    reveal.style.color = "#ffd700";
+                    reveal.innerText = "★ 隐藏规则：" + hiddenRuleText.join("；");
+                    document.getElementById("ruleList").appendChild(reveal);
+                }
+                
                 document.getElementById("modal").style.display = "flex";
             }
 
             render();
         }
+        
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                let elapsed = Math.floor((Date.now() - startTime) / 1000);
+                let mins = Math.floor(elapsed / 60);
+                let secs = elapsed % 60;
+                document.getElementById("timer").innerText = 
+                    mins + ":" + (secs < 10 ? "0" : "") + secs;
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
 
         function nextLevel() {
             level++;
-            saveLevel();   // 保存当前进度
+            saveLevel();
             document.getElementById("level").innerText = level;
             document.getElementById("modal").style.display = "none";
             gameFinished = false;
             generateLevel();
             resetUI();
             render();
+            startTimer();
         }
 
         function resetUI() {
             document.getElementById("stability").innerText = "0%";
             document.getElementById("bar").style.width = "0%";
+            document.getElementById("timer").innerText = "0:00";
         }
 
         /* ========= 返回按钮 ========= */
 
         document.getElementById("backBtn").addEventListener("click", () => {
+            stopTimer();
             if (gameFinished || confirm("确定要退出当前关卡吗？进度将不会保存。")) {
                 gameFinished = false;
-                // 返回上一页或首页
                 if (window.history.length > 1) {
                     window.history.back();
                 } else {
                     window.location.href = "../index.html";
                 }
+            } else {
+                if (!gameFinished && !timerInterval) startTimer();
             }
         });
 
         /* ========= 启动 ========= */
 
-        loadLevel();      // 读取缓存
-        generateLevel();  // 根据缓存关卡随机生成规则
+        loadLevel();
+        generateLevel();
         render();
+        startTimer();
 
     </script>
 </body>
