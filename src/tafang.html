@@ -662,15 +662,28 @@ class Enemy {
       ctx.fillText('小', this.x, this.y);
     }
     
-    if (this.hp < this.maxHp) {
-      const barWidth = GRID_SIZE * 0.8;
-      const barHeight = GRID_SIZE * 0.15;
-      ctx.fillStyle = '#ef4444';
-      ctx.fillRect(this.x - barWidth / 2, this.y - size - barHeight - 2, barWidth, barHeight);
-      
-      const hpPercent = Math.max(0, this.hp / this.maxHp);
-      ctx.fillStyle = hpPercent > 0.5 ? this.color : '#fbbf24';
-      ctx.fillRect(this.x - barWidth / 2, this.y - size - barHeight - 2, barWidth * hpPercent, barHeight);
+    // 血条始终显示，添加圆角和边框
+    const barWidth = GRID_SIZE * 0.8;
+    const barHeight = GRID_SIZE * 0.15;
+    const barX = this.x - barWidth / 2;
+    const barY = this.y - size - barHeight - 2;
+    const radius = 3;
+    
+    // 背景（满血时为深色）
+    ctx.fillStyle = '#1e293b';
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(barX, barY, barWidth, barHeight, radius);
+    ctx.fill();
+    ctx.stroke();
+    
+    const hpPercent = Math.max(0, this.hp / this.maxHp);
+    if (hpPercent > 0) {
+      ctx.fillStyle = hpPercent > 0.5 ? this.color : (hpPercent > 0.25 ? '#fbbf24' : '#ef4444');
+      ctx.beginPath();
+      ctx.roundRect(barX + 1, barY + 1, (barWidth - 2) * hpPercent, barHeight - 2, radius - 1);
+      ctx.fill();
     }
   }
   
