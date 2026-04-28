@@ -69,8 +69,105 @@
   .tower-btn .cost { color:#fbbf24; font-size:11px; }
   .tower-btn.slow { border-color:#38bdf8; }
   .tower-btn.burst { border-color:#f472b6; }
+  .tower-btn.thunder { border-color:#a855f7; }
   .tower-btn.remove { border-color:#ef4444; }
   .tower-btn.remove.selected { border-color:#ef4444; background:#3a1a1a; }
+  
+  /* 游戏结束统计覆盖层 */
+  #stats-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+  .stats-panel {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 2px solid #38bdf8;
+    border-radius: 16px;
+    padding: 24px 32px;
+    max-width: 360px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+  }
+  .stats-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ef4444;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  }
+  .stats-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #334155;
+    font-size: 16px;
+  }
+  .stats-row:last-child {
+    border-bottom: none;
+  }
+  .stats-label {
+    color: #94a3b8;
+  }
+  .stats-value {
+    color: #22c55e;
+    font-weight: bold;
+  }
+  .stats-section-title {
+    color: #38bdf8;
+    font-size: 14px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .monster-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .monster-stat {
+    background: #0f172a;
+    padding: 8px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .monster-stat-label {
+    color: #94a3b8;
+  }
+  .monster-stat-value {
+    color: #fbbf24;
+    font-weight: bold;
+    font-size: 16px;
+  }
+  .restart-btn {
+    margin-top: 24px;
+    padding: 14px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+  }
+  .restart-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
+  }
+  .restart-btn:active {
+    transform: translateY(0);
+  }
 </style>
 </head>
 <body>
@@ -90,12 +187,67 @@
       <div>爆发炮</div>
       <div class="cost">30能量</div>
     </div>
+    <div class="tower-btn thunder" data-mode="thunder" onclick="selectTower('thunder')">
+      <div>雷电炮</div>
+      <div class="cost">40能量</div>
+    </div>
     <div class="tower-btn remove" data-mode="remove" onclick="selectTower('remove')">
       <div>拆除</div>
       <div class="cost">移除炮台</div>
     </div>
   </div>
 </div>
+
+<!-- 游戏结束统计覆盖层 -->
+<div id="stats-overlay">
+  <div class="stats-panel">
+    <div class="stats-title">游戏结束</div>
+    
+    <div class="stats-row">
+      <span class="stats-label">到达波次</span>
+      <span class="stats-value" id="stat-wave">1</span>
+    </div>
+    <div class="stats-row">
+      <span class="stats-label">总杀敌数</span>
+      <span class="stats-value" id="stat-kills">0</span>
+    </div>
+    <div class="stats-row">
+      <span class="stats-label">建造炮台</span>
+      <span class="stats-value" id="stat-towers">0</span>
+    </div>
+    <div class="stats-row">
+      <span class="stats-label">消耗能量</span>
+      <span class="stats-value" id="stat-energy">0</span>
+    </div>
+    
+    <div class="stats-section-title">怪物击杀统计</div>
+    <div class="monster-stats">
+      <div class="monster-stat">
+        <div class="monster-stat-label">普通</div>
+        <div class="monster-stat-value" id="stat-normal">0</div>
+      </div>
+      <div class="monster-stat">
+        <div class="monster-stat-label">快速</div>
+        <div class="monster-stat-value" id="stat-fast">0</div>
+      </div>
+      <div class="monster-stat">
+        <div class="monster-stat-label">坚韧</div>
+        <div class="monster-stat-value" id="stat-tough">0</div>
+      </div>
+      <div class="monster-stat">
+        <div class="monster-stat-label">隐匿者</div>
+        <div class="monster-stat-value" id="stat-ghost">0</div>
+      </div>
+      <div class="monster-stat">
+        <div class="monster-stat-label">狂暴者</div>
+        <div class="monster-stat-value" id="stat-berserker">0</div>
+      </div>
+    </div>
+    
+    <button class="restart-btn" onclick="restartGame()">重新开始</button>
+  </div>
+</div>
+
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -188,6 +340,19 @@ let totalEnemiesThisWave = 5;
 let selectedTower = 'slow';
 let selectedCost = 20;
 let gameInitialized = false;
+let gameOver = false;
+
+// 游戏统计数据
+let stats = {
+  kills: 0,
+  normalKills: 0,
+  fastKills: 0,
+  toughKills: 0,
+  ghostKills: 0,
+  berserkerKills: 0,
+  towersBuilt: 0,
+  energyUsed: 0
+};
 
 // 获取路径边的格子
 function getAdjacentToPath() {
@@ -292,22 +457,24 @@ class Tower {
     const pos = gridToCenter(col, row);
     this.x = pos.x;
     this.y = pos.y;
-    this.range = mode === 'slow' ? 100 : 80;
+    this.range = mode === 'slow' ? 100 : (mode === 'thunder' ? 90 : 80);
     this.cooldown = 0;
     this.mode = mode;
   }
   
   draw() {
     const size = GRID_SIZE * 0.5;
+    const color = this.mode === 'slow' ? '#38bdf8' : (this.mode === 'thunder' ? '#a855f7' : '#f472b6');
+    
     ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = this.mode === 'slow' ? '#38bdf8' : '#f472b6';
+    ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.rect(this.col * GRID_SIZE + 4, this.row * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
     ctx.fill();
     ctx.stroke();
     
-    ctx.fillStyle = this.mode === 'slow' ? '#38bdf8' : '#f472b6';
+    ctx.fillStyle = color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, size / 2, 0, Math.PI * 2);
     ctx.fill();
@@ -316,6 +483,23 @@ class Tower {
     ctx.beginPath();
     ctx.arc(this.x, this.y, size / 4, 0, Math.PI * 2);
     ctx.fill();
+    
+    // 雷电炮特殊装饰
+    if (this.mode === 'thunder') {
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2 + performance.now() / 1000;
+        const x1 = this.x + Math.cos(angle) * size * 0.6;
+        const y1 = this.y + Math.sin(angle) * size * 0.6;
+        const x2 = this.x + Math.cos(angle) * size * 0.8;
+        const y2 = this.y + Math.sin(angle) * size * 0.8;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+    }
     
     if (this.showRange) {
       ctx.strokeStyle = 'rgba(255,255,255,0.2)';
@@ -331,17 +515,49 @@ class Tower {
       let target = null;
       let minDist = Infinity;
       
+      // 雷电炮优先攻击未受损的敌人
       enemies.forEach(e => {
         const d = dist(this, e);
         if (d < this.range && d < minDist) {
-          minDist = d;
-          target = e;
+          if (this.mode !== 'thunder' || e.hp >= e.maxHp * 0.5) {
+            minDist = d;
+            target = e;
+          }
         }
       });
       
       if (target) {
-        bullets.push(new Bullet(this, target, this.mode));
-        this.cooldown = this.mode === 'slow' ? 50 : 25;
+        if (this.mode === 'thunder') {
+          // 雷电炮攻击多个敌人
+          const chainTargets = [target];
+          let lastTarget = target;
+          for (let i = 0; i < 3; i++) {
+            let nextTarget = null;
+            let nextDist = 70; // 连锁距离
+            enemies.forEach(e => {
+              if (!chainTargets.includes(e) && !e.dead) {
+                const d = dist(lastTarget, e);
+                if (d < nextDist) {
+                  nextDist = d;
+                  nextTarget = e;
+                }
+              }
+            });
+            if (nextTarget) {
+              chainTargets.push(nextTarget);
+              lastTarget = nextTarget;
+            } else {
+              break;
+            }
+          }
+          chainTargets.forEach(t => {
+            bullets.push(new Bullet(this, t, this.mode, chainTargets.indexOf(t) === 0 ? null : chainTargets[chainTargets.indexOf(t) - 1]));
+          });
+          this.cooldown = 40;
+        } else {
+          bullets.push(new Bullet(this, target, this.mode));
+          this.cooldown = this.mode === 'slow' ? 50 : 25;
+        }
       }
     }
   }
@@ -356,27 +572,47 @@ class Enemy {
     this.x = pos.x;
     this.y = pos.y;
     
-    const types = ['normal', 'fast', 'tough'];
-    const weights = [0.6, 0.25, 0.15];
+    const types = ['normal', 'fast', 'tough', 'ghost', 'berserker'];
+    const weights = [0.5, 0.2, 0.1, 0.1, 0.1];
     const rand = Math.random();
-    if (rand < weights[0]) {
-      this.type = 'normal';
+    let cumulative = 0;
+    
+    for (let i = 0; i < types.length; i++) {
+      if (rand < cumulative + weights[i]) {
+        this.type = types[i];
+        break;
+      }
+      cumulative += weights[i];
+    }
+    
+    // 根据类型设置属性 (血量随波次指数增长)
+    if (this.type === 'normal') {
       this.reward = 5;
       this.color = '#22c55e';
       this.speed = 0.8 + wave * 0.08;
-      this.hp = 30 + wave * 8;
-    } else if (rand < weights[0] + weights[1]) {
-      this.type = 'fast';
+      this.hp = Math.floor(30 * Math.pow(1.12, wave));
+    } else if (this.type === 'fast') {
       this.reward = 3;
       this.color = '#facc15';
       this.speed = 1.5 + wave * 0.12;
-      this.hp = 20 + wave * 5;
-    } else {
-      this.type = 'tough';
+      this.hp = Math.floor(20 * Math.pow(1.1, wave));
+    } else if (this.type === 'tough') {
       this.reward = 10;
       this.color = '#ef4444';
       this.speed = 0.5 + wave * 0.05;
-      this.hp = 60 + wave * 15;
+      this.hp = Math.floor(60 * Math.pow(1.15, wave));
+    } else if (this.type === 'ghost') {
+      this.reward = 8;
+      this.color = '#a855f7';
+      this.speed = 0.9 + wave * 0.06;
+      this.hp = Math.floor(25 * Math.pow(1.11, wave));
+      this.invisible = false;
+      this.invisibleTimer = 0;
+    } else if (this.type === 'berserker') {
+      this.reward = 12;
+      this.color = '#f97316';
+      this.speed = 0.4 + wave * 0.03;
+      this.hp = Math.floor(80 * Math.pow(1.13, wave));
     }
     this.maxHp = this.hp;
     this.slowed = false;
@@ -385,11 +621,31 @@ class Enemy {
   
   draw() {
     const size = GRID_SIZE * 0.4;
-    ctx.fillStyle = this.slowed ? '#60a5fa' : this.color;
+    
+    // 隐匿者隐身效果
+    if (this.type === 'ghost' && this.invisible) {
+      ctx.globalAlpha = 0.3;
+      ctx.fillStyle = this.color;
+    } else {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = this.slowed ? '#60a5fa' : this.color;
+    }
+    
     ctx.beginPath();
     ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
     ctx.fill();
     
+    // 狂暴者特殊效果
+    if (this.type === 'berserker') {
+      const ragePercent = 1 - this.hp / this.maxHp;
+      ctx.strokeStyle = `rgba(249, 115, 22, ${ragePercent * 0.8})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, size + 5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    
+    ctx.globalAlpha = 1;
     ctx.fillStyle = '#fff';
     ctx.font = `bold ${GRID_SIZE * 0.25}px sans-serif`;
     ctx.textAlign = 'center';
@@ -398,6 +654,12 @@ class Enemy {
       ctx.fillText('速', this.x, this.y);
     } else if (this.type === 'tough') {
       ctx.fillText('坚', this.x, this.y);
+    } else if (this.type === 'ghost') {
+      ctx.fillText('隐', this.x, this.y);
+    } else if (this.type === 'berserker') {
+      ctx.fillText('狂', this.x, this.y);
+    } else {
+      ctx.fillText('小', this.x, this.y);
     }
     
     if (this.hp < this.maxHp) {
@@ -420,7 +682,28 @@ class Enemy {
       }
     }
     
-    const currentSpeed = this.slowed ? this.speed * 0.4 : this.speed;
+    // 隐匿者隐身逻辑
+    if (this.type === 'ghost') {
+      this.invisibleTimer++;
+      if (this.invisibleTimer >= 60 && this.invisibleTimer < 120) {
+        this.invisible = true;
+      } else {
+        this.invisible = false;
+      }
+    }
+    
+    let currentSpeed = this.speed;
+    
+    // 冰冻减速对隐匿者无效
+    if (this.slowed && this.type !== 'ghost') {
+      currentSpeed *= 0.4;
+    }
+    
+    // 狂暴者：血量越低速度越快
+    if (this.type === 'berserker') {
+      const ragePercent = 1 - this.hp / this.maxHp;
+      currentSpeed *= (1 + ragePercent * 1.5);
+    }
     
     if (this.pathIndex < PATH.length - 1) {
       const target = PATH[this.pathIndex + 1];
@@ -445,20 +728,45 @@ class Enemy {
 
 // 子弹类
 class Bullet {
-  constructor(tower, target, mode) {
+  constructor(tower, target, mode, prevTarget) {
     this.x = tower.x;
     this.y = tower.y;
     this.target = target;
     this.mode = mode;
+    this.prevTarget = prevTarget;
     this.dead = false;
+    this.chainIndex = prevTarget ? -1 : 0;
   }
   
   draw() {
     const size = GRID_SIZE * 0.12;
-    ctx.fillStyle = this.mode === 'slow' ? '#38bdf8' : '#fbbf24';
+    
+    // 绘制闪电链
+    if (this.prevTarget && !this.prevTarget.dead) {
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(this.prevTarget.x, this.prevTarget.y);
+      // 绘制折线闪电
+      const midX = (this.prevTarget.x + this.x) / 2 + (Math.random() - 0.5) * 20;
+      const midY = (this.prevTarget.y + this.y) / 2 + (Math.random() - 0.5) * 20;
+      ctx.lineTo(midX, midY);
+      ctx.lineTo(this.x, this.y);
+      ctx.stroke();
+    }
+    
+    if (this.mode === 'thunder') {
+      // 雷电球有拖尾效果
+      ctx.shadowColor = '#a855f7';
+      ctx.shadowBlur = 10;
+    }
+    
+    ctx.fillStyle = this.mode === 'slow' ? '#38bdf8' : (this.mode === 'thunder' ? '#a855f7' : '#fbbf24');
     ctx.beginPath();
     ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
     ctx.fill();
+    
+    ctx.shadowBlur = 0;
   }
   
   update() {
@@ -471,17 +779,21 @@ class Bullet {
     const dy = this.target.y - this.y;
     const d = Math.sqrt(dx * dx + dy * dy);
     
-    this.x += (dx / d) * 4;
-    this.y += (dy / d) * 4;
+    this.x += (dx / d) * (this.mode === 'thunder' ? 6 : 4);
+    this.y += (dy / d) * (this.mode === 'thunder' ? 6 : 4);
     
     if (d < GRID_SIZE * 0.2) {
       if (this.mode === 'slow') {
         this.target.slowed = true;
         this.target.slowTimer = 120;
+        this.target.hp -= 8; // 冰冻炮伤害为爆发炮的1/3
+      } else if (this.mode === 'thunder') {
+        // 雷电伤害递减
+        const damage = 20 - this.chainIndex * 5;
+        this.target.hp -= Math.max(damage, 5);
       } else {
         this.target.hp -= 25;
       }
-      this.target.hp -= 10;
       this.dead = true;
     }
   }
@@ -493,7 +805,9 @@ function dist(a, b) {
 
 function selectTower(mode) {
   selectedTower = mode;
-  selectedCost = mode === 'slow' ? 20 : 30;
+  if (mode === 'slow') selectedCost = 20;
+  else if (mode === 'burst') selectedCost = 30;
+  else if (mode === 'thunder') selectedCost = 40;
   
   document.querySelectorAll('.tower-btn').forEach(btn => {
     btn.classList.remove('selected');
@@ -526,6 +840,8 @@ canvas.onclick = (e) => {
   if (energy >= selectedCost) {
     towers.push(new Tower(grid.col, grid.row, selectedTower));
     energy -= selectedCost;
+    stats.energyUsed += selectedCost;
+    stats.towersBuilt++;
     document.getElementById('energy').textContent = energy;
   }
 };
@@ -564,6 +880,8 @@ canvas.ontouchstart = (e) => {
   if (energy >= selectedCost) {
     towers.push(new Tower(grid.col, grid.row, selectedTower));
     energy -= selectedCost;
+    stats.energyUsed += selectedCost;
+    stats.towersBuilt++;
     document.getElementById('energy').textContent = energy;
   }
 };
@@ -595,6 +913,15 @@ function render() {
     if (e.hp <= 0) {
       energy += e.reward;
       document.getElementById('energy').textContent = energy;
+      // 更新杀敌统计
+      stats.kills++;
+      switch(e.type) {
+        case 'normal': stats.normalKills++; break;
+        case 'fast': stats.fastKills++; break;
+        case 'tough': stats.toughKills++; break;
+        case 'ghost': stats.ghostKills++; break;
+        case 'berserker': stats.berserkerKills++; break;
+      }
       return false;
     }
     if (e.pathIndex >= PATH.length) {
@@ -621,13 +948,20 @@ function render() {
   if (lives <= 0) {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#ef4444';
-    ctx.font = `bold ${canvas.width * 0.08}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('游戏结束', canvas.width / 2, canvas.height / 2);
-    ctx.font = `${canvas.width * 0.04}px sans-serif`;
-    ctx.fillText(`到达波次: ${wave}`, canvas.width / 2, canvas.height / 2 + canvas.height * 0.1);
+    
+    // 显示统计信息
+    document.getElementById('stats-overlay').style.display = 'block';
+    document.getElementById('stat-wave').textContent = wave;
+    document.getElementById('stat-kills').textContent = stats.kills;
+    document.getElementById('stat-towers').textContent = stats.towersBuilt;
+    document.getElementById('stat-energy').textContent = stats.energyUsed;
+    document.getElementById('stat-normal').textContent = stats.normalKills;
+    document.getElementById('stat-fast').textContent = stats.fastKills;
+    document.getElementById('stat-tough').textContent = stats.toughKills;
+    document.getElementById('stat-ghost').textContent = stats.ghostKills;
+    document.getElementById('stat-berserker').textContent = stats.berserkerKills;
+    
+    gameOver = true;
     return;
   }
   
@@ -637,6 +971,39 @@ function render() {
 // 初始化
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
+
+// 重新开始游戏
+function restartGame() {
+  towers = [];
+  enemies = [];
+  bullets = [];
+  energy = 100;
+  lives = 10;
+  wave = 1;
+  waveTimer = 0;
+  enemiesThisWave = 0;
+  totalEnemiesThisWave = 5;
+  gameOver = false;
+  
+  // 重置统计数据
+  stats = {
+    kills: 0,
+    normalKills: 0,
+    fastKills: 0,
+    toughKills: 0,
+    ghostKills: 0,
+    berserkerKills: 0,
+    towersBuilt: 0,
+    energyUsed: 0
+  };
+  
+  document.getElementById('energy').textContent = energy;
+  document.getElementById('lives').textContent = lives;
+  document.getElementById('wave').textContent = wave;
+  document.getElementById('stats-overlay').style.display = 'none';
+  
+  requestAnimationFrame(render);
+}
 </script>
 </body>
 </html>
