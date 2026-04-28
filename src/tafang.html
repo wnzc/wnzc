@@ -17,14 +17,14 @@
   }
   #game-container {
     width: 100%;
-    max-width: 800px;
+    max-width: 450px;
     margin: 0 auto;
   }
   canvas { 
     display:block; 
     width: 100%;
-    height: auto;
-    max-height: 60vh;
+    aspect-ratio: 9/16;
+    max-height: 70vh;
     background:#1e293b; 
   }
   #info { 
@@ -74,7 +74,7 @@
   .tower-btn.remove.selected { border-color:#ef4444; background:#3a1a1a; }
   
   /* 游戏结束统计覆盖层 */
-  #stats-overlay {
+  #stats-overlay, #start-overlay {
     display: none;
     position: fixed;
     top: 0;
@@ -168,6 +168,109 @@
   .restart-btn:active {
     transform: translateY(0);
   }
+  
+  /* 开始界面 */
+  .start-panel {
+    text-align: center;
+  }
+  .game-title {
+    font-size: 36px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #38bdf8, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+    text-shadow: none;
+  }
+  .game-subtitle {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 30px;
+  }
+  .tower-intro {
+    text-align: left;
+    margin: 20px 0;
+    padding: 15px;
+    background: #0f172a;
+    border-radius: 10px;
+  }
+  .tower-intro h4 {
+    color: #38bdf8;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+  }
+  .tower-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #cbd5e1;
+  }
+  .tower-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+  }
+  .tower-icon.slow { background: #38bdf8; }
+  .tower-icon.burst { background: #f472b6; }
+  .tower-icon.thunder { background: #a855f7; }
+  .monster-intro {
+    text-align: left;
+    margin: 20px 0;
+    padding: 15px;
+    background: #0f172a;
+    border-radius: 10px;
+  }
+  .monster-intro h4 {
+    color: #ef4444;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+  }
+  .monster-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 12px;
+    color: #cbd5e1;
+  }
+  .monster-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: white;
+  }
+  .start-btn {
+    margin-top: 20px;
+    padding: 16px 60px;
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+  }
+  .start-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 25px rgba(56, 189, 248, 0.5);
+  }
+  .start-btn:active {
+    transform: translateY(0);
+  }
 </style>
 </head>
 <body>
@@ -195,6 +298,56 @@
       <div>拆除</div>
       <div class="cost">移除炮台</div>
     </div>
+  </div>
+</div>
+
+<!-- 开始界面 -->
+<div id="start-overlay">
+  <div class="stats-panel start-panel">
+    <div class="game-title">量子塔防</div>
+    <div class="game-subtitle">策略防守，抵御入侵</div>
+    
+    <div class="tower-intro">
+      <h4>炮台介绍</h4>
+      <div class="tower-item">
+        <div class="tower-icon slow">冰</div>
+        <span>冰冻炮 - 减速敌人+少量伤害</span>
+      </div>
+      <div class="tower-item">
+        <div class="tower-icon burst">爆</div>
+        <span>爆发炮 - 高伤害单体攻击</span>
+      </div>
+      <div class="tower-item">
+        <div class="tower-icon thunder">雷</div>
+        <span>雷电炮 - 连锁闪电攻击</span>
+      </div>
+    </div>
+    
+    <div class="monster-intro">
+      <h4>怪物图鉴</h4>
+      <div class="monster-item">
+        <div class="monster-icon" style="background:#22c55e">小</div>
+        <span>普通 - 基础怪物</span>
+      </div>
+      <div class="monster-item">
+        <div class="monster-icon" style="background:#facc15">速</div>
+        <span>快速 - 移动速度快</span>
+      </div>
+      <div class="monster-item">
+        <div class="monster-icon" style="background:#ef4444">坚</div>
+        <span>坚韧 - 血量高</span>
+      </div>
+      <div class="monster-item">
+        <div class="monster-icon" style="background:#a855f7">隐</div>
+        <span>隐匿者 - 周期性隐身</span>
+      </div>
+      <div class="monster-item">
+        <div class="monster-icon" style="background:#f97316">狂</div>
+        <span>狂暴者 - 血少时加速</span>
+      </div>
+    </div>
+    
+    <button class="start-btn" onclick="startGame()">开始游戏</button>
   </div>
 </div>
 
@@ -254,9 +407,9 @@ const ctx = canvas.getContext('2d');
 
 // 响应式画布大小
 function resizeCanvas() {
-  const container = document.getElementById('game-container');
-  const width = Math.min(window.innerWidth, 800);
-  const height = Math.min(window.innerHeight * 0.55, 400);
+  const containerWidth = Math.min(window.innerWidth * 0.95, 450);
+  const width = Math.floor(containerWidth);
+  const height = Math.floor(width * 16 / 9);
   
   canvas.width = width;
   canvas.height = height;
@@ -268,10 +421,10 @@ function resizeCanvas() {
 let GRID_SIZE, COLS, ROWS, PATH;
 
 function initGame() {
-  // 根据画布大小计算网格
-  COLS = Math.floor(canvas.width / 40);
-  ROWS = Math.floor(canvas.height / 40);
-  GRID_SIZE = Math.min(40, Math.floor(canvas.width / COLS));
+  // 根据画布大小计算网格，确保格子为正方形
+  GRID_SIZE = 40;
+  COLS = Math.floor(canvas.width / GRID_SIZE);
+  ROWS = Math.floor(canvas.height / GRID_SIZE);
   
   // 动态生成路径
   generatePath();
@@ -283,40 +436,55 @@ function initGame() {
 function generatePath() {
   PATH = [];
   
-  // S型路径：从左上开始，左右摆动向下延伸
-  const startRow = 2;
-  const endRow = ROWS - 3;
-  const segments = 5; // S弯数量
+  // 竖屏S型路径：左右摆动，上下间隔有空间放炮台
+  const midCol = Math.floor(COLS / 2);
+  const leftCol = Math.floor(COLS * 0.25);
+  const rightCol = Math.floor(COLS * 0.75);
+  const pathRows = [1, 4, 7, 10]; // 路径行，间隔均匀
   
-  // 从左端开始
-  for (let col = 0; col < Math.floor(COLS / segments); col++) {
-    PATH.push({col, row: startRow});
+  // 从顶部中间开始
+  PATH.push({col: midCol, row: 0});
+  PATH.push({col: midCol, row: 1});
+  
+  // S型左弯
+  for (let col = midCol; col >= leftCol; col--) {
+    PATH.push({col, row: 2});
+  }
+  for (let row = 2; row <= pathRows[0]; row++) {
+    PATH.push({col: leftCol, row});
   }
   
-  // S型曲线
-  for (let i = 0; i < segments; i++) {
-    const fromRow = i % 2 === 0 ? startRow : endRow;
-    const toRow = i % 2 === 0 ? endRow : startRow;
-    const rowStep = fromRow < toRow ? 1 : -1;
-    
-    // 垂直移动
-    for (let row = fromRow; row !== toRow; row += rowStep) {
-      PATH.push({col: Math.floor(COLS / segments) * (i + 1), row});
-    }
-    
-    // 水平移动到下一段（除了最后一段）
-    if (i < segments - 1) {
-      for (let col = Math.floor(COLS / segments) * (i + 1); col < Math.floor(COLS / segments) * (i + 2); col++) {
-        PATH.push({col, row: toRow});
-      }
-    }
+  // S型右弯
+  for (let col = leftCol; col <= rightCol; col++) {
+    PATH.push({col, row: pathRows[0]});
+  }
+  for (let row = pathRows[0]; row <= pathRows[1]; row++) {
+    PATH.push({col: rightCol, row});
   }
   
-  // 延伸到右端
-  for (let col = Math.floor(COLS / segments) * segments; col < COLS; col++) {
-    PATH.push({col, row: startRow});
+  // S型左弯
+  for (let col = rightCol; col >= leftCol; col--) {
+    PATH.push({col, row: pathRows[1]});
+  }
+  for (let row = pathRows[1]; row <= pathRows[2]; row++) {
+    PATH.push({col: leftCol, row});
   }
   
+  // S型右弯
+  for (let col = leftCol; col <= rightCol; col++) {
+    PATH.push({col, row: pathRows[2]});
+  }
+  for (let row = pathRows[2]; row <= pathRows[3]; row++) {
+    PATH.push({col: rightCol, row});
+  }
+  
+  // 到底部中间出口
+  for (let col = rightCol; col >= midCol; col--) {
+    PATH.push({col, row: pathRows[3]});
+  }
+  for (let row = pathRows[3]; row < ROWS; row++) {
+    PATH.push({col: midCol, row});
+  }
   // 路径上的格子集合
   pathSet = new Set(PATH.map(p => `${p.col},${p.row}`));
   
@@ -341,6 +509,7 @@ let selectedTower = 'slow';
 let selectedCost = 20;
 let gameInitialized = false;
 let gameOver = false;
+let gameStarted = false;
 
 // 游戏统计数据
 let stats = {
@@ -916,7 +1085,15 @@ function render() {
   drawPath();
   drawPlaceableCells();
   
-  towers.forEach(t => { t.update(); t.draw(); });
+  towers.forEach(t => { t.draw(); });
+  
+  // 游戏未开始时只绘制界面
+  if (!gameStarted) {
+    requestAnimationFrame(render);
+    return;
+  }
+  
+  towers.forEach(t => { t.update(); });
   enemies.forEach(e => { e.update(); e.draw(); });
   bullets.forEach(b => { b.update(); b.draw(); });
   
@@ -963,7 +1140,7 @@ function render() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // 显示统计信息
-    document.getElementById('stats-overlay').style.display = 'block';
+    document.getElementById('stats-overlay').style.display = 'flex';
     document.getElementById('stat-wave').textContent = wave;
     document.getElementById('stat-kills').textContent = stats.kills;
     document.getElementById('stat-towers').textContent = stats.towersBuilt;
@@ -985,6 +1162,17 @@ function render() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
+// 显示开始界面
+document.getElementById('start-overlay').style.display = 'flex';
+
+// 开始游戏
+function startGame() {
+  document.getElementById('start-overlay').style.display = 'none';
+  gameStarted = true;
+  gameOver = false;
+  requestAnimationFrame(render);
+}
+
 // 重新开始游戏
 function restartGame() {
   towers = [];
@@ -997,6 +1185,7 @@ function restartGame() {
   enemiesThisWave = 0;
   totalEnemiesThisWave = 5;
   gameOver = false;
+  gameStarted = false;
   
   // 重置统计数据
   stats = {
@@ -1014,6 +1203,7 @@ function restartGame() {
   document.getElementById('lives').textContent = lives;
   document.getElementById('wave').textContent = wave;
   document.getElementById('stats-overlay').style.display = 'none';
+  document.getElementById('start-overlay').style.display = 'flex';
   
   requestAnimationFrame(render);
 }
