@@ -620,7 +620,7 @@ function drawPath() {
   const end = PATH[PATH.length - 1];
   
   ctx.fillStyle = '#22c55e';
-  ctx.font = `bold ${GRID_SIZE * 0.3}px sans-serif`;
+  ctx.font = `${GRID_SIZE * 0.3}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('入', start.col * GRID_SIZE + GRID_SIZE / 2, start.row * GRID_SIZE + GRID_SIZE / 2);
@@ -666,7 +666,7 @@ class Tower {
     
     // 中心文字
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${GRID_SIZE * 0.3}px sans-serif`;
+    ctx.font = `${GRID_SIZE * 0.3}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     let text = this.mode === 'slow' ? '冰' : (this.mode === 'thunder' ? '雷' : '爆');
@@ -823,7 +823,7 @@ class Enemy {
     
     ctx.globalAlpha = 1;
     ctx.fillStyle = '#fff';
-    ctx.font = `bold ${GRID_SIZE * 0.25}px sans-serif`;
+    ctx.font = `${GRID_SIZE * 0.25}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     if (this.type === 'fast') {
@@ -1171,7 +1171,7 @@ function render() {
     ctx.fill();
     
     ctx.fillStyle = '#fbbf24';
-    ctx.font = `bold ${GRID_SIZE * 0.4}px sans-serif`;
+    ctx.font = `${GRID_SIZE * 0.4}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(seconds, x, y);
