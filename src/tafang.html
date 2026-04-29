@@ -6,9 +6,10 @@
 <title>量子塔防</title>
 <style>
   * { box-sizing: border-box; }
-  body { 
+  html, body { 
     margin:0; 
     padding:0; 
+    height: 100%;
     background:#0f172a; 
     color:white; 
     font-family:sans-serif;
@@ -19,13 +20,14 @@
     width: 100%;
     max-width: 450px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 56px); /* 减去 tower-panel 的高度 */
   }
   canvas { 
     display:block; 
-    width: 100%;
-    aspect-ratio: 9/16;
-    max-height: 70vh;
     background:#1e293b; 
+    flex: 1;
   }
   #info { 
     text-align:center; 
@@ -40,28 +42,39 @@
   .wave { color:#38bdf8; }
   .lives { color:#f87171; }
   #tower-panel { 
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
     display:flex; 
     justify-content:center; 
     gap:8px; 
-    padding:10px;
+    padding:8px 10px;
     background:#1e293b;
     border-top:1px solid #334155;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    z-index: 100;
   }
   .tower-btn {
-    flex: 1;
-    min-width: 90px;
-    max-width: 120px;
-    padding:10px 8px;
+    flex: 0 0 auto;
+    min-width: 70px;
+    max-width: 80px;
+    height: 40px;
+    padding:6px 4px;
     border:2px solid #334155;
     border-radius:8px;
     background:#0f172a;
     color:white;
     cursor:pointer;
-    font-size:12px;
+    font-size:11px;
     text-align: center;
     transition:0.2s;
     -webkit-tap-highlight-color: transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
   .tower-btn:active { transform: scale(0.95); }
   .tower-btn:hover { border-color:#38bdf8; }
@@ -284,15 +297,15 @@
   <div id="tower-panel">
     <div class="tower-btn slow selected" data-mode="slow" onclick="selectTower('slow')">
       <div>冰冻炮</div>
-      <div class="cost">20能量</div>
+      <div class="cost">40能量</div>
     </div>
     <div class="tower-btn burst" data-mode="burst" onclick="selectTower('burst')">
       <div>爆发炮</div>
-      <div class="cost">30能量</div>
+      <div class="cost">60能量</div>
     </div>
     <div class="tower-btn thunder" data-mode="thunder" onclick="selectTower('thunder')">
       <div>雷电炮</div>
-      <div class="cost">40能量</div>
+      <div class="cost">80能量</div>
     </div>
     <div class="tower-btn remove" data-mode="remove" onclick="selectTower('remove')">
       <div>拆除</div>
@@ -409,7 +422,7 @@ const ctx = canvas.getContext('2d');
 function resizeCanvas() {
   const containerWidth = Math.min(window.innerWidth * 0.95, 450);
   const width = Math.floor(containerWidth);
-  const height = Math.floor(width * 16 / 9);
+  const height = Math.floor(width * 19 / 9);
   
   canvas.width = width;
   canvas.height = height;
@@ -417,13 +430,20 @@ function resizeCanvas() {
   initGame();
 }
 
+// 检测是否竖屏模式（高度大于宽度）
+function isPortraitMode() {
+  return window.innerHeight > window.innerWidth;
+}
+
 // 动态网格配置
 let GRID_SIZE, COLS, ROWS, PATH;
 
 function initGame() {
   // 根据画布大小计算网格，确保格子为正方形
-  GRID_SIZE = 40;
-  COLS = Math.floor(canvas.width / GRID_SIZE);
+  const colsCount = 10;
+  GRID_SIZE = Math.floor(canvas.width / colsCount);
+  GRID_SIZE = Math.max(30, Math.min(50, GRID_SIZE));
+  COLS = colsCount;
   ROWS = Math.floor(canvas.height / GRID_SIZE);
   
   // 动态生成路径
@@ -510,6 +530,9 @@ let selectedCost = 20;
 let gameInitialized = false;
 let gameOver = false;
 let gameStarted = false;
+let countdownEndTime = 0; // 倒计时结束时间戳
+let countdownActive = true; // 是否处于倒计时状态
+const COUNTDOWN_SECONDS = 3; // 倒计时秒数
 
 // 游戏统计数据
 let stats = {
@@ -632,44 +655,24 @@ class Tower {
   }
   
   draw() {
-    const size = GRID_SIZE * 0.5;
+    const size = GRID_SIZE * 0.4;
     const color = this.mode === 'slow' ? '#38bdf8' : (this.mode === 'thunder' ? '#a855f7' : '#f472b6');
     
-    ctx.fillStyle = '#1e293b';
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.rect(this.col * GRID_SIZE + 4, this.row * GRID_SIZE + 4, GRID_SIZE - 8, GRID_SIZE - 8);
-    ctx.fill();
-    ctx.stroke();
-    
+    // 圆形背景
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(this.x, this.y, size / 2, 0, Math.PI * 2);
+    ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
     ctx.fill();
     
+    // 中心文字
     ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, size / 4, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.font = `bold ${GRID_SIZE * 0.3}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    let text = this.mode === 'slow' ? '冰' : (this.mode === 'thunder' ? '雷' : '爆');
+    ctx.fillText(text, this.x, this.y);
     
-    // 雷电炮特殊装饰
-    if (this.mode === 'thunder') {
-      ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 4; i++) {
-        const angle = (i / 4) * Math.PI * 2 + performance.now() / 1000;
-        const x1 = this.x + Math.cos(angle) * size * 0.6;
-        const y1 = this.y + Math.sin(angle) * size * 0.6;
-        const x2 = this.x + Math.cos(angle) * size * 0.8;
-        const y2 = this.y + Math.sin(angle) * size * 0.8;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-      }
-    }
-    
+    // 显示范围
     if (this.showRange) {
       ctx.strokeStyle = 'rgba(255,255,255,0.2)';
       ctx.beginPath();
@@ -725,7 +728,7 @@ class Tower {
           this.cooldown = 40;
         } else {
           bullets.push(new Bullet(this, target, this.mode));
-          this.cooldown = this.mode === 'slow' ? 50 : 25;
+          this.cooldown = this.mode === 'slow' ? 100 : 50;
         }
       }
     }
@@ -734,24 +737,28 @@ class Tower {
 
 // 敌人类
 class Enemy {
-  constructor() {
+  constructor(forcedType = null) {
     this.pathIndex = 0;
     const start = PATH[0];
     const pos = gridToCenter(start.col, start.row);
     this.x = pos.x;
     this.y = pos.y;
     
-    const types = ['normal', 'fast', 'tough', 'ghost', 'berserker'];
-    const weights = [0.5, 0.2, 0.1, 0.1, 0.1];
-    const rand = Math.random();
-    let cumulative = 0;
-    
-    for (let i = 0; i < types.length; i++) {
-      if (rand < cumulative + weights[i]) {
-        this.type = types[i];
-        break;
+    if (forcedType) {
+      this.type = forcedType;
+    } else {
+      const types = ['normal', 'fast', 'tough', 'ghost', 'berserker'];
+      const weights = [0.5, 0.2, 0.1, 0.1, 0.1];
+      const rand = Math.random();
+      let cumulative = 0;
+      
+      for (let i = 0; i < types.length; i++) {
+        if (rand < cumulative + weights[i]) {
+          this.type = types[i];
+          break;
+        }
+        cumulative += weights[i];
       }
-      cumulative += weights[i];
     }
     
     // 根据类型设置属性 (血量随波次指数增长)
@@ -987,9 +994,9 @@ function dist(a, b) {
 
 function selectTower(mode) {
   selectedTower = mode;
-  if (mode === 'slow') selectedCost = 20;
-  else if (mode === 'burst') selectedCost = 30;
-  else if (mode === 'thunder') selectedCost = 40;
+  if (mode === 'slow') selectedCost = 40;
+  else if (mode === 'burst') selectedCost = 60;
+  else if (mode === 'thunder') selectedCost = 80;
   
   document.querySelectorAll('.tower-btn').forEach(btn => {
     btn.classList.remove('selected');
@@ -1069,8 +1076,13 @@ canvas.ontouchstart = (e) => {
 };
 
 function spawnEnemy() {
+  // 倒计时中不生成怪物
+  if (countdownActive) return;
+  
   if (enemiesThisWave < totalEnemiesThisWave) {
-    enemies.push(new Enemy());
+    // 前两波只生成普通怪
+    const forcedType = wave <= 2 ? 'normal' : null;
+    enemies.push(new Enemy(forcedType));
     enemiesThisWave++;
   }
 }
@@ -1120,8 +1132,16 @@ function render() {
     return true;
   });
   
+  // 倒计时逻辑（使用时间戳确保准确5秒）
+  if (countdownActive) {
+    const remaining = Math.max(0, Math.ceil((countdownEndTime - Date.now()) / 1000));
+    if (remaining <= 0) {
+      countdownActive = false;
+    }
+  }
+  
   waveTimer++;
-  if (waveTimer >= 90) {
+  if (waveTimer >= 90 && !countdownActive) {
     spawnEnemy();
     waveTimer = 0;
   }
@@ -1133,6 +1153,28 @@ function render() {
     energy += 30;
     document.getElementById('energy').textContent = energy;
     document.getElementById('wave').textContent = wave;
+    // 新波次开始，重置倒计时（5秒）
+    countdownEndTime = Date.now() + COUNTDOWN_SECONDS * 1000;
+    countdownActive = true;
+  }
+  
+  // 绘制倒计时
+  if (countdownActive) {
+    const start = PATH[0];
+    const x = start.col * GRID_SIZE + GRID_SIZE / 2;
+    const y = start.row * GRID_SIZE + GRID_SIZE / 2;
+    const seconds = Math.max(0, Math.ceil((countdownEndTime - Date.now()) / 1000));
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.beginPath();
+    ctx.arc(x, y, GRID_SIZE * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = `bold ${GRID_SIZE * 0.4}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(seconds, x, y);
   }
   
   if (lives <= 0) {
@@ -1170,6 +1212,8 @@ function startGame() {
   document.getElementById('start-overlay').style.display = 'none';
   gameStarted = true;
   gameOver = false;
+  countdownEndTime = Date.now() + COUNTDOWN_SECONDS * 1000;
+  countdownActive = true;
   requestAnimationFrame(render);
 }
 
@@ -1186,6 +1230,8 @@ function restartGame() {
   totalEnemiesThisWave = 5;
   gameOver = false;
   gameStarted = false;
+  countdownEndTime = Date.now() + COUNTDOWN_SECONDS * 1000;
+  countdownActive = true;
   
   // 重置统计数据
   stats = {
@@ -1206,6 +1252,7 @@ function restartGame() {
   document.getElementById('start-overlay').style.display = 'flex';
   
   requestAnimationFrame(render);
+  startGame()
 }
 </script>
 </body>
