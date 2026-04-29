@@ -41,6 +41,25 @@
   .energy { color:#fbbf24; }
   .wave { color:#38bdf8; }
   .lives { color:#f87171; }
+  #speed-btn {
+    position: fixed;
+    bottom: 80px;
+    right: 10px;
+    padding: 8px 12px;
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 8px;
+    color: #888;
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 100;
+    transition: 0.2s;
+  }
+  #speed-btn.active {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: white;
+  }
   #tower-panel { 
     position: fixed;
     bottom: 0;
@@ -293,6 +312,7 @@
     <span class="wave">波次: <span id="wave">1</span></span>
     <span class="lives">生命: <span id="lives">10</span></span>
   </div>
+  <button id="speed-btn" onclick="toggleSpeed()">2x</button>
   <canvas id="game"></canvas>
   <div id="tower-panel">
     <div class="tower-btn slow selected" data-mode="slow" onclick="selectTower('slow')">
@@ -419,13 +439,20 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
 // 响应式画布大小
+let canvasDisplayWidth, canvasDisplayHeight;
+
 function resizeCanvas() {
-  const containerWidth = Math.min(window.innerWidth * 0.95, 450);
-  const width = Math.floor(containerWidth);
-  const height = Math.floor(width * 19 / 9);
+  const dpr = window.devicePixelRatio || 1;
+  const containerWidth = Math.min(window.innerWidth, 450);
+  canvasDisplayWidth = Math.floor(containerWidth);
+  canvasDisplayHeight = Math.floor(canvasDisplayWidth * 19 / 9);
   
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = canvasDisplayWidth * dpr;
+  canvas.height = canvasDisplayHeight * dpr;
+  canvas.style.width = canvasDisplayWidth + 'px';
+  canvas.style.height = canvasDisplayHeight + 'px';
+  
+  ctx.scale(dpr, dpr);
   
   initGame();
 }
@@ -439,12 +466,12 @@ function isPortraitMode() {
 let GRID_SIZE, COLS, ROWS, PATH;
 
 function initGame() {
-  // 根据画布大小计算网格，确保格子为正方形
+  // 根据显示尺寸计算网格，确保格子为正方形
   const colsCount = 10;
-  GRID_SIZE = Math.floor(canvas.width / colsCount);
+  GRID_SIZE = Math.floor(canvasDisplayWidth / colsCount);
   GRID_SIZE = Math.max(30, Math.min(50, GRID_SIZE));
   COLS = colsCount;
-  ROWS = Math.floor(canvas.height / GRID_SIZE);
+  ROWS = Math.floor(canvasDisplayHeight / GRID_SIZE);
   
   // 动态生成路径
   generatePath();
@@ -532,7 +559,9 @@ let gameOver = false;
 let gameStarted = false;
 let countdownEndTime = 0; // 倒计时结束时间戳
 let countdownActive = true; // 是否处于倒计时状态
+let speedBoost = false; // 是否加速
 const COUNTDOWN_SECONDS = 3; // 倒计时秒数
+const GAME_SPEED = 0.5; // 游戏速度因子（0.5=慢一倍，1=正常，2=快一倍）
 
 // 游戏统计数据
 let stats = {
@@ -575,11 +604,10 @@ function gridToCenter(col, row) {
 // 获取格子坐标
 function getGridPos(x, y) {
   const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
+  // 使用显示尺寸计算，因为 canvas 已经用 dpr 缩放过了
   return {
-    col: Math.floor((x - rect.left) * scaleX / GRID_SIZE),
-    row: Math.floor((y - rect.top) * scaleY / GRID_SIZE)
+    col: Math.floor((x - rect.left) / GRID_SIZE),
+    row: Math.floor((y - rect.top) / GRID_SIZE)
   };
 }
 
@@ -681,8 +709,8 @@ class Tower {
     }
   }
   
-  update() {
-    this.cooldown--;
+  update(speedFactor) {
+    this.cooldown -= speedFactor;
     if (this.cooldown <= 0) {
       let target = null;
       let minDist = Infinity;
@@ -725,10 +753,10 @@ class Tower {
           chainTargets.forEach(t => {
             bullets.push(new Bullet(this, t, this.mode, chainTargets.indexOf(t) === 0 ? null : chainTargets[chainTargets.indexOf(t) - 1]));
           });
-          this.cooldown = 40;
+          this.cooldown = 40 / GAME_SPEED;
         } else {
           bullets.push(new Bullet(this, target, this.mode));
-          this.cooldown = this.mode === 'slow' ? 100 : 50;
+          this.cooldown = this.mode === 'slow' ? 100 / GAME_SPEED : 50 / GAME_SPEED;
         }
       }
     }
@@ -765,30 +793,30 @@ class Enemy {
     if (this.type === 'normal') {
       this.reward = 5;
       this.color = '#22c55e';
-      this.speed = 0.8 + wave * 0.08;
-      this.hp = Math.floor(30 * Math.pow(1.12, wave));
+      this.speed = (0.8 + wave * 0.08) * GAME_SPEED;
+      this.hp = Math.floor(30 * Math.pow(1.3, wave));
     } else if (this.type === 'fast') {
       this.reward = 3;
       this.color = '#facc15';
-      this.speed = 1.5 + wave * 0.12;
-      this.hp = Math.floor(20 * Math.pow(1.1, wave));
+      this.speed = (1.2 + wave * 0.12) * GAME_SPEED;
+      this.hp = Math.floor(20 * Math.pow(1.3, wave));
     } else if (this.type === 'tough') {
       this.reward = 10;
       this.color = '#ef4444';
-      this.speed = 0.5 + wave * 0.05;
-      this.hp = Math.floor(60 * Math.pow(1.15, wave));
+      this.speed = (0.5 + wave * 0.05) * GAME_SPEED;
+      this.hp = Math.floor(60 * Math.pow(1.3, wave));
     } else if (this.type === 'ghost') {
       this.reward = 8;
       this.color = '#a855f7';
-      this.speed = 0.9 + wave * 0.06;
-      this.hp = Math.floor(25 * Math.pow(1.11, wave));
+      this.speed = (0.7 + wave * 0.06) * GAME_SPEED;
+      this.hp = Math.floor(25 * Math.pow(1.3, wave));
       this.invisible = false;
       this.invisibleTimer = 0;
     } else if (this.type === 'berserker') {
       this.reward = 12;
       this.color = '#f97316';
-      this.speed = 0.4 + wave * 0.03;
-      this.hp = Math.floor(80 * Math.pow(1.13, wave));
+      this.speed = (0.4 + wave * 0.03) * GAME_SPEED;
+      this.hp = Math.floor(80 * Math.pow(1.3, wave));
     }
     this.maxHp = this.hp;
     this.slowed = false;
@@ -863,9 +891,9 @@ class Enemy {
     }
   }
   
-  update() {
+  update(speedFactor) {
     if (this.slowed) {
-      this.slowTimer--;
+      this.slowTimer -= speedFactor;
       if (this.slowTimer <= 0) {
         this.slowed = false;
       }
@@ -958,7 +986,7 @@ class Bullet {
     ctx.shadowBlur = 0;
   }
   
-  update() {
+  update(speedFactor) {
     if (!this.target || this.target.dead) {
       this.dead = true;
       return;
@@ -968,8 +996,9 @@ class Bullet {
     const dy = this.target.y - this.y;
     const d = Math.sqrt(dx * dx + dy * dy);
     
-    this.x += (dx / d) * (this.mode === 'thunder' ? 6 : 4);
-    this.y += (dy / d) * (this.mode === 'thunder' ? 6 : 4);
+    const bulletSpeed = (this.mode === 'thunder' ? 6 : 4) * speedFactor;
+    this.x += (dx / d) * bulletSpeed;
+    this.y += (dy / d) * bulletSpeed;
     
     if (d < GRID_SIZE * 0.2) {
       if (this.mode === 'slow') {
@@ -1105,9 +1134,12 @@ function render() {
     return;
   }
   
-  towers.forEach(t => { t.update(); });
-  enemies.forEach(e => { e.update(); e.draw(); });
-  bullets.forEach(b => { b.update(); b.draw(); });
+  // 计算当前速度因子
+  const currentSpeed = speedBoost ? GAME_SPEED * 2 : GAME_SPEED;
+  
+  towers.forEach(t => { t.update(currentSpeed); });
+  enemies.forEach(e => { e.update(currentSpeed); e.draw(); });
+  bullets.forEach(b => { b.update(currentSpeed); b.draw(); });
   
   bullets = bullets.filter(b => !b.dead);
   
@@ -1141,7 +1173,7 @@ function render() {
   }
   
   waveTimer++;
-  if (waveTimer >= 90 && !countdownActive) {
+  if (waveTimer >= 90 / currentSpeed && !countdownActive) {
     spawnEnemy();
     waveTimer = 0;
   }
@@ -1206,6 +1238,19 @@ resizeCanvas();
 
 // 显示开始界面
 document.getElementById('start-overlay').style.display = 'flex';
+
+// 切换加速按钮
+function toggleSpeed() {
+  speedBoost = !speedBoost;
+  const btn = document.getElementById('speed-btn');
+  if (speedBoost) {
+    btn.classList.add('active');
+    btn.textContent = '2x';
+  } else {
+    btn.classList.remove('active');
+    btn.textContent = '1x';
+  }
+}
 
 // 开始游戏
 function startGame() {
