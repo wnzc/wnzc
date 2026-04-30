@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>时钟天气 - 横屏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 横屏容器 */
+        .landscape-container {
+            width: 100vh;
+            height: 100vw;
+            transform: rotate(90deg);
+            transform-origin: left top;
+            position: absolute;
+            left: 100vh;
+            top: 0;
+        }
+        
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* 返回按钮 */
+        .back-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            padding: 8px 16px;
+            background: rgba(255, 152, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .back-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="window.close()">返回</button>
+    <div class="landscape-container">
+        <iframe src="https://teojs.github.io/clock-dashboard/" allow="autoplay"></iframe>
+    </div>
+    
+    <script>
+        // 尝试锁定屏幕方向
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(() => {});
+        }
+    </script>
+</body>
+</html>
