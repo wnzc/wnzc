@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="white"/>
+  <rect x="12" y="12" width="48" height="48" fill="white" stroke="black" stroke-width="3" rx="4"/>
+  <rect x="68" y="12" width="48" height="48" fill="white" stroke="black" stroke-width="3" rx="4"/>
+  <rect x="12" y="68" width="48" height="48" fill="white" stroke="black" stroke-width="3" rx="4"/>
+  <rect x="68" y="68" width="48" height="48" fill="white" stroke="black" stroke-width="3" rx="4"/>
+  <line x1="36" y1="36" x2="92" y2="36" stroke="black" stroke-width="2"/>
+  <line x1="92" y1="36" x2="92" y2="92" stroke="black" stroke-width="2"/>
+  <line x1="92" y1="92" x2="36" y2="92" stroke="black" stroke-width="2"/>
+  <line x1="36" y1="92" x2="36" y2="36" stroke="black" stroke-width="2"/>
+  <text x="36" y="42" font-family="Arial" font-size="20" font-weight="bold" fill="black" text-anchor="middle">1</text>
+  <text x="92" y="42" font-family="Arial" font-size="20" font-weight="bold" fill="black" text-anchor="middle">2</text>
+  <text x="36" y="98" font-family="Arial" font-size="20" font-weight="bold" fill="black" text-anchor="middle">4</text>
+  <text x="92" y="98" font-family="Arial" font-size="20" font-weight="bold" fill="black" text-anchor="middle">3</text>
+</svg>

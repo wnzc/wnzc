@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字连线 - 益智路径游戏</title>
+    <meta name="description" content="数字连线是一款创新型益智游戏，挑战你按顺序连接数字。渐进式难度、直观操控，适合所有年龄段。">
+    <style>
+        :root {
+        --primary: #4a90e2;
+        --primary-dark: #357abd;
+        --success: #4CAF50;
+        --error: #f44336;
+        --background: #f0f4f8;
+        --cell-bg: #ffffff;
+        --hint-color: #90CAF9;
+        --active-color: #64B5F6;
+        --error-color: #ef5350;
+        --success-color: #66bb6a;
+        --cell-size: min(12vw, 50px);
+        --cell-gap: min(2vw, 8px);
+    }
+
+    body {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        min-height: 100vh;
+        margin: 0;
+        background: linear-gradient(135deg, #f6f9fc 0%, var(--background) 100%);
+        color: #2c3e50;
+        padding: 10px;
+    }
+
+    .game-title {
+        font-size: clamp(24px, 5vw, 48px);
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 10px;
+        background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .help-btn, .theme-btn {
+        position: fixed;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: white;
+        border: none;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1000;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .help-btn {
+        top: 15px;
+        right: 15px;
+    }
+
+    .theme-btn {
+        top: 15px;
+        left: 15px;
+    }
+
+    .help-btn:hover, .theme-btn:hover {
+        transform: scale(1.1);
+        background: var(--primary-dark);
+    }
+
+    /* Dark Theme */
+    body.dark-theme {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #e0e0e0;
+    }
+
+    body.dark-theme .game-container {
+        background: #1f2937;
+    }
+
+    body.dark-theme .cell {
+        background: #374151;
+    }
+
+    body.dark-theme .modal-content {
+        background: #1f2937;
+    }
+
+    body.dark-theme .modal-content h2 {
+        color: #e0e0e0;
+    }
+
+    body.dark-theme .modal-content p,
+    body.dark-theme .modal-content ul li {
+        color: #b0b0b0;
+    }
+
+    body.dark-theme .game-title {
+        background: linear-gradient(45deg, #60a5fa, #3b82f6);
+        -webkit-background-clip: text;
+    }
+
+    body.dark-theme .level-display {
+        color: #ffffff;
+    }
+
+    body.dark-theme .game-name {
+        color: #b0b0b0;
+    }
+
+    .level-display {
+        color: #2c3e50;
+    }
+
+    .game-name {
+        color: #555;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 2000;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        padding: 30px;
+        border-radius: 16px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        margin: 20px;
+        position: relative;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .modal-content h2 {
+        color: #2c3e50;
+        font-size: 20px;
+        font-weight: 700;
+        margin: 20px 0 10px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--primary);
+    }
+
+    .modal-content h2:first-child {
+        margin-top: 0;
+    }
+
+    .modal-content p {
+        color: #555;
+        line-height: 1.6;
+        margin: 10px 0;
+    }
+
+    .modal-content ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .modal-content ul li {
+        color: #555;
+        padding: 6px 0;
+        padding-left: 20px;
+        position: relative;
+    }
+
+    .modal-content ul li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 6px;
+        height: 6px;
+        background: var(--primary);
+        border-radius: 50%;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 28px;
+        cursor: pointer;
+        color: #999;
+        transition: color 0.3s;
+    }
+
+    .close-btn:hover {
+        color: #333;
+    }
+
+    .game-container {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin: 0 auto 20px;
+        position: relative;
+        width: fit-content;
+    }
+
+    .game-grid {
+        display: grid;
+        gap: var(--cell-gap);
+        padding: var(--cell-gap);
+        margin: 20px auto;
+        position: relative;
+        z-index: 1;
+        touch-action: none;
+        user-select: none;
+        width: fit-content;
+    }
+
+    .game-grid[data-size="2"] {
+        grid-template-columns: repeat(2, var(--cell-size));
+    }
+
+    .game-grid[data-size="3"] {
+        grid-template-columns: repeat(3, var(--cell-size));
+    }
+
+    .game-grid[data-size="4"] {
+        grid-template-columns: repeat(4, var(--cell-size));
+    }
+
+    .game-grid[data-size="5"] {
+        grid-template-columns: repeat(5, var(--cell-size));
+    }
+
+    .game-grid[data-size="6"] {
+        grid-template-columns: repeat(6, var(--cell-size));
+    }
+
+    .cell {
+        width: var(--cell-size);
+        height: var(--cell-size);
+        background: #e0e0e0;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: min(6vw, 24px);
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .cell:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.1),
+                    0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .cell.hint {
+        background: #b3e0ff;
+        color: white;
+        border-color: #64b5f6;
+    }
+
+    .cell.active {
+        background: #64b5f6;
+        color: white;
+        border-color: #349ef3;
+    }
+
+    .cell.error {
+        background: #ffb3b3;
+        color: white;
+        border-color: #e53935;
+    }
+
+    .cell.correct {
+        background: #b3ffb3;
+        color: white;
+        border-color: #66bb6a;
+    }
+
+    .cell.hint.correct {
+        background: #b3e0ff;
+        color: white;
+        border-color: #66bb6a;
+    }
+
+    .level-display {
+        font-size: min(5vw, 24px);
+        font-weight: 600;
+        text-align: center;
+        margin: 10px 0;
+        color: #2c3e50;
+    }
+
+    .game-name {
+        text-align: center;
+    }
+
+    .lines-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 999;
+    }
+
+    #pathCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    button {
+        background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 20px;
+        font-size: min(4vw, 18px);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: block;
+        margin: 10px auto;
+        max-width: 200px;
+        width: 100%;
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        background: linear-gradient(45deg, #357abd, #2c6ba9);
+    }
+
+    button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    #snapshotsContainer {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 10px;
+        padding: 10px;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+
+    #snapshotsContainer img {
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+
+    @media (orientation: landscape) and (max-height: 500px) {
+        :root {
+            --cell-size: min(8vw, 40px);
+        }
+
+        .game-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .level-display {
+            margin: 0;
+            writing-mode: vertical-lr;
+            transform: rotate(180deg);
+        }
+    }
+
+    @media (orientation: portrait) and (max-width: 360px) {
+        :root {
+            --cell-size: min(14vw, 45px);
+        }
+
+        .cell {
+            font-size: min(7vw, 22px);
+        }
+    }
+
+    section {
+        max-width: 800px;
+        margin: 60px auto;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 24px;
+        box-shadow: 
+            0 4px 6px rgba(0,0,0,0.05),
+            0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    article {
+        margin-bottom: 40px;
+    }
+
+    h2 {
+        color: #2c3e50;
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        position: relative;
+        padding-bottom: 10px;
+    }
+
+    h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+        border-radius: 2px;
+    }
+
+    ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    ul li {
+        padding: 10px 0;
+        padding-left: 25px;
+        position: relative;
+    }
+
+    ul li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 8px;
+        height: 8px;
+        background: var(--primary);
+        border-radius: 50%;
+        transform: translateY(-50%);
+    }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+    <button id="helpBtn" class="help-btn">?</button>
+    <button id="themeBtn" class="theme-btn">☾</button>
+    
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>什么是数字连线？</h2>
+            <p>
+                数字连线是一款创新型益智游戏，将数字序列与路径寻找相结合。玩家需要按数字顺序连接相邻的格子，创造出一条完整的路径。
+            </p>
+            <p>
+                跟随提示数字，穿过越来越具挑战性的关卡。每一步都很重要，因为你只能连接相邻的格子。
+            </p>
+            <p>
+                非常适合益智游戏爱好者和想要锻炼逻辑思维的人。游戏规则简单，但随着关卡推进，难度会逐渐增加。
+            </p>
+            
+            <h2>游戏规则</h2>
+            <ul>
+                <li>从一个包含提示数字的网格开始</li>
+                <li>按数字顺序连接相邻的格子</li>
+                <li>每个数字必须与其邻居相连（不能走斜线）</li>
+                <li>按正确顺序连接所有格子完成路径</li>
+                <li>使用提示数字作为指引来解决每个谜题</li>
+            </ul>
+            
+            <h2>游戏特色</h2>
+            <ul>
+                <li>多个关卡难度递进</li>
+                <li>支持触屏和鼠标操作</li>
+                <li>彩色路径可视化反馈</li>
+                <li>移动和完成时的音效提示</li>
+                <li>适合所有年龄段的脑力挑战</li>
+            </ul>
+        </div>
+    </div>
+
+    <h1 class="game-title">数字连线</h1>
+    
+    <div id="gameContainer" class="game-container">
+        <div class="level-display">
+            关卡: <span id="currentLevel">1</span>
+        </div>
+        <div id="gameGrid" class="game-grid"></div>
+        <div class="game-name">数字连线</div>
+        <canvas id="pathCanvas"></canvas>
+    </div>
+    <button id="autoPlay">自动演示</button>
+
+    <div id="snapshotsContainer" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px;"></div>
+
+    <script>
+        // 根据关卡获取gridSize和hintCount的函数
+        function getGridSizeAndHintCount(currentLevel) {
+            const gridRules = {
+                2: { startHint: 1, maxHint: 2 },
+                3: { startHint: 2, maxHint: 4 },
+                4: { startHint: 3, maxHint: 8 }
+            };
+
+            function findGridAndHintForLevel(level) {
+                let g = 2;
+                let { startHint, maxHint } = gridRules[g];
+                let levelCountForCurrentGrid = 1;
+                let currentHint = startHint;
+
+                for (let i = 1; i < level; i++) {
+                    currentHint = startHint + (levelCountForCurrentGrid - 1);
+                    if (currentHint >= maxHint) {
+                        g++;
+                        if (!gridRules[g]) {
+                            g = 4; 
+                        }
+                        startHint = gridRules[g].startHint;
+                        maxHint = gridRules[g].maxHint;
+                        levelCountForCurrentGrid = 1;
+                        currentHint = startHint;
+                    } else {
+                        levelCountForCurrentGrid++;
+                    }
+                }
+
+                currentHint = startHint + (levelCountForCurrentGrid - 1);
+                if (currentHint > maxHint) currentHint = maxHint;
+
+                return { grid: g, hint: currentHint };
+            }
+
+            return findGridAndHintForLevel(currentLevel);
+        }
+
+        class SoundEffect1 {
+           constructor() {
+               this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+               this.baseFrequency = 400;
+
+               this.gridMelodies = {
+                   2: {
+                       melody: [
+                           {note: 'C4', duration: 0.25},
+                           {note: 'E4', duration: 0.25},
+                           {note: 'G4', duration: 0.25},
+                           {note: 'C5', duration: 0.25}
+                       ],
+                       name: "简单音阶"
+                   },
+                   
+                   3: {
+                       melody: [
+                           {note: 'C4', duration: 0.25},
+                           {note: 'C4', duration: 0.25},
+                           {note: 'G4', duration: 0.25},
+                           {note: 'G4', duration: 0.25},
+                           {note: 'A4', duration: 0.25},
+                           {note: 'A4', duration: 0.25},
+                           {note: 'G4', duration: 0.25},
+                           {note: 'F4', duration: 0.25},
+                           {note: 'E4', duration: 0.25}
+                       ],
+                       name: "小星星"
+                   },
+                   
+                   4: {
+                       melody: [
+                           {note: 'E4', duration: 0.25},
+                           {note: 'E4', duration: 0.25},
+                           {note: 'F4', duration: 0.25},
+                           {note: 'G4', duration: 0.25},
+                           {note: 'G4', duration: 0.25},
+                           {note: 'F4', duration: 0.25},
+                           {note: 'E4', duration: 0.25},
+                           {note: 'D4', duration: 0.25},
+                           {note: 'C4', duration: 0.25},
+                           {note: 'C4', duration: 0.25},
+                           {note: 'D4', duration: 0.25},
+                           {note: 'E4', duration: 0.25},
+                           {note: 'E4', duration: 0.3},
+                           {note: 'D4', duration: 0.2},
+                           {note: 'D4', duration: 0.25},
+                           {note: 'E4', duration: 0.25}
+                       ],
+                       name: "欢乐颂"
+                   },
+                   
+                   5: {
+                       melody: [
+                            {note: 'G4', duration: 0.25}, {note: 'D4', duration: 0.25},
+                            {note: 'G4', duration: 0.25}, {note: 'D4', duration: 0.25},
+                            {note: 'G4', duration: 0.25}, {note: 'D4', duration: 0.25},
+                            {note: 'G4', duration: 0.25}, {note: 'B4', duration: 0.25},
+                            {note: 'D5', duration: 0.25}, {note: 'B4', duration: 0.25},
+                            {note: 'A4', duration: 0.25}, {note: 'G4', duration: 0.25},
+                            {note: 'F#4', duration: 0.25}, {note: 'G4', duration: 0.25},
+                            {note: 'A4', duration: 0.25}, {note: 'D4', duration: 0.25},
+                            {note: 'G4', duration: 0.25}, {note: 'A4', duration: 0.25},
+                            {note: 'B4', duration: 0.25}, {note: 'C5', duration: 0.25},
+                            {note: 'D5', duration: 0.25}, {note: 'C5', duration: 0.25},
+                            {note: 'B4', duration: 0.25}, {note: 'A4', duration: 0.25},
+                            {note: 'G4', duration: 0.25}
+                       ],
+                       name: "小夜曲"
+                   },
+                   
+                   6: {
+                       melody: [
+                           {note: 'G4', duration: 0.25}, {note: 'D4', duration: 0.25},
+                           {note: 'E4', duration: 0.25}, {note: 'F#4', duration: 0.25},
+                           {note: 'G4', duration: 0.25}, {note: 'D4', duration: 0.25},
+                           {note: 'G4', duration: 0.25}, {note: 'A4', duration: 0.25},
+                           {note: 'B4', duration: 0.25}, {note: 'C5', duration: 0.25},
+                           {note: 'D5', duration: 0.25}, {note: 'G4', duration: 0.25},
+                           {note: 'B4', duration: 0.25}, {note: 'C5', duration: 0.25},
+                           {note: 'A4', duration: 0.25}, {note: 'B4', duration: 0.25},
+                           {note: 'G4', duration: 0.25}, {note: 'A4', duration: 0.25},
+                           {note: 'F#4', duration: 0.25}, {note: 'G4', duration: 0.25},
+                           {note: 'E4', duration: 0.25}, {note: 'F#4', duration: 0.25},
+                           {note: 'D4', duration: 0.25}, {note: 'E4', duration: 0.25},
+                           {note: 'F#4', duration: 0.25}, {note: 'G4', duration: 0.25},
+                           {note: 'A4', duration: 0.25}, {note: 'B4', duration: 0.25},
+                           {note: 'C5', duration: 0.25}, {note: 'A4', duration: 0.25},
+                           {note: 'B4', duration: 0.25}, {note: 'A4', duration: 0.25},
+                           {note: 'G4', duration: 0.25}, {note: 'F#4', duration: 0.25},
+                           {note: 'E4', duration: 0.25}, {note: 'D4', duration: 0.25}
+                       ],
+                       name: "小步舞曲"
+                   }
+               };
+
+               this.noteToFreq = {
+                   'C4': 261.63, 'C#4': 277.18, 'D4': 293.66,
+                   'D#4': 311.13, 'E4': 329.63, 'F4': 349.23,
+                   'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30,
+                   'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
+                   'C5': 523.25, 'C#5': 554.37, 'D5': 587.33,
+                   'D#5': 622.25, 'E5': 659.26, 'F5': 698.46,
+                   'F#5': 739.99, 'G5': 783.99, 'G#5': 830.61,
+                   'A5': 880.00, 'A#5': 932.33, 'B5': 987.77
+               };
+           }
+
+           playApplause() {
+               const duration = 1.5;
+               const clapCount = Math.floor(Math.random() * 10) + 15;
+               
+               for (let i = 0; i < clapCount; i++) {
+                   setTimeout(() => {
+                       const clap = this.audioContext.createOscillator();
+                       const clapGain = this.audioContext.createGain();
+                       const noise = this.audioContext.createOscillator();
+                       const noiseGain = this.audioContext.createGain();
+                       
+                       clap.connect(clapGain);
+                       noise.connect(noiseGain);
+                       clapGain.connect(this.audioContext.destination);
+                       noiseGain.connect(this.audioContext.destination);
+                       
+                       clap.frequency.value = 1500 + Math.random() * 500;
+                       noise.type = 'white';
+                       
+                       clapGain.gain.value = 0.3 + Math.random() * 0.1;
+                       noiseGain.gain.value = 0.3 + Math.random() * 0.1;
+                       
+                       clap.start();
+                       noise.start();
+                       
+                       clapGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+                       noiseGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+                       
+                       clap.stop(this.audioContext.currentTime + 0.1);
+                       noise.stop(this.audioContext.currentTime + 0.1);
+                       
+                   }, i * (duration * 1000 / clapCount));
+               }
+           }
+
+           playClickNumber(number, gridSize) {
+               if (!this.gridMelodies[gridSize]) {
+                   console.warn(`网格大小 ${gridSize} 没有定义旋律`);
+                   return;
+               }
+
+               const currentMelody = this.gridMelodies[gridSize].melody;
+               const totalNotes = currentMelody.length;
+               const noteIndex = ((number - 1) % totalNotes + totalNotes) % totalNotes;
+               const noteInfo = currentMelody[noteIndex];
+               
+               if (!noteInfo || !this.noteToFreq[noteInfo.note]) {
+                   console.warn(`数字 ${number} 在网格 ${gridSize} 中音符无效`);
+                   return;
+               }
+
+               const oscillator = this.audioContext.createOscillator();
+               const gainNode = this.audioContext.createGain();
+               
+               oscillator.connect(gainNode);
+               gainNode.connect(this.audioContext.destination);
+               
+               const frequency = this.noteToFreq[noteInfo.note];
+               
+               if (!isFinite(frequency)) {
+                   console.warn(`音符 ${noteInfo.note} 频率无效`);
+                   return;
+               }
+
+               oscillator.type = 'sine';
+               oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+               
+               gainNode.gain.setValueAtTime(0.6, this.audioContext.currentTime);
+               gainNode.gain.exponentialRampToValueAtTime(0.05, this.audioContext.currentTime + noteInfo.duration);
+               
+               oscillator.start();
+               oscillator.stop(this.audioContext.currentTime + noteInfo.duration);
+           }
+
+
+            playError() {
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(300, this.audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(200, this.audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.5, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.05, this.audioContext.currentTime + 0.2);
+                
+                oscillator.start();
+                oscillator.stop(this.audioContext.currentTime + 0.2);
+            }
+
+           playRandomCelebration() {
+               this.playMelodyC.bind(this)
+           }
+
+           playMelodyC() {
+               const notes = [0, 7, 12, 16, 12, 16, 19, 24].map(n => this.baseFrequency * Math.pow(2, n/12));
+               this.playArpeggio(notes);
+           }
+
+           playSequence(frequencies) {
+               frequencies.forEach((freq, i) => {
+                   setTimeout(() => {
+                       const osc = this.audioContext.createOscillator();
+                       const gain = this.audioContext.createGain();
+                       
+                       osc.connect(gain);
+                       gain.connect(this.audioContext.destination);
+                       
+                       osc.type = Math.random() > 0.5 ? 'sine' : 'triangle';
+                       osc.frequency.value = freq;
+                       
+                       gain.gain.value = 0.4;
+                       gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+                       
+                       osc.start();
+                       osc.stop(this.audioContext.currentTime + 0.1);
+                   }, i * 100);
+               });
+           }
+
+           playArpeggio(frequencies) {
+               frequencies.forEach((freq, i) => {
+                   setTimeout(() => {
+                       const osc = this.audioContext.createOscillator();
+                       const gain = this.audioContext.createGain();
+                       
+                       osc.connect(gain);
+                       gain.connect(this.audioContext.destination);
+                       
+                       osc.type = 'triangle';
+                       osc.frequency.value = freq;
+                       
+                       gain.gain.setValueAtTime(0.4, this.audioContext.currentTime);
+                       gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                       
+                       osc.start();
+                       osc.stop(this.audioContext.currentTime + 0.2);
+                   }, i * 60);
+               });
+           }
+        }
+
+        class SoundEffect {
+            constructor() {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.baseFrequency = 400;
+                
+                this.noteToFreq = {
+                    'C4': 261.63, 'C#4': 277.18, 'D4': 293.66,
+                    'D#4': 311.13, 'E4': 329.63, 'F4': 349.23,
+                    'F#4': 369.99, 'G4': 392.00, 'G#4': 415.30,
+                    'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
+                    'C5': 523.25, 'C#5': 554.37, 'D5': 587.33,
+                    'D#5': 622.25, 'E5': 659.26, 'F5': 698.46,
+                    'F#5': 739.99, 'G5': 783.99, 'G#5': 830.61,
+                    'A5': 880.00, 'A#5': 932.33, 'B5': 987.77
+                };
+
+                this.gridMelodies = {
+                    2: {
+                        melody: [
+                            {note: 'C5', duration: 0.15},
+                            {note: 'E5', duration: 0.15},
+                            {note: 'G5', duration: 0.15},
+                            {note: 'C5', duration: 0.15}
+                        ],
+                        name: "简单音阶"
+                    },
+                    
+                    3: {
+                        melody: [
+                            {note: 'C5', duration: 0.15},
+                            {note: 'C5', duration: 0.15},
+                            {note: 'G5', duration: 0.15},
+                            {note: 'G5', duration: 0.15},
+                            {note: 'A5', duration: 0.15},
+                            {note: 'A5', duration: 0.15},
+                            {note: 'G5', duration: 0.15},
+                            {note: 'F5', duration: 0.15},
+                            {note: 'E5', duration: 0.15}
+                        ],
+                        name: "小星星"
+                    },
+                    
+                    4: {
+                        melody: [
+                            {note: 'E5', duration: 0.15},
+                            {note: 'E5', duration: 0.15},
+                            {note: 'F5', duration: 0.15},
+                            {note: 'G5', duration: 0.15},
+                            {note: 'G5', duration: 0.15},
+                            {note: 'F5', duration: 0.15},
+                            {note: 'E5', duration: 0.15},
+                            {note: 'D5', duration: 0.15},
+                            {note: 'C5', duration: 0.15},
+                            {note: 'C5', duration: 0.15},
+                            {note: 'D5', duration: 0.15},
+                            {note: 'E5', duration: 0.15},
+                            {note: 'E5', duration: 0.15},
+                            {note: 'D5', duration: 0.15},
+                            {note: 'D5', duration: 0.15},
+                            {note: 'E5', duration: 0.15}
+                        ],
+                        name: "欢乐颂"
+                    },
+                    
+                    5: {
+                        melody: [
+                            {note: 'G5', duration: 0.15}, {note: 'D5', duration: 0.15},
+                            {note: 'G5', duration: 0.15}, {note: 'D5', duration: 0.15},
+                            {note: 'G5', duration: 0.15}, {note: 'D5', duration: 0.15},
+                            {note: 'G5', duration: 0.15}, {note: 'B5', duration: 0.15},
+                            {note: 'D5', duration: 0.15}, {note: 'B5', duration: 0.15},
+                            {note: 'A5', duration: 0.15}, {note: 'G5', duration: 0.15},
+                            {note: 'F#5', duration: 0.15}, {note: 'G5', duration: 0.15},
+                            {note: 'A5', duration: 0.15}, {note: 'D5', duration: 0.15},
+                            {note: 'G5', duration: 0.15}, {note: 'A5', duration: 0.15},
+                            {note: 'B5', duration: 0.15}, {note: 'C5', duration: 0.15},
+                            {note: 'D5', duration: 0.15}, {note: 'C5', duration: 0.15},
+                            {note: 'B5', duration: 0.15}, {note: 'A5', duration: 0.15},
+                            {note: 'G5', duration: 0.15}
+                        ],
+                        name: "小夜曲"
+                    },
+                    
+                    6: {
+                        melody: [
+                            {note: 'G5', duration: 0.12}, {note: 'D5', duration: 0.12},
+                            {note: 'E5', duration: 0.12}, {note: 'F#5', duration: 0.12},
+                            {note: 'G5', duration: 0.12}, {note: 'D5', duration: 0.12},
+                            {note: 'G5', duration: 0.12}, {note: 'A5', duration: 0.12},
+                            {note: 'B5', duration: 0.12}, {note: 'C5', duration: 0.12},
+                            {note: 'D5', duration: 0.12}, {note: 'G5', duration: 0.12},
+                            {note: 'B5', duration: 0.12}, {note: 'C5', duration: 0.12},
+                            {note: 'A5', duration: 0.12}, {note: 'B5', duration: 0.12},
+                            {note: 'G5', duration: 0.12}, {note: 'A5', duration: 0.12},
+                            {note: 'F#5', duration: 0.12}, {note: 'G5', duration: 0.12},
+                            {note: 'E5', duration: 0.12}, {note: 'F#5', duration: 0.12},
+                            {note: 'D5', duration: 0.12}, {note: 'E5', duration: 0.12},
+                            {note: 'F#5', duration: 0.12}, {note: 'G5', duration: 0.12},
+                            {note: 'A5', duration: 0.12}, {note: 'B5', duration: 0.12},
+                            {note: 'C5', duration: 0.12}, {note: 'A5', duration: 0.12},
+                            {note: 'B5', duration: 0.12}, {note: 'A5', duration: 0.12},
+                            {note: 'G5', duration: 0.12}, {note: 'F#5', duration: 0.12},
+                            {note: 'E5', duration: 0.12}, {note: 'D5', duration: 0.12}
+                        ],
+                        name: "小步舞曲"
+                    }
+                };
+            }
+
+            generatePentatonicMelody(length) {
+                const pentatonicNotes = ['C6', 'D6', 'E6', 'G6', 'A6'];
+                let melody = [];
+                for (let i = 0; i < length; i++) {
+                    melody.push({
+                        note: pentatonicNotes[i % pentatonicNotes.length],
+                        duration: 0.1
+                    });
+                }
+                return melody;
+            }
+
+            playClickNumber(number, gridSize) {
+                if (!this.gridMelodies[gridSize]) {
+                    console.warn(`网格大小 ${gridSize} 没有定义旋律`);
+                    return;
+                }
+
+                const currentMelody = this.gridMelodies[gridSize].melody;
+                const totalNotes = currentMelody.length;
+                const noteIndex = ((number - 1) % totalNotes + totalNotes) % totalNotes;
+                const noteInfo = currentMelody[noteIndex];
+
+                if (!noteInfo || !this.noteToFreq[noteInfo.note]) {
+                    console.warn(`数字 ${number} 在网格 ${gridSize} 中音符无效`);
+                    return;
+                }
+
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                const overtoneOsc = this.audioContext.createOscillator();
+                const overtoneGain = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(this.noteToFreq[noteInfo.note], this.audioContext.currentTime);
+                
+                overtoneOsc.connect(overtoneGain);
+                overtoneGain.connect(this.audioContext.destination);
+                overtoneOsc.type = 'triangle';
+                overtoneOsc.frequency.setValueAtTime(this.noteToFreq[noteInfo.note] * 2, this.audioContext.currentTime);
+                
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.4, this.audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + noteInfo.duration);
+                
+                overtoneGain.gain.setValueAtTime(0, this.audioContext.currentTime);
+                overtoneGain.gain.linearRampToValueAtTime(0.2, this.audioContext.currentTime + 0.01);
+                overtoneGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + noteInfo.duration);
+                
+                oscillator.start();
+                overtoneOsc.start();
+                oscillator.stop(this.audioContext.currentTime + noteInfo.duration);
+                overtoneOsc.stop(this.audioContext.currentTime + noteInfo.duration);
+            }
+
+            playError() {
+                const duration = 0.2;
+                
+                const osc1 = this.audioContext.createOscillator();
+                const osc2 = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                osc1.type = 'triangle';
+                osc2.type = 'square';
+                
+                osc1.frequency.setValueAtTime(880, this.audioContext.currentTime);
+                osc2.frequency.setValueAtTime(932.33, this.audioContext.currentTime);
+                
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.3, this.audioContext.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+                
+                osc1.start();
+                osc2.start();
+                osc1.stop(this.audioContext.currentTime + duration);
+                osc2.stop(this.audioContext.currentTime + duration);
+            }
+
+            playApplause() {
+                console.log("播放掌声");
+                const duration = 1.5;
+                const clapCount = Math.floor(Math.random() * 10) + 15;
+                
+                for (let i = 0; i < clapCount; i++) {
+                    setTimeout(() => {
+                        const mainOsc = this.audioContext.createOscillator();
+                        const mainGain = this.audioContext.createGain();
+                        const highOsc = this.audioContext.createOscillator();
+                        const highGain = this.audioContext.createGain();
+                        const noiseOsc = this.audioContext.createOscillator();
+                        const noiseGain = this.audioContext.createGain();
+                        
+                        mainOsc.connect(mainGain);
+                        highOsc.connect(highGain);
+                        noiseOsc.connect(noiseGain);
+                        mainGain.connect(this.audioContext.destination);
+                        highGain.connect(this.audioContext.destination);
+                        noiseGain.connect(this.audioContext.destination);
+                        
+                        mainOsc.type = 'triangle';
+                        mainOsc.frequency.value = 1500 + Math.random() * 500;
+                        
+                        highOsc.type = 'square';
+                        highOsc.frequency.value = 2500 + Math.random() * 1000;
+                        
+                        noiseOsc.type = 'sawtooth';
+                        noiseOsc.frequency.value = 2000 + Math.random() * 500;
+                        
+                        mainGain.gain.setValueAtTime(0.3, this.audioContext.currentTime);
+                        highGain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                        noiseGain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                        
+                        mainGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.1);
+                        highGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.08);
+                        noiseGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.05);
+                        
+                        mainOsc.start();
+                        highOsc.start();
+                        noiseOsc.start();
+                        mainOsc.stop(this.audioContext.currentTime + 0.1);
+                        highOsc.stop(this.audioContext.currentTime + 0.1);
+                        noiseOsc.stop(this.audioContext.currentTime + 0.1);
+                        
+                    }, i * (duration * 1000 / clapCount));
+                }
+            }
+
+            playRandomCelebration() {
+                console.log("播放庆祝音乐");
+                this.playMelodyC()
+            }
+
+            playMelodyC() {
+                const notes = [0, 7, 12, 16, 12, 16, 19, 24].map(n => this.baseFrequency * Math.pow(2, n/12));
+                this.playArpeggio(notes);
+            }
+
+            playArpeggio(frequencies) {
+               frequencies.forEach((freq, i) => {
+                   setTimeout(() => {
+                       const osc = this.audioContext.createOscillator();
+                       const gain = this.audioContext.createGain();
+                       
+                       osc.connect(gain);
+                       gain.connect(this.audioContext.destination);
+                       
+                       osc.type = 'triangle';
+                       osc.frequency.value = freq;
+                       
+                       gain.gain.setValueAtTime(0.4, this.audioContext.currentTime);
+                       gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
+                       
+                       osc.start();
+                       osc.stop(this.audioContext.currentTime + 0.2);
+                   }, i * 60);
+               });
+           }
+        }
+
+        class Game {
+
+            getGridSizeAndHintCount(level) {
+               const rules = {
+                   2: { startHint: 1, maxHints: 2, levels: 2 },
+                   3: { startHint: 2, maxHints: 6, levels: 5 },
+                   4: { startHint: 3, maxHints: 10, levels: 8 },
+                   5: { startHint: 4, maxHints: 16, levels: 13 },
+                   6: { startHint: 5, maxHints: 24, levels: 20 }
+               };
+
+               const totalLevels = Object.values(rules).reduce((sum, rule) => sum + rule.levels, 0);
+               if (level > totalLevels) {
+                   return { gridSize: 6, hintCount: 24 };
+               }
+
+               let remainingLevel = level;
+               let gridSize = 2;
+               
+               for (const [size, rule] of Object.entries(rules)) {
+                   if (remainingLevel <= rule.levels) {
+                       gridSize = parseInt(size);
+                       break;
+                   }
+                   remainingLevel -= rule.levels;
+               }
+
+               const rule = rules[gridSize];
+               const hintCount = Math.min(
+                   rule.startHint + remainingLevel - 1,
+                   rule.maxHints
+               );
+
+               return { gridSize, hintCount };
+            }
+
+
+            constructor() {
+                this.maxLevel = parseInt(localStorage.getItem('maxLevel')) || 1;
+                this.currentLevel = this.maxLevel;
+
+                const { gridSize, hintCount } = this.getGridSizeAndHintCount(this.currentLevel);
+                this.gridSize = gridSize;
+                
+                this.cells = [];
+                this.solution = [];
+                this.hints = new Set();
+                this.path = [];
+                this.isDragging = false;
+                this.lastCell = null;
+                
+                this.gameContainer = document.getElementById('gameContainer');
+                this.gameGrid = document.getElementById('gameGrid');
+                this.pathCanvas = document.getElementById('pathCanvas');
+                this.ctx = this.pathCanvas.getContext('2d');
+                this.autoPlayBtn = document.getElementById('autoPlay');
+
+                this.levelDisplay = document.getElementById('currentLevel');
+
+                this.sound = new SoundEffect();
+
+                this.setupCanvas();
+
+                window.addEventListener('resize', () => this.setupCanvas());
+
+
+                this.isAutoPlaying = false;
+                
+                this.init();
+            }
+
+
+            init() {
+                this.handleStart = this.handleStart.bind(this);
+                this.handleMove = this.handleMove.bind(this);
+                this.handleEnd = this.handleEnd.bind(this);
+                this.setupEventListeners();
+                this.initLevel();
+            }
+
+
+            async autoPlay() {
+               this.isAutoPlaying = true;
+               
+               const playLevel = async () => {
+                   await new Promise(resolve => setTimeout(resolve, 1000));
+                   
+                   this.path = [];
+                   this.lastCell = null;
+                   this.clearCanvas();
+                   
+                   for(let i = 0; i < this.solution.length; i++) {
+                       const cellIndex = this.solution[i];
+                       const cell = this.cells[cellIndex];
+                       
+                       this.addToPath(cell);
+                       await new Promise(resolve => setTimeout(resolve, 200));
+                   }
+                   
+                   await new Promise(resolve => setTimeout(resolve, 1000));
+                   
+                   if(this.isAutoPlaying) {
+                       this.isAutoPlaying = false;
+                       this.currentLevel++;
+                       this.levelDisplay.textContent = this.currentLevel;
+                       this.initLevel();
+                   }
+               };
+
+               playLevel();
+            }
+
+            setupEventListeners() {
+                this.autoPlayBtn.addEventListener('click', () => this.autoPlay());
+                
+                this.gameGrid.addEventListener('mousedown', this.handleStart);
+                document.addEventListener('mousemove', this.handleMove);
+                document.addEventListener('mouseup', this.handleEnd);
+
+                
+                this.gameGrid.addEventListener('touchstart', this.handleStart);
+                document.addEventListener('touchmove', this.handleMove);
+                document.addEventListener('touchend', this.handleEnd);
+
+                // Help modal
+                const helpBtn = document.getElementById('helpBtn');
+                const modal = document.getElementById('helpModal');
+                const closeBtn = document.querySelector('.close-btn');
+                const themeBtn = document.getElementById('themeBtn');
+
+                helpBtn.addEventListener('click', () => {
+                    modal.classList.add('show');
+                });
+
+                closeBtn.addEventListener('click', () => {
+                    modal.classList.remove('show');
+                });
+
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.remove('show');
+                    }
+                });
+
+                // Theme toggle
+                themeBtn.addEventListener('click', () => {
+                    document.body.classList.toggle('dark-theme');
+                    const isDark = document.body.classList.contains('dark-theme');
+                    themeBtn.textContent = isDark ? '☀' : '☾';
+                    localStorage.setItem('darkTheme', isDark);
+                });
+
+                // Load saved theme
+                if (localStorage.getItem('darkTheme') === 'true') {
+                    document.body.classList.add('dark-theme');
+                    themeBtn.textContent = '☀';
+                }
+            }
+
+            isAdjacent(index1, index2) {
+                const row1 = Math.floor(index1 / this.gridSize);
+                const col1 = index1 % this.gridSize;
+                const row2 = Math.floor(index2 / this.gridSize);
+                const col2 = index2 % this.gridSize;
+                return Math.abs(row1 - row2) + Math.abs(col1 - col2) === 1;
+            }
+
+            captureSnapshot() {
+                html2canvas(this.gameContainer).then(canvas => {
+                    const imgData = canvas.toDataURL("image/png");
+                    const img = document.createElement('img');
+                    img.src = imgData;
+                    img.style.width = '100px';
+                    img.style.border = '2px solid #4a90e2';
+                    img.style.borderRadius = '8px';
+                    img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+
+                    const snapshotsContainer = document.getElementById('snapshotsContainer');
+                    snapshotsContainer.appendChild(img);
+                });
+            }
+
+
+            generateValidPath() {
+               const totalCells = this.gridSize * this.gridSize;
+               let validPath = null;
+
+               while (!validPath) {
+                   let path = [Math.floor(Math.random() * totalCells)];
+                   let available = new Set();
+
+                   for (let i = 0; i < totalCells; i++) {
+                       if (i !== path[0]) available.add(i);
+                   }
+
+                   while (path.length < totalCells && available.size > 0) {
+                       const lastCell = path[path.length - 1];
+                       const validMoves = [...available].filter(next => this.isAdjacent(lastCell, next));
+
+                       if (validMoves.length === 0) break;
+
+                       const nextCell = validMoves[Math.floor(Math.random() * validMoves.length)];
+                       path.push(nextCell);
+                       available.delete(nextCell);
+                   }
+
+                   if (path.length === totalCells) {
+                       validPath = path;
+                   }
+               }
+
+               return validPath;
+            }
+
+
+            startTutorial() {
+               if (this.currentLevel === 1 && !this.path.length) {
+                   this.tutorialInterval = setInterval(() => {
+                       if (!this.path.length) {
+                           this.path = [];
+                           this.lastCell = null;
+                           this.clearCanvas();
+                           
+                           for(let i = 0; i < this.solution.length; i++) {
+                               setTimeout(() => {
+                                   const cellIndex = this.solution[i];
+                                   const cell = this.cells[cellIndex];
+                                   this.addToPath(cell);
+                               }, i * 500);
+                           }
+                           
+                           setTimeout(() => {
+                               this.path = [];
+                               this.lastCell = null;
+                               this.clearCanvas();
+                               this.updateUI();
+                           }, this.solution.length * 500);
+                       }
+                   }, 500 );
+               }
+            }
+
+            initLevel() {
+               const { gridSize, hintCount } = this.getGridSizeAndHintCount(this.currentLevel);
+               this.gridSize = gridSize;
+
+               this.solution = this.generateValidPath();
+               if (!this.solution) {
+                   console.error("无法生成有效路径");
+                   return;
+               }
+
+               this.hints.clear();
+
+               const totalCells = this.gridSize * this.gridSize;
+               while (this.hints.size < hintCount) {
+                   const position = Math.floor(Math.random() * (totalCells - 1)) + 2;
+                   this.hints.add(position);
+               }
+
+               this.path = [];
+               this.lastCell = null;
+               this.clearCanvas();
+               
+               this.levelDisplay.textContent = this.currentLevel;
+               this.createGrid();
+            }
+            
+            createGrid() {
+                this.gameGrid.innerHTML = '';
+                this.cells = [];
+                
+                this.gameGrid.setAttribute('data-size', this.gridSize);
+
+                for (let i = 0; i < this.gridSize * this.gridSize; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.index = i;
+                    
+                    const solutionIndex = this.solution.indexOf(i);
+                    if (this.hints.has(solutionIndex + 1)) {
+                        cell.textContent = (solutionIndex + 1).toString();
+                        cell.classList.add('hint');
+                    }
+                    
+                    this.gameGrid.appendChild(cell);
+                    this.cells.push(cell);
+                }
+                
+                // Ensure canvas is sized correctly after grid is created
+                requestAnimationFrame(() => this.setupCanvas());
+            }
+
+            handleStart(e) {
+                e.preventDefault();
+                const cell = this.getCellFromEvent(e);
+                if (!cell) return;
+
+                if (this.tutorialInterval) {
+                    clearInterval(this.tutorialInterval);
+                    this.tutorialInterval = null;
+                }
+
+                this.isDragging = true;
+                this.path = [];
+                this.clearCanvas();
+                this.addToPath(cell);
+            }
+
+            handleMove(e) {
+                if (!this.isDragging) return;
+                e.preventDefault();
+                
+                const cell = this.getCellFromEvent(e);
+                if (!cell || cell === this.lastCell) return;
+
+                if (this.isValidNextCell(cell)) {
+                    this.addToPath(cell);
+                }
+            }
+
+            handleEnd() {
+                this.isDragging = false;
+                
+                if (this.isLevelComplete()) {
+                    this.sound.playRandomCelebration();
+                    this.captureSnapshot();
+                    setTimeout(() => {
+                        this.currentLevel++;
+                        if (this.currentLevel > this.maxLevel) {
+                           this.maxLevel = this.currentLevel;
+                           localStorage.setItem('maxLevel', this.maxLevel);
+                       }
+                        this.levelDisplay.textContent = this.currentLevel;
+                        this.initLevel();
+                    }, 1000);
+                }
+            }
+
+            addLevelSelector() {
+                const selector = document.createElement('input');
+                selector.type = 'range';
+                selector.min = '1';
+                selector.max = this.maxLevel;
+                selector.value = this.currentLevel;
+                selector.onchange = (e) => {
+                    this.currentLevel = parseInt(e.target.value);
+                    this.initLevel();
+                };
+                document.body.insertBefore(selector, this.gameContainer);
+            }
+
+            getCellFromEvent(e) {
+                const point = e.touches ? e.touches[0] : e;
+                const element = document.elementFromPoint(point.clientX, point.clientY);
+                if (element && element.classList.contains('cell')) {
+                    return element;
+                }
+                return null;
+            }
+
+            isValidNextCell(cell) {
+                if (!this.lastCell) return true;
+                
+                const lastIndex = parseInt(this.lastCell.dataset.index);
+                const currentIndex = parseInt(cell.dataset.index);
+                
+                return this.isAdjacent(lastIndex, currentIndex);
+            }
+
+            addToPath(cell) {
+               const index = parseInt(cell.dataset.index);
+               if (!this.path.includes(index)) {
+                   const pathIndex = this.path.length + 1;
+                   this.path.push(index);
+                   this.lastCell = cell;
+                   
+                   const solutionIndex = this.solution.indexOf(index);
+                   
+                   if (this.hints.has(solutionIndex + 1)) {
+                       if (pathIndex === solutionIndex + 1) {
+                           this.sound.playClickNumber(pathIndex, this.gridSize);
+                       } else {
+                           this.sound.playError();
+                       }
+                   } else {
+                       this.sound.playClickNumber(pathIndex, this.gridSize);
+                   }
+                   
+                   this.updateUI();
+                   this.drawPaths();
+               }
+            }
+            
+            updateUI() {
+               const isComplete = this.isLevelComplete();
+               
+               this.cells.forEach((cell, index) => {
+                   const pathIndex = this.path.indexOf(index);
+                   const solutionIndex = this.solution.indexOf(index);
+                   
+                   cell.classList.remove('active', 'hint', 'error', 'correct');
+                   
+                   if (this.hints.has(solutionIndex + 1)) {
+                       cell.textContent = (solutionIndex + 1).toString();
+                       cell.classList.add('hint');
+                       
+                       if (pathIndex !== -1 && pathIndex !== solutionIndex) {
+                           cell.classList.add('error');
+                       }
+                   } else if (pathIndex !== -1) {
+                       cell.textContent = (pathIndex + 1).toString();
+                       cell.classList.add('active');
+                   } else {
+                       cell.textContent = '';
+                   }
+                   
+                   if (isComplete) {
+                       cell.classList.add('correct');
+                   }
+               });
+            }
+
+
+            setupCanvas() {
+                if (!this.gameContainer || !this.pathCanvas) return;
+                
+                const rect = this.gameContainer.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                
+                this.pathCanvas.width = rect.width * dpr;
+                this.pathCanvas.height = rect.height * dpr;
+                this.pathCanvas.style.width = rect.width + 'px';
+                this.pathCanvas.style.height = rect.height + 'px';
+                
+                this.ctx.scale(dpr, dpr);
+                this.canvasRect = rect;
+            }
+
+            clearCanvas() {
+                if (!this.ctx || !this.pathCanvas) return;
+                this.ctx.clearRect(0, 0, this.pathCanvas.width, this.pathCanvas.height);
+            }
+
+            drawPaths() {
+                if (!this.gameContainer || this.path.length < 1) return;
+                
+                const containerRect = this.gameContainer.getBoundingClientRect();
+                this.clearCanvas();
+
+                // Calculate line width based on cell size
+                const cellSize = containerRect.width / (this.gridSize + 1);
+                const lineWidth = Math.max(2, Math.min(3, cellSize * 0.3));
+
+                // Get all points from path
+                const points = [];
+                for (let i = 0; i < this.path.length; i++) {
+                    const cell = this.cells[this.path[i]];
+                    if (!cell) continue;
+                    
+                    const cellRect = cell.getBoundingClientRect();
+                    const x = cellRect.left - containerRect.left + cellRect.width / 2;
+                    const y = cellRect.top - containerRect.top + cellRect.height / 2;
+                    points.push({x, y});
+                }
+
+                if (points.length === 0) return;
+
+                // Draw each line segment connecting consecutive path points
+                for (let i = 1; i < points.length; i++) {
+                    const prev = points[i - 1];
+                    const curr = points[i];
+                    
+                    // Draw glow effect
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(prev.x, prev.y);
+                    this.ctx.lineTo(curr.x, curr.y);
+                    this.ctx.strokeStyle = 'rgba(255, 247, 150, 0.2)';
+                    this.ctx.lineWidth = lineWidth + 4;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.stroke();
+                    
+                    // Draw main line
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(prev.x, prev.y);
+                    this.ctx.lineTo(curr.x, curr.y);
+                    this.ctx.strokeStyle = 'rgba(255, 235, 100, 0.8)';
+                    this.ctx.lineWidth = lineWidth;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.stroke();
+                }
+            }
+
+            isLevelComplete() {
+                if (this.path.length !== this.gridSize * this.gridSize) return false;
+                
+                for (const hintNumber of this.hints) {
+                    const requiredCellIndex = this.solution[hintNumber - 1];
+                    const playerPathIndex = this.path.indexOf(requiredCellIndex);
+                    if (playerPathIndex !== hintNumber - 1) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+
+
+        }
+
+        window.onload = () => new Game();
+
+    </script>
+</body>
+</html>
