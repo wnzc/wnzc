@@ -36,7 +36,7 @@
         text-align: center;
         margin-bottom: 10px;
         background: linear-gradient(45deg, var(--primary), var(--primary-dark));
-        -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
         text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
@@ -105,7 +105,7 @@
 
     body.dark-theme .game-title {
         background: linear-gradient(45deg, #60a5fa, #3b82f6);
-        -webkit-background-clip: text;
+        background-clip: text;
     }
 
     body.dark-theme .level-display {
@@ -525,7 +525,9 @@
             const gridRules = {
                 2: { startHint: 1, maxHint: 2 },
                 3: { startHint: 2, maxHint: 4 },
-                4: { startHint: 3, maxHint: 8 }
+                4: { startHint: 3, maxHint: 8 },
+                5: { startHint: 4, maxHint: 16 },
+                6: { startHint: 5, maxHint: 25 }
             };
 
             function findGridAndHintForLevel(level) {
@@ -918,6 +920,35 @@
                             {note: 'E5', duration: 0.12}, {note: 'D5', duration: 0.12}
                         ],
                         name: "小步舞曲"
+                    },
+                    
+                    5: {
+                        melody: [
+                            {note: 'C5', duration: 0.15}, {note: 'D5', duration: 0.15},
+                            {note: 'E5', duration: 0.15}, {note: 'F5', duration: 0.15},
+                            {note: 'G5', duration: 0.15}, {note: 'A5', duration: 0.15},
+                            {note: 'B5', duration: 0.15}, {note: 'C6', duration: 0.15},
+                            {note: 'B5', duration: 0.15}, {note: 'A5', duration: 0.15},
+                            {note: 'G5', duration: 0.15}, {note: 'F5', duration: 0.15},
+                            {note: 'E5', duration: 0.15}, {note: 'D5', duration: 0.15},
+                            {note: 'C5', duration: 0.3}
+                        ],
+                        name: "音阶上下行"
+                    },
+                    
+                    6: {
+                        melody: [
+                            {note: 'C5', duration: 0.1}, {note: 'E5', duration: 0.1},
+                            {note: 'G5', duration: 0.1}, {note: 'C6', duration: 0.1},
+                            {note: 'G5', duration: 0.1}, {note: 'E5', duration: 0.1},
+                            {note: 'C5', duration: 0.1}, {note: 'D5', duration: 0.1},
+                            {note: 'F5', duration: 0.1}, {note: 'A5', duration: 0.1},
+                            {note: 'F5', duration: 0.1}, {note: 'D5', duration: 0.1},
+                            {note: 'E5', duration: 0.1}, {note: 'G5', duration: 0.1},
+                            {note: 'B5', duration: 0.1}, {note: 'E6', duration: 0.1},
+                            {note: 'B5', duration: 0.1}, {note: 'G5', duration: 0.2}
+                        ],
+                        name: "和弦琶音"
                     }
                 };
             }
