@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24点挑战赛 - 大师版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        glass: "rgba(255, 255, 255, 0.25)",
+                        glassBorder: "rgba(255, 255, 255, 0.5)",
+                        primary: "#6366f1",
+                        secondary: "#ec4899",
+                        accent: "#8b5cf6",
+                        dark: "#1e293b"
+                    },
+                    fontFamily: {
+                        sans: ['"Inter"', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    },
+                    animation: {
+                        'bounce-slight': 'bounce-slight 2s infinite',
+                        'fade-in': 'fadeIn 0.5s ease-out forwards',
+                        'slide-up': 'slideUp 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        'bounce-slight': {
+                            '0%, 100%': { transform: 'translateY(-2%)' },
+                            '50%': { transform: 'translateY(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* 玻璃拟态卡片效果 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 扑克牌样式 */
+        .playing-card {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            position: relative;
+            aspect-ratio: 2/3;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .playing-card.red { color: #ef4444; }
+        .playing-card.black { color: #1e293b; }
+
+        .playing-card::before, .playing-card::after {
+            content: attr(data-value);
+            position: absolute;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .playing-card::before { top: 0.5rem; left: 0.5rem; }
+        .playing-card::after { bottom: 0.5rem; right: 0.5rem; transform: rotate(180deg); }
+
+        /* 输入框去重默认样式 */
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+
+    <div class="glass-panel w-full max-w-4xl rounded-3xl shadow-glass overflow-hidden flex flex-col md:flex-row min-h-[600px] animate-fade-in">
+        
+        <!-- 左侧：游戏主区域 -->
+        <div class="flex-1 p-6 md:p-10 flex flex-col relative z-10">
+            <!-- 头部信息 -->
+            <header class="flex justify-between items-center mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-white shadow-lg">
+                        <i class="fa-solid fa-gamepad"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">24点挑战赛</h1>
+                        <p class="text-xs text-gray-500 font-medium">大师级思维训练</p>
+                    </div>
+                </div>
+                <div class="glass-card px-4 py-2 rounded-xl flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-yellow-500"></i>
+                    <span class="text-sm font-semibold text-gray-600">得分:</span>
+                    <span id="score-display" class="text-xl font-bold text-primary">0</span>
+                </div>
+            </header>
+
+            <!-- 游戏状态提示 -->
+            <div id="status-message" class="mb-6 p-4 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100 flex items-start gap-3 transition-all duration-300">
+                <i class="fa-solid fa-circle-info mt-1"></i>
+                <div>
+                    <h3 class="font-bold text-sm">欢迎来到挑战赛！</h3>
+                    <p class="text-sm mt-1 opacity-90">使用下方4张牌，通过加减乘除算出24。每个数字必须且只能使用一次。</p>
+                </div>
+            </div>
+
+            <!-- 扑克牌展示区 -->
+            <div class="flex-1 flex flex-col justify-center items-center gap-6 mb-8">
+                <div id="cards-container" class="grid grid-cols-4 gap-4 w-full max-w-md">
+                    <!-- 牌面由JS生成 -->
+                    <div class="playing-card shadow-lg animate-slide-up" style="animation-delay: 0ms;">?</div>
+                    <div class="playing-card shadow-lg animate-slide-up" style="animation-delay: 100ms;">?</div>
+                    <div class="playing-card shadow-lg animate-slide-up" style="animation-delay: 200ms;">?</div>
+                    <div class="playing-card shadow-lg animate-slide-up" style="animation-delay: 300ms;">?</div>
+                </div>
+                
+                <!-- 快捷操作区 -->
+                <div class="flex gap-2 text-sm text-gray-500">
+                    <span class="px-2 py-1 bg-gray-100 rounded">+</span>
+                    <span class="px-2 py-1 bg-gray-100 rounded">-</span>
+                    <span class="px-2 py-1 bg-gray-100 rounded">*</span>
+                    <span class="px-2 py-1 bg-gray-100 rounded">/</span>
+                    <span class="px-2 py-1 bg-gray-100 rounded">( )</span>
+                </div>
+            </div>
+
+            <!-- 输入与操作区 -->
+            <div class="space-y-4">
+                <div class="relative group">
+                    <input type="text" id="user-input" placeholder="输入算式，例如 (3+5)*4" 
+                        class="w-full bg-white/50 border border-gray-200 rounded-xl px-5 py-4 text-lg font-mono text-gray-700 placeholder-gray-400 focus:bg-white focus:border-primary transition-all shadow-inner">
+                    <button id="submit-btn" class="absolute right-2 top-2 bottom-2 bg-primary hover:bg-indigo-600 text-white px-6 rounded-lg font-medium transition-colors shadow-md">
+                        提交
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="hint-btn" class="glass-card py-3 rounded-xl font-semibold text-gray-600 hover:text-primary hover:bg-white flex items-center justify-center gap-2 transition-all">
+                        <i class="fa-regular fa-lightbulb"></i> 提示 (-5分)
+                    </button>
+                    <button id="giveup-btn" class="glass-card py-3 rounded-xl font-semibold text-gray-600 hover:text-red-500 hover:bg-white flex items-center justify-center gap-2 transition-all">
+                        <i class="fa-solid fa-flag"></i> 放弃 (0分)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：规则与历史记录 -->
+        <div class="w-full md:w-80 bg-white/40 backdrop-blur-md border-l border-white/30 p-6 flex flex-col">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list text-secondary"></i> 对战记录
+            </h2>
+            
+            <div id="history-log" class="flex-1 overflow-y-auto space-y-3 pr-2">
+                <!-- 历史记录由JS生成 -->
+                <div class="text-center text-gray-500 text-sm py-10 opacity-60">
+                    暂无记录<br>开始你的第一局吧！
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-white/30">
+                <div class="text-xs text-gray-500 leading-relaxed">
+                    <strong class="text-gray-700">计分规则：</strong><br>
+                    ✅ 独立解答：+10分<br>
+                    💡 提示后解答：+5分<br>
+                    ❌ 放弃/查看答案：0分
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 逻辑 -->
+    <script>
+        // 游戏状态
+        const state = {
+            score: 0,
+            currentCards: [],
+            currentSolution: null,
+            hasUsedHint: false,
+            roundCount: 0
+        };
+
+        // DOM 元素
+        const els = {
+            score: document.getElementById('score-display'),
+            cardsContainer: document.getElementById('cards-container'),
+            input: document.getElementById('user-input'),
+            submitBtn: document.getElementById('submit-btn'),
+            hintBtn: document.getElementById('hint-btn'),
+            giveupBtn: document.getElementById('giveup-btn'),
+            statusMsg: document.getElementById('status-message'),
+            historyLog: document.getElementById('history-log')
+        };
+
+        // 工具函数：洗牌
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // 核心算法：24点求解器 (用于验证和提示)
+        const Solver = {
+            solve: function(nums) {
+                if (nums.length === 0) return null;
+                const results = this.solveRecursive(nums);
+                return results.length > 0 ? results[0] : null;
+            },
+            
+            solveRecursive: function(nums) {
+                if (nums.length === 1) {
+                    if (Math.abs(nums[0].val - 24) < 0.0001) return [nums[0].expr];
+                    return [];
+                }
+
+                const solutions = [];
+                for (let i = 0; i < nums.length; i++) {
+                    for (let j = 0; j < nums.length; j++) {
+                        if (i === j) continue;
+                        
+                        const list2 = [];
+                        for (let k = 0; k < nums.length; k++) {
+                            if (k !== i && k !== j) list2.push(nums[k]);
+                        }
+
+                        const a = nums[i], b = nums[j];
+                        
+                        // 加
+                        list2.push({ val: a.val + b.val, expr: `(${a.expr}+${b.expr})` });
+                        solutions.push(...this.solveRecursive(list2));
+                        list2.pop();
+
+                        // 乘
+                        list2.push({ val: a.val * b.val, expr: `(${a.expr}*${b.expr})` });
+                        solutions.push(...this.solveRecursive(list2));
+                        list2.pop();
+
+                        // 减 (a - b)
+                        list2.push({ val: a.val - b.val, expr: `(${a.expr}-${b.expr})` });
+                        solutions.push(...this.solveRecursive(list2));
+                        list2.pop();
+
+                        // 除 (a / b)
+                        if (Math.abs(b.val) > 0.0001) {
+                            list2.push({ val: a.val / b.val, expr: `(${a.expr}/${b.expr})` });
+                            solutions.push(...this.solveRecursive(list2));
+                            list2.pop();
+                        }
+                    }
+                }
+                return solutions;
+            }
+        };
+
+        // 游戏逻辑
+        function initGame() {
+            startNewRound();
+            
+            // 事件监听
+            els.submitBtn.addEventListener('click', checkAnswer);
+            els.hintBtn.addEventListener('click', showHint);
+            els.giveupBtn.addEventListener('click', giveUp);
+            els.input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') checkAnswer();
+            });
+        }
+
+        function startNewRound() {
+            state.roundCount++;
+            state.hasUsedHint = false;
+            state.currentCards = [];
+            els.input.value = '';
+            els.input.disabled = false;
+            els.submitBtn.disabled = false;
+            els.hintBtn.disabled = false;
+            els.giveupBtn.disabled = false;
+
+            // 生成有解的牌
+            let solvable = false;
+            while (!solvable) {
+                state.currentCards = Array.from({length: 4}, () => Math.floor(Math.random() * 13) + 1);
+                const solution = Solver.solve(state.currentCards.map(n => ({val: n, expr: n.toString()})));
+                if (solution) {
+                    state.currentSolution = solution;
+                    solvable = true;
+                }
+            }
+
+            renderCards();
+            updateStatus('info', `第 ${state.roundCount} 轮：请用这4张牌算出24！`);
+        }
+
+        function getCardDisplay(num) {
+            if (num === 1) return { val: 'A', color: 'red' }; // A usually red or black, simplified here
+            if (num === 11) return { val: 'J', color: 'red' };
+            if (num === 12) return { val: 'Q', color: 'red' };
+            if (num === 13) return { val: 'K', color: 'red' };
+            // 随机花色颜色模拟
+            return { val: num, color: Math.random() > 0.5 ? 'black' : 'red' };
+        }
+
+        function renderCards() {
+            els.cardsContainer.innerHTML = '';
+            state.currentCards.forEach((num, index) => {
+                const display = getCardDisplay(num);
+                const card = document.createElement('div');
+                card.className = `playing-card ${display.color} shadow-lg animate-slide-up cursor-pointer hover:scale-105 active:scale-95`;
+                card.style.animationDelay = `${index * 100}ms`;
+                card.setAttribute('data-value', display.val);
+                card.innerHTML = display.val;
+                
+                // 点击卡片将数字填入输入框
+                card.addEventListener('click', () => {
+                    if (!els.input.disabled) {
+                        const val = els.input.value;
+                        // 简单的智能插入：如果最后是运算符或空，直接加；否则加运算符
+                        const lastChar = val.slice(-1);
+                        if (val.length > 0 && !['+', '-', '*', '/', '(', ' '].includes(lastChar)) {
+                            els.input.value += '*'; // 默认乘法，方便快速输入
+                        }
+                        els.input.value += num;
+                        els.input.focus();
+                    }
+                });
+                
+                els.cardsContainer.appendChild(card);
+            });
+        }
+
+        function updateStatus(type, msg) {
+            const colors = {
+                'success': 'bg-green-50 text-green-700 border-green-100',
+                'error': 'bg-red-50 text-red-700 border-red-100',
+                'info': 'bg-blue-50 text-blue-700 border-blue-100',
+                'warning': 'bg-yellow-50 text-yellow-700 border-yellow-100'
+            };
+            
+            const icons = {
+                'success': 'fa-check-circle',
+                'error': 'fa-circle-xmark',
+                'info': 'fa-circle-info',
+                'warning': 'fa-triangle-exclamation'
+            };
+
+            els.statusMsg.className = `mb-6 p-4 rounded-2xl border flex items-start gap-3 transition-all duration-300 ${colors[type]}`;
+            els.statusMsg.innerHTML = `
+                <i class="fa-solid ${icons[type]} mt-1"></i>
+                <div>
+                    <h3 class="font-bold text-sm">${type === 'success' ? '太棒了！' : type === 'error' ? '哎呀...' : '提示'}</h3>
+                    <p class="text-sm mt-1 opacity-90">${msg}</p>
+                </div>
+            `;
+        }
+
+        function checkAnswer() {
+            const expr = els.input.value.trim();
+            if (!expr) return;
+
+            // 1. 验证字符合法性
+            const validChars = /^[0-9+\-*/().\s]+$/;
+            if (!validChars.test(expr)) {
+                updateStatus('error', '只能包含数字和运算符号 (+ - * / ( )) 哦！');
+                return;
+            }
+
+            // 2. 提取表达式中的数字
+            const numsInExpr = expr.match(/\d+/g);
+            if (!numsInExpr || numsInExpr.length !== 4) {
+                updateStatus('error', '必须使用且仅能使用4个数字！');
+                return;
+            }
+
+            // 3. 验证数字是否匹配 (排序后比较)
+            const userNums = numsInExpr.map(Number).sort((a, b) => a - b);
+            const targetNums = [...state.currentCards].sort((a, b) => a - b);
+            
+            let isMatch = true;
+            for (let i = 0; i < 4; i++) {
+                if (userNums[i] !== targetNums[i]) {
+                    isMatch = false;
+                    break;
+                }
+            }
+
+            if (!isMatch) {
+                updateStatus('error', `数字不对哦！你需要用 [${state.currentCards.join(', ')}] 这几个数。`);
+                return;
+            }
+
+            // 4. 计算结果
+            try {
+                // 安全的eval替代方案 (Function构造器)
+                const result = new Function('return ' + expr)();
+                
+                // 检查是否等于24 (允许极小误差)
+                if (Math.abs(result - 24) < 0.0001) {
+                    handleWin(expr);
+                } else {
+                    updateStatus('error', `结果是 ${parseFloat(result.toFixed(2))}，不是24哦，再算算？`);
+                }
+            } catch (e) {
+                updateStatus('error', '算式格式有误，请检查括号或运算符。');
+            }
+        }
+
+        function handleWin(expr) {
+            let points = state.hasUsedHint ? 5 : 10;
+            state.score += points;
+            els.score.textContent = state.score;
+            
+            updateStatus('success', `正确！算式 ${expr} = 24。获得 ${points} 分！`);
+            addHistory(expr, true, points);
+            
+            // 禁用输入，准备下一轮
+            disableInput();
+            
+            setTimeout(() => {
+                startNewRound();
+            }, 2500);
+        }
+
+        function showHint() {
+            if (state.hasUsedHint) {
+                updateStatus('warning', '这轮你已经用过提示了，加油自己算！');
+                return;
+            }
+            state.hasUsedHint = true;
+            
+            // 简单的提示逻辑：取解法中的第一步
+            // 解法格式通常是 ((A+B)*(C-D))，我们尝试给出第一步运算
+            // 这里简化处理：给出一个包含两个数字的子表达式
+            const sol = state.currentSolution;
+            // 找到第一个闭合括号内的简单运算，或者前两个数字的运算
+            // 为了简单且有趣，我们随机给出一个关于两个数字的组合建议
+            
+            const nums = state.currentCards;
+            const n1 = nums[Math.floor(Math.random() * nums.length)];
+            let n2 = n1;
+            while(n2 === n1) n2 = nums[Math.floor(Math.random() * nums.length)];
+            
+            const ops = ['+', '-', '*', '/'];
+            const op = ops[Math.floor(Math.random() * ops.length)];
+            
+            updateStatus('info', `提示：试试看能不能先算出 ${n1} ${op} ${n2}？或者尝试把结果变成24的因数（如3, 4, 6, 8）。`);
+        }
+
+        function giveUp() {
+            updateStatus('warning', `没关系，这题确实有点难。正确解法可以是：<br><strong class="text-lg font-mono">${state.currentSolution} = 24</strong>`);
+            addHistory(state.currentSolution, false, 0);
+            disableInput();
+            
+            setTimeout(() => {
+                startNewRound();
+            }, 4000);
+        }
+
+        function disableInput() {
+            els.input.disabled = true;
+            els.submitBtn.disabled = true;
+            els.hintBtn.disabled = true;
+            els.giveupBtn.disabled = true;
+        }
+
+        function addHistory(expr, isWin, points) {
+            const item = document.createElement('div');
+            item.className = `glass-card p-3 rounded-lg text-sm animate-slide-up border-l-4 ${isWin ? 'border-green-400' : 'border-gray-300'}`;
+            
+            const time = new Date().toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            
+            item.innerHTML = `
+                <div class="flex justify-between items-center mb-1">
+                    <span class="font-bold text-gray-700">#${state.roundCount}</span>
+                    <span class="text-xs font-mono text-gray-400">${time}</span>
+                </div>
+                <div class="font-mono text-gray-800 break-all mb-1">${expr}</div>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs ${isWin ? 'text-green-600' : 'text-gray-500'}">${isWin ? '回答正确' : '查看答案'}</span>
+                    <span class="font-bold ${points > 0 ? 'text-primary' : 'text-gray-400'}">+${points}</span>
+                </div>
+            `;
+            
+            // 移除空状态
+            if (els.historyLog.children[0]?.classList.contains('text-center')) {
+                els.historyLog.innerHTML = '';
+            }
+            
+            els.historyLog.prepend(item);
+        }
+
+        // 启动游戏
+        initGame();
+
+    </script>
+</body>
+</html>
