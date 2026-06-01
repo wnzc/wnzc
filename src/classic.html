@@ -253,7 +253,7 @@ function getSystemPrompt(chapterNum) {
 2. 然后分段详细讲解，重点解读人物关系和心理
 3. **重要**：在适当的时候，要说明该人物的性格特点和主要特征
 4. 最后可以来个总结吐槽
-5. 不要标题，直接开始讲解，不要有任何引导性内容`;
+5. 不要标题，直接开始讲解，不要有‘*’，不要有特殊符号，只有逗号和句号和换行即可，不要有任何引导性内容`;
 }
 
 async function fetchExplanation() {
@@ -297,6 +297,7 @@ async function fetchExplanation() {
         "temperature": 1.0
       })
     });
+    if (!response.ok) throw new Error('API请求失败');
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -389,7 +390,7 @@ async function generateVoice() {
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ input: currentExplanation, voice: 'zh-CN-XiaomengNeural', speed: 0.85, pitch: 0, style: 'general' })
+          body: JSON.stringify({ input: currentExplanation, voice: 'zh-CN-YunyeNeural', speed: 1.15, pitch: 0, style: 'general' })
         });
         if (response.ok) { audioBlob = await response.blob(); break; }
       } catch (e) { continue; }
