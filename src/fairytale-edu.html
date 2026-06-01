@@ -132,6 +132,25 @@
     .action-btn.new { background: #e91e63; color: #fff; }
     .action-btn.new:hover { background: #c2185b; }
     .action-btn.copied { background: #4caf50; color: #fff; }
+    .voice-btn {
+      width: 100%; padding: 14px; border: none; border-radius: 25px;
+      color: #fff; font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: all 0.3s ease;
+      background: #ce93d8;
+    }
+    .voice-btn:hover { background: #ba68c8; }
+    .voice-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .voice-btn.hidden { opacity: 0.5; pointer-events: none; }
+    .audio-section { margin-top: 16px; display: none; }
+    .audio-section.show { display: block; }
+    .audio-section audio { width: 100%; border-radius: 10px; margin-bottom: 10px; }
+    .download-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 25px;
+      background: #8c7a9b; color: #fff; font-size: 14px; cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .download-btn:hover { background: #a08db5; }
+    .voice-row { margin-top: 12px; }
     .toast {
       position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
       background: #333; color: #fff; padding: 12px 24px; border-radius: 25px;
@@ -201,6 +220,13 @@
           <button class="action-btn copy" onclick="copyStory()">📋 复制故事</button>
           <button class="action-btn new" onclick="newStory()">✨ 再来一个</button>
         </div>
+        <div class="voice-row">
+          <button class="voice-btn hidden" id="voiceBtn" onclick="generateVoice()">🔊 生成音频</button>
+        </div>
+        <div class="audio-section" id="audioSection">
+          <audio id="audioEl" controls></audio>
+          <button class="download-btn" onclick="downloadAudio()">⬇️ 下载音频</button>
+        </div>
       </div>
     </div>
   </div>
@@ -210,6 +236,7 @@
     let isRequesting = false;
     let selectedThemes = [];
     let fullStoryText = '';
+    let currentAudioUrl = '';
 
     document.querySelectorAll('.theme-chip').forEach(chip => {
       chip.addEventListener('click', () => {
@@ -245,7 +272,68 @@
     function newStory() {
       document.getElementById('storyContainer').classList.remove('show');
       document.getElementById('actionsContainer').style.display = 'none';
+      document.getElementById('audioSection').classList.remove('show');
+      if (currentAudioUrl) { URL.revokeObjectURL(currentAudioUrl); currentAudioUrl = ''; }
+      const voiceBtn = document.getElementById('voiceBtn');
+      voiceBtn.classList.add('hidden');
+      voiceBtn.textContent = '🔊 生成音频';
+      voiceBtn.disabled = false;
       fetchStory();
+    }
+
+    async function generateVoice() {
+      if (!fullStoryText) { showToast('暂无内容可生成语音'); return; }
+      if (isRequesting) { showToast('请稍候...'); return; }
+      isRequesting = true;
+
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioSection = document.getElementById('audioSection');
+      const audioEl = document.getElementById('audioEl');
+
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 生成中...';
+      showToast('⏳ 语音生成中...');
+
+      try {
+        const VOICE_API_URLS = [
+          'https://tts.wangwangit.com/v1/audio/speech',
+          'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
+        ];
+        let audioBlob = null;
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ input: fullStoryText, voice: 'zh-CN-XiaoyiNeural', speed: 0.85, pitch: 0, style: 'general' })
+            });
+            if (response.ok) { audioBlob = await response.blob(); break; }
+          } catch (e) { continue; }
+        }
+        if (!audioBlob) throw new Error('请求失败');
+        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = URL.createObjectURL(audioBlob);
+        audioEl.src = currentAudioUrl;
+        audioSection.classList.add('show');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 重新生成';
+        isRequesting = false;
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('语音生成失败');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 生成音频';
+        isRequesting = false;
+      }
+    }
+
+    function downloadAudio() {
+      if (!currentAudioUrl) { showToast('暂无音频可下载'); return; }
+      const a = document.createElement('a');
+      a.href = currentAudioUrl;
+      a.download = `fairytale_${Date.now()}.mp3`;
+      a.click();
+      showToast('开始下载');
     }
 
     function getSystemPrompt(style, extra, themes) {
@@ -316,6 +404,9 @@ ${extra ? `补充要求：${extra}` : ''}
         <p style="text-align: center; color: #999;">正在为小朋友创作故事...</p>
       `;
       actionsDiv.style.display = 'none';
+      document.getElementById('voiceBtn').classList.add('hidden');
+      document.getElementById('audioSection').classList.remove('show');
+      if (currentAudioUrl) { URL.revokeObjectURL(currentAudioUrl); currentAudioUrl = ''; }
 
       fullStoryText = '';
 
@@ -376,6 +467,7 @@ ${extra ? `补充要求：${extra}` : ''}
         // 移除光标，显示完成状态
         storyTextDiv.innerHTML = formatStoryText(buffer);
         actionsDiv.style.display = 'flex';
+        document.getElementById('voiceBtn').classList.remove('hidden');
 
       } catch (error) {
         console.error(error);

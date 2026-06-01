@@ -153,9 +153,64 @@
       background: #666;
     }
 
-    .copy-btn.hidden {
+    .copy-btn.hidden,
+    .voice-btn.hidden {
       opacity: 0.5;
       pointer-events: none;
+    }
+
+    .voice-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: linear-gradient(135deg, #6a5acd, #7b68ee);
+      box-shadow: 0 4px 15px rgba(106, 90, 205, 0.3);
+    }
+
+    .voice-btn:hover {
+      background: linear-gradient(135deg, #7b68ee, #8a7fff);
+    }
+
+    .voice-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .audio-section {
+      margin-top: 16px;
+      display: none;
+    }
+
+    .audio-section.show {
+      display: block;
+    }
+
+    .audio-section audio {
+      width: 100%;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .download-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 25px;
+      background: #555;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .download-btn:hover {
+      background: #666;
     }
 
     .toast {
@@ -225,6 +280,16 @@
         <button class="copy-btn hidden" id="copyBtn" onclick="copyText()">
           📋 复制故事
         </button>
+        <button class="voice-btn hidden" id="voiceBtn" onclick="generateVoice()">
+          🔊 生成音频
+        </button>
+      </div>
+
+      <div class="audio-section" id="audioSection">
+        <audio id="audioEl" controls></audio>
+        <button class="download-btn" id="downloadBtn" onclick="downloadAudio()">
+          ⬇️ 下载音频
+        </button>
       </div>
     </div>
   </div>
@@ -241,6 +306,7 @@
     // ============================================================
 
     let currentStory = '';
+    let currentAudioUrl = '';
 
     function updateDate() {
       const now = new Date();
@@ -297,11 +363,15 @@
       const btn = document.getElementById('getBtn');
       const storyText = document.getElementById('storyText');
       const copyBtn = document.getElementById('copyBtn');
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioSection = document.getElementById('audioSection');
 
       btn.disabled = true;
       btn.textContent = '⏳ 创作中...';
       storyText.innerHTML = '<span class="placeholder"><span class="loading-dots">正在构思故事</span></span>';
       copyBtn.classList.add('hidden');
+      voiceBtn.classList.add('hidden');
+      audioSection.classList.remove('show');
       currentStory = '';
 
       try {
@@ -310,6 +380,8 @@
           headers: API_HEADER,
           body: JSON.stringify(getAPIBody())
         });
+        
+        if (!response.ok) throw new Error('API请求失败');
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -326,6 +398,7 @@
               const data = line.slice(6);
               if (data === '[DONE]') {
                 copyBtn.classList.remove('hidden');
+                voiceBtn.classList.remove('hidden');
                 showToast('创作完成');
                 btn.disabled = false;
                 btn.textContent = '🌟 重新生成';
@@ -362,6 +435,79 @@
       }).catch(() => {
         showToast('复制失败');
       });
+    }
+
+    async function generateVoice() {
+      if (!currentStory) {
+        showToast('暂无内容可生成语音');
+        return;
+      }
+
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioSection = document.getElementById('audioSection');
+      const audioEl = document.getElementById('audioEl');
+
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 生成中...';
+      showToast('⏳ 语音生成中...');
+
+      try {
+        const VOICE_API_URLS = [
+          'https://tts.wangwangit.com/v1/audio/speech',
+          'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
+        ];
+
+        let audioBlob = null;
+
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: currentStory,
+                voice: 'zh-CN-XiaoshuangNeural',
+                speed: 0.95,
+                pitch: 0,
+                style: 'general'
+              })
+            });
+
+            if (response.ok) {
+              audioBlob = await response.blob();
+              break;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+
+        if (!audioBlob) throw new Error('请求失败');
+
+        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = URL.createObjectURL(audioBlob);
+        audioEl.src = currentAudioUrl;
+        audioSection.classList.add('show');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 重新生成';
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('语音生成失败');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 生成音频';
+      }
+    }
+
+    function downloadAudio() {
+      if (!currentAudioUrl) {
+        showToast('暂无音频可下载');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = currentAudioUrl;
+      a.download = `hypnosis_${Date.now()}.mp3`;
+      a.click();
+      showToast('开始下载');
     }
   </script>
 </body>

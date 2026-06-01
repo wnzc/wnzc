@@ -435,6 +435,7 @@
             "temperature": 1.0
           })
         });
+        if (!response.ok) throw new Error('API请求失败');
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -505,7 +506,7 @@
       const formattedSection = document.getElementById('formattedSection');
       currentFormattedText = formatText(currentStory);
       formattedBox.innerHTML = currentFormattedText.split('\n').map(line => `<div class="line">${line}</div>`).join('');
-      formattedSection.classList.add('show');
+      // formattedSection.classList.add('show');
     }
 
     function copyFormattedText() {
@@ -555,8 +556,8 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 input: currentStory,
-                voice: 'zh-CN-XiaomengNeural',
-                speed: 0.85,
+                voice: 'zh-CN-XiaoyiNeural',
+                speed: 1.25,
                 pitch: 0,
                 style: 'general'
               })
