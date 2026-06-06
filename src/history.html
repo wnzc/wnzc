@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>民间故事</title>
+  <title>历史故事</title>
   <style>
     * {
       margin: 0;
@@ -13,7 +13,7 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+      background: linear-gradient(135deg, #2c1810 0%, #1a0f0a 50%, #0d0705 100%);
       min-height: 100vh;
       padding: 20px;
     }
@@ -27,13 +27,13 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: #c9a227;
+      color: #d4a853;
       text-decoration: none;
       font-size: 14px;
       margin-bottom: 16px;
       padding: 8px 12px;
-      background: rgba(201, 162, 39, 0.1);
-      border: 1px solid rgba(201, 162, 39, 0.3);
+      background: rgba(212, 168, 83, 0.1);
+      border: 1px solid rgba(212, 168, 83, 0.3);
       border-radius: 20px;
     }
 
@@ -41,7 +41,7 @@
       background: rgba(255, 255, 255, 0.95);
       border-radius: 24px;
       padding: 32px 24px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
     }
 
     .card-header {
@@ -56,7 +56,7 @@
 
     .card-header h1 {
       font-size: 22px;
-      color: #1a1a2e;
+      color: #2c1810;
       font-weight: 600;
     }
 
@@ -67,8 +67,8 @@
     }
 
     .content-box {
-      background: linear-gradient(135deg, #faf5eb 0%, #f5f0e6 100%);
-      border: 1px solid #d4c5a9;
+      background: linear-gradient(135deg, #f5f0e6 0%, #ebe5d8 100%);
+      border: 1px solid #c9b896;
       border-radius: 16px;
       padding: 24px;
       min-height: 300px;
@@ -116,13 +116,13 @@
     }
 
     .get-btn {
-      background: linear-gradient(135deg, #8b4513, #a0522d);
-      box-shadow: 0 4px 15px rgba(139, 69, 19, 0.4);
+      background: linear-gradient(135deg, #8b7355, #a08060);
+      box-shadow: 0 4px 15px rgba(139, 115, 85, 0.4);
     }
 
     .get-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(139, 69, 19, 0.5);
+      box-shadow: 0 6px 20px rgba(139, 115, 85, 0.5);
     }
 
     .get-btn:active {
@@ -298,26 +298,26 @@
 
     <div class="main-card">
       <div class="card-header">
-        <div class="icon">📜</div>
-        <h1>民间故事</h1>
-        <div class="subtitle">神话传说 · 鬼怪奇谈</div>
+        <div class="icon">📚</div>
+        <h1>历史故事</h1>
+        <div class="subtitle">古代风云 · 史记奇闻</div>
       </div>
 
       <div class="content-box">
         <div class="story" id="storyText">
           <div class="placeholder">
-            <span style="font-size: 48px;">🏮</span>
-            <span>点击下方按钮，开启一段尘封的故事</span>
+            <span style="font-size: 48px;">🏯</span>
+            <span>点击下方按钮，开启一段尘封的历史</span>
           </div>
         </div>
       </div>
 
       <div class="btn-group">
         <button class="get-btn" id="getBtn" onclick="fetchStory()">
-          📖 开启故事
+          📖 开启历史
         </button>
         <button class="copy-btn hidden" id="copyBtn" onclick="copyText()">
-          📋 复制故事
+          📋 复制历史
         </button>
         <button class="voice-btn hidden" id="voiceBtn" onclick="generateVoice()">
           🔊 生成音频
@@ -365,7 +365,7 @@
     }
 
     const storyTypes = [
-      '民间神话', '古代鬼怪', '志怪传说', '地方怪谈', '古籍奇闻'
+      '历史风云', '朝代更迭', '战争传奇', '谋略奇谋', '帝王轶事'
     ];
 
     function getRandomType() {
@@ -374,41 +374,21 @@
 
     function getSystemPrompt() {
       const type = getRandomType();
-      return `你是一位精通中国民间故事的顶级讲述者，擅长讲述${type}。你的故事要引人入胜，让听众沉浸其中。
+      return `你是一位精通中国历史的讲述者，擅长讲述${type}。
 
 **故事要求**：
-1. **题材**：神话传说、鬼怪故事、民间奇谈皆可，可以是古籍记载的，也可以是民间口口相传的
-2. **风格**：
-   - 古朴、神秘、有代入感
-   - 用说书人的口吻，有节奏感，起伏跌宕
-   - 有悬念，层层递进，引人入胜
-   - 如果有具体地点，简要描述地理环境和文化背景；如果没有，用"某地"或代称
-   - 人名要随机，不能和现代/古代名人重名
-   - 如果背景和人物关系不大，人名地名可用代称
-3. **内容结构**：
-   - 开头要吸引人，用环境描写+悬念引出故事
-   - 中间要有冲突、转折、高潮
-   - 结尾要有余味或哲理
-   - 每个重要场景都要有细节描写
-4. **细节描写**：
-   - 视觉：色彩、光影、场景布置
-   - 听觉：环境音、对话声、特殊音效
-   - 感官：气味、温度、触感
-   - 心理：主角的恐惧、好奇、决心等
+1. **题材**：中国历史上的真实事件、传说、轶事皆可，可以是朝代更迭、战争策略、谋略奇谋、帝王轶事等
+2. **风格**：历史感强、详实生动，用历史的口吻，有代入感，如果有时代背景可以简单概述一下朝代背景，如果没有就不要用具体的地名和人名。如果背景和人物与故事关系不大，人名和地名可以用代称
+3. **内容**：要有起承转合，有历史厚重感，有细节描写
+4. **背景**：可以是朝代制度、历史人物、古代战争、谋略策略、文化现象等
 5. **字数**：5000字左右
 6. **格式**：纯故事正文，不要标题、不要署名，直接开始讲故事
 
-**描写增强要求**：
-- 开篇用"从前..."、"很久以前..."、"据说..."、"古籍记载..."等
-- 每次转折用"不料..."、"谁知..."、"哪知..."等
-- 每次高潮用"就在这时..."、"突然..."、"正当..."等
-- 每次结尾用"从此..."、"后来..."、"后世..."等
-
-**示例开头**：
-"从前在[地点]有个叫[人名]的人...那天夜里，月光如水，忽然听到..."
-
-**示例描写**：
-"月色如水，清冷的月光洒在古老的山石上，映出斑驳的影子。四周静悄悄的，只有风吹树叶的沙沙声..."
+**故事开头示例**：
+- "据史书记载..."
+- "在古代..."
+- "据说..."
+- "据民间传闻..."
 
 请直接开始讲述故事，不要有任何前缀说明。`;
     }
@@ -432,8 +412,8 @@
       const audioSection = document.getElementById('audioSection');
 
       btn.disabled = true;
-      btn.textContent = '⏳ 聆听中...';
-      storyText.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">🕯️</span><span>故事正在徐徐展开...</span></div>';
+      btn.textContent = '⏳ 历史缓缓展开...';
+      storyText.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">📜</span><span>历史正在缓缓展开...</span></div>';
       copyBtn.classList.add('hidden');
       voiceBtn.classList.add('hidden');
       audioSection.classList.remove('show');
@@ -447,7 +427,7 @@
             "model": "glm-4.7-flash",
             "messages": [
               { "role": "system", "content": getSystemPrompt() },
-              { "role": "user", "content": "请讲一个民间故事" }
+              { "role": "user", "content": "请讲一个历史故事" }
             ],
             "stream": true,
             "thinking": { "type": "disabled" },
@@ -474,7 +454,7 @@
                 copyBtn.classList.remove('hidden');
                 voiceBtn.classList.remove('hidden');
                 btn.disabled = false;
-                btn.textContent = '📖 再听一个';
+                btn.textContent = '📖 再听一段';
                 displayFormattedText();
                 isRequesting = false;
                 return;
@@ -492,9 +472,9 @@
         }
       } catch (error) {
         btn.disabled = false;
-        btn.textContent = '📖 开启故事';
+        btn.textContent = '📖 开启历史';
         console.error('Error:', error);
-        storyText.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">💨</span><span>故事暂时讲不下去了...</span></div>';
+        storyText.innerHTML = '<div class="placeholder"><span style="font-size: 48px;">💨</span><span>历史暂时讲不下去了...</span></div>';
         showToast('请求失败');
         isRequesting = false;
       }
@@ -617,7 +597,7 @@
       }
       const a = document.createElement('a');
       a.href = currentAudioUrl;
-      a.download = `myth_${Date.now()}.mp3`;
+      a.download = `history_${Date.now()}.mp3`;
       a.click();
       showToast('开始下载');
     }
