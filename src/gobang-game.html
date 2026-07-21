@@ -7,6 +7,7 @@
     <title>五子棋游戏</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="gobang-ai.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -473,150 +474,9 @@
                 updateGameStatus();
             }
 
-            // AI评估函数 - 评估某个位置的价值
-            function evaluatePosition(row, col, player) {
-                if (gameBoard[row][col] !== 0) return -1; // 已有棋子，不能下
-
-                let score = 0;
-                const directions = [
-                    [1, 0],   // 水平
-                    [0, 1],   // 垂直
-                    [1, 1],   // 对角线
-                    [1, -1]   // 反对角线
-                ];
-
-                for (const [dx, dy] of directions) {
-                    let count = 1;
-                    let emptyEnds = 0;
-                    let blocked = 0;
-
-                    // 正向检查
-                    for (let i = 1; i < 5; i++) {
-                        const newRow = row + i * dy;
-                        const newCol = col + i * dx;
-
-                        if (newRow < 0 || newRow >= BOARD_SIZE || newCol < 0 || newCol >= BOARD_SIZE) {
-                            blocked++;
-                            break;
-                        }
-
-                        if (gameBoard[newRow][newCol] === player) {
-                            count++;
-                        } else if (gameBoard[newRow][newCol] === 0) {
-                            emptyEnds++;
-                            break;
-                        } else {
-                            blocked++;
-                            break;
-                        }
-                    }
-
-                    // 反向检查
-                    for (let i = 1; i < 5; i++) {
-                        const newRow = row - i * dy;
-                        const newCol = col - i * dx;
-
-                        if (newRow < 0 || newRow >= BOARD_SIZE || newCol < 0 || newCol >= BOARD_SIZE) {
-                            blocked++;
-                            break;
-                        }
-
-                        if (gameBoard[newRow][newCol] === player) {
-                            count++;
-                        } else if (gameBoard[newRow][newCol] === 0) {
-                            emptyEnds++;
-                            break;
-                        } else {
-                            blocked++;
-                            break;
-                        }
-                    }
-
-                    // 根据连续棋子数量和两端情况计算分数
-                    if (count >= 5) {
-                        score += 10000; // 五连子，最高分
-                    } else if (count === 4) {
-                        if (emptyEnds >= 1) score += 1000; // 活四或冲四
-                    } else if (count === 3) {
-                        if (emptyEnds === 2) score += 100; // 活三
-                        else if (emptyEnds === 1) score += 50; // 冲三
-                    } else if (count === 2) {
-                        if (emptyEnds === 2) score += 10; // 活二
-                        else if (emptyEnds === 1) score += 5; // 冲二
-                    } else if (count === 1) {
-                        if (emptyEnds === 2) score += 1; // 单活一
-                    }
-                }
-
-                return score;
-            }
-
             // AI选择最佳落子位置
             function aiChooseMove() {
-                let bestScore = -1;
-                let bestMoves = [];
-                const opponent = 1; // 玩家是黑棋
-                const aiPlayer = 2; // AI是白棋
-
-                // 遍历棋盘，评估每个空位
-                for (let i = 0; i < BOARD_SIZE; i++) {
-                    for (let j = 0; j < BOARD_SIZE; j++) {
-                        if (gameBoard[i][j] === 0) {
-                            // 评估AI在此位置落子的价值
-                            let aiScore = evaluatePosition(i, j, aiPlayer);
-
-                            // 根据难度调整评估逻辑
-                            if (aiDifficulty === 'easy') {
-                                // 简单难度：降低评估准确性，有时会选择次优位置
-                                if (Math.random() < 0.3) {
-                                    aiScore *= 0.5;
-                                }
-                            } else if (aiDifficulty === 'hard') {
-                                // 困难难度：同时考虑防守和进攻
-                                const opponentScore = evaluatePosition(i, j, opponent);
-                                // 优先防守，如果对手有更好的位置
-                                if (opponentScore > aiScore) {
-                                    aiScore = opponentScore * 1.2; // 稍微优先防守
-                                }
-                            } else {
-                                // 中等难度：平衡进攻和防守
-                                const opponentScore = evaluatePosition(i, j, opponent);
-                                if (opponentScore > aiScore * 1.5) {
-                                    aiScore = opponentScore; // 只在对手威胁很大时才防守
-                                }
-                            }
-
-                            // 更新最佳位置
-                            if (aiScore > bestScore) {
-                                bestScore = aiScore;
-                                bestMoves = [{ row: i, col: j }];
-                            } else if (aiScore === bestScore && aiScore > 0) {
-                                bestMoves.push({ row: i, col: j });
-                            }
-                        }
-                    }
-                }
-
-                // 如果没有找到好位置，随机选择一个空位
-                if (bestMoves.length === 0) {
-                    const emptyPositions = [];
-                    for (let i = 0; i < BOARD_SIZE; i++) {
-                        for (let j = 0; j < BOARD_SIZE; j++) {
-                            if (gameBoard[i][j] === 0) {
-                                emptyPositions.push({ row: i, col: j });
-                            }
-                        }
-                    }
-                    if (emptyPositions.length > 0) {
-                        const randomIndex = Math.floor(Math.random() * emptyPositions.length);
-                        return emptyPositions[randomIndex];
-                    }
-                    return null;
-                }
-
-                // 从最佳位置中随机选择一个（增加一些随机性）
-                const randomIndex = Math.floor(Math.random() * bestMoves.length);
-                return bestMoves[randomIndex];
+                return window.GobangAI.chooseMove(gameBoard, aiDifficulty);
             }
 
             // AI落子
