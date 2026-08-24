@@ -160,6 +160,10 @@
   </div>
   <div id="toast" class="toast"></div>
 
+  <!-- AI 统一配置：更换 URL / model / Authorization 请改 src/ai-config.js -->
+  <script src="../ai-models.js"></script>
+  <script src="ai-config.js"></script>
+  <script src="ai-history.js"></script>
   <script>
     let isRequesting = false;
 
@@ -346,9 +350,9 @@ ${content}
       try {
         const response = await fetch(API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq" },
+          headers: API_HEADER,
           body: JSON.stringify({
-            "model": "glm-4.7-flash",
+            "model": GLM_MODEL,
             "messages": [
               { "role": "system", "content": getSystemPrompt(content) },
               { "role": "user", "content": `请根据以下内容创作儿童版3D卡通分镜剧本：` + content }
@@ -364,6 +368,7 @@ ${content}
         const result = data.choices[0].message.content;
 
         renderScript(result);
+        if (window.aiHistory) aiHistory.save('儿童3D卡通分镜剧本', content, result, { hasVoice: false });
 
       } catch (error) {
         console.error(error);
@@ -476,9 +481,6 @@ ${content}
     document.getElementById('getBtn').addEventListener('click', fetchScript);
   </script>
 
-  <!-- 请在这里配置你的智谱AI API地址 -->
-  <script>
-    const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'; // 例如: https://open.bigmodel.cn/api/paas/v4/chat/completions
   </script>
 </body>
 </html>

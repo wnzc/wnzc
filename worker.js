@@ -9,14 +9,18 @@ const locks = {
   tts: false
 }
 
-// ==================== 接口配置 ====================
-const GLM_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions'
-const GLM_API_KEY = '8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq'
+// ==================== AI 统一配置 ====================
+// 模型配置（glm / deepseek / agnes + 默认开关）唯一维护点在根目录 ai-models.js，
+// 与前端页面共用同一物理文件。部署时请将 ai-models.js 与本文件放在同目录。
+importScripts('ai-models.js')
+const ACTIVE_CONFIG = AI_MODELS[AI_MODELS.ACTIVE_MODEL]
+const GLM_API_URL = ACTIVE_CONFIG.apiUrl
+const GLM_API_KEY = ACTIVE_CONFIG.apiKey
 const TTS_API_URLS = [
   'https://tts.wangwangit.com/v1/audio/speech',
   'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
 ]
-// =================================================
+// ====================================================
 
 async function handleRequest(request) {
   const url = new URL(request.url)
@@ -76,7 +80,7 @@ async function handleRequest(request) {
             'Authorization': `Bearer ${GLM_API_KEY}`
           },
           body: JSON.stringify({
-            model: 'glm-4.7-flash',
+            model: ACTIVE_CONFIG.model,
             messages: messages,
             stream: false,
             thinking: { type: 'disabled' },

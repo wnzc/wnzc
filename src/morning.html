@@ -256,14 +256,11 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- AI 统一配置：更换 URL / model / Authorization 请改 src/ai-config.js -->
+  <script src="../ai-models.js"></script>
+  <script src="ai-config.js"></script>
+  <script src="ai-history.js"></script>
   <script>
-    // ==================== 接口配置（自行修改） ====================
-    const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-    const API_HEADER = {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq"
-    };
-    // ============================================================
 
     let currentQuote = '';
     let currentAudioUrl = '';
@@ -299,7 +296,7 @@
     function getAPIBody() {
       const dateStr = getDatePrefix();
       return {
-        "model": "glm-4.7-flash",
+        "model": GLM_MODEL,
         "messages": [
           {
             "role": "system",
@@ -360,6 +357,7 @@
               const data = line.slice(6);
               if (data === '[DONE]') {
                 copyBtn.classList.remove('hidden');
+                if (window.aiHistory) aiHistory.save('每日早安', getAPIBody().messages[1].content, currentQuote, { voice: 'zh-CN-XiaomengNeural', speed: 0.9 });
                 generateVoice();
                 return;
               }
@@ -412,11 +410,6 @@
       showToast('⏳ 语音生成中...');
 
       try {
-        const VOICE_API_URLS = [
-        'https://tts.wangwangit.com/v1/audio/speech',
-        'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
-      ];
-
       let audioBlob = null;
 
       for (const apiUrl of VOICE_API_URLS) {
@@ -458,6 +451,40 @@
         btn.textContent = '🌸 获取今日励志语';
       }
     }
+
+    // 供历史记录面板调用的语音生成钩子
+    window.generateVoiceFromContent = function(text, params) {
+      var voice = (params && params.voice) || 'zh-CN-XiaomengNeural';
+      var speed = (params && params.speed) || 0.9;
+      var audioEl = document.getElementById('audioEl');
+      var audioSection = document.getElementById('audioSection');
+      var btn = document.getElementById('getBtn');
+      if (!audioEl) return;
+      btn.disabled = true;
+      btn.textContent = '⏳ 生成中...';
+      audioSection.classList.add('show');
+      var audioBlobUrl = null;
+      (async function() {
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const res = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: text, voice: voice, speed: speed, pitch: 0, style: 'general' }) });
+            if (res.ok) {
+              const blob = await res.blob();
+              if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+              audioBlobUrl = URL.createObjectURL(blob);
+              audioEl.src = audioBlobUrl;
+              audioEl.play();
+              btn.disabled = false;
+              btn.textContent = '🌸 获取今日励志语';
+              return;
+            }
+          } catch(e) { continue; }
+        }
+        btn.disabled = false;
+        btn.textContent = '🌸 获取今日励志语';
+        showToast('语音生成失败');
+      })();
+    };
 
     function downloadAudio() {
       if (!currentAudioUrl) {

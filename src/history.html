@@ -343,14 +343,10 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="../ai-models.js"></script>
+  <script src="ai-config.js"></script>
+  <script src="ai-history.js"></script>
   <script>
-    // ==================== 接口配置（自行修改） ====================
-    const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-    const API_HEADER = {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq"
-    };
-    // ============================================================
 
     let currentStory = '';
     let currentFormattedText = '';
@@ -424,7 +420,7 @@
           method: 'POST',
           headers: API_HEADER,
           body: JSON.stringify({
-            "model": "glm-4.7-flash",
+            "model": GLM_MODEL,
             "messages": [
               { "role": "system", "content": getSystemPrompt() },
               { "role": "user", "content": "请讲一个历史故事" }
@@ -457,6 +453,7 @@
                 btn.textContent = '📖 再听一段';
                 displayFormattedText();
                 isRequesting = false;
+                if (window.aiHistory) aiHistory.save('历史故事', '历史故事生成', currentStory, { voice: 'zh-CN-XiaoyiNeural', speed: 1.25 });
                 return;
               }
               try {
@@ -542,11 +539,6 @@
       showToast('⏳ 语音生成中...');
 
       try {
-        const VOICE_API_URLS = [
-          'https://tts.wangwangit.com/v1/audio/speech',
-          'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
-        ];
-
         let audioBlob = null;
 
         for (const apiUrl of VOICE_API_URLS) {
@@ -589,6 +581,39 @@
         isRequesting = false;
       }
     }
+
+    window.generateVoiceFromContent = function(text, params) {
+      var voice = (params && params.voice) || 'zh-CN-XiaoyiNeural';
+      var speed = (params && params.speed) || 1.25;
+      var audioEl = document.getElementById('audioEl');
+      var audioSection = document.getElementById('audioSection');
+      var voiceBtn = document.getElementById('voiceBtn');
+      if (!audioEl) return;
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 生成中...';
+      audioSection.classList.add('show');
+      var audioBlobUrl = null;
+      (async function() {
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const res = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: text, voice: voice, speed: speed, pitch: 0, style: 'general' }) });
+            if (res.ok) {
+              const blob = await res.blob();
+              if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+              audioBlobUrl = URL.createObjectURL(blob);
+              audioEl.src = audioBlobUrl;
+              audioEl.play();
+              voiceBtn.disabled = false;
+              voiceBtn.textContent = '🔊 重新生成';
+              return;
+            }
+          } catch(e) { continue; }
+        }
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 生成音频';
+        showToast('语音生成失败');
+      })();
+    };
 
     function downloadAudio() {
       if (!currentAudioUrl) {

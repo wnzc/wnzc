@@ -166,10 +166,11 @@
   </div>
   <div class="toast" id="toast"></div>
 
+<!-- AI 统一配置：更换 URL / model / Authorization 请改 src/ai-config.js -->
+<script src="../ai-models.js"></script>
+<script src="ai-config.js"></script>
+<script src="ai-history.js"></script>
 <script>
-const API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-const API_HEADER = { "Content-Type": "application/json", "Authorization": "Bearer 8cb5d6c44a984a22a143ead8ac510d2f.9adwosowpPiml1Nq" };
-
 const BOOK_DATA = {
   // jpm: {
   //   name: '金瓶梅',
@@ -286,7 +287,7 @@ async function fetchExplanation() {
       method: 'POST',
       headers: API_HEADER,
       body: JSON.stringify({
-        "model": "glm-4.7-flash",
+        "model": GLM_MODEL,
         "messages": [
           { "role": "system", "content": getSystemPrompt(chapterNum) },
           { "role": "user", "content": `请解读《${BOOK_DATA[currentBook].name}》${BOOK_DATA[currentBook].chapters[chapterNum]}` }
@@ -316,6 +317,7 @@ async function fetchExplanation() {
             btn.textContent = '📖 重新解读';
             displayFormattedText();
             isRequesting = false;
+            if (window.aiHistory) aiHistory.save('古籍趣解', `《${BOOK_DATA[currentBook].name}》第${chapterNum}章解读`, currentExplanation, { voice: 'zh-CN-YunyeNeural', speed: 1.15 });
             return;
           }
           try {
@@ -380,10 +382,6 @@ async function generateVoice() {
   showToast('⏳ 语音生成中...');
 
   try {
-    const VOICE_API_URLS = [
-      'https://tts.wangwangit.com/v1/audio/speech',
-      'https://wnzctts.wnzc.workers.dev/v1/audio/speech'
-    ];
     let audioBlob = null;
     for (const apiUrl of VOICE_API_URLS) {
       try {
@@ -411,6 +409,39 @@ async function generateVoice() {
     isRequesting = false;
   }
 }
+
+    window.generateVoiceFromContent = function(text, params) {
+      var voice = (params && params.voice) || 'zh-CN-YunyeNeural';
+      var speed = (params && params.speed) || 1.15;
+      var audioEl = document.getElementById('audioEl');
+      var audioSection = document.getElementById('audioSection');
+      var voiceBtn = document.getElementById('voiceBtn');
+      if (!audioEl) return;
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 生成中...';
+      audioSection.classList.add('show');
+      var audioBlobUrl = null;
+      (async function() {
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const res = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ input: text, voice: voice, speed: speed, pitch: 0, style: 'general' }) });
+            if (res.ok) {
+              const blob = await res.blob();
+              if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+              audioBlobUrl = URL.createObjectURL(blob);
+              audioEl.src = audioBlobUrl;
+              audioEl.play();
+              voiceBtn.disabled = false;
+              voiceBtn.textContent = '🔊 重新生成';
+              return;
+            }
+          } catch(e) { continue; }
+        }
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 生成音频';
+        showToast('语音生成失败');
+      })();
+    };
 
 function downloadAudio() {
   if (!currentAudioUrl) { showToast('暂无音频可下载'); return; }

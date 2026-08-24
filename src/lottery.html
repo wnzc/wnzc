@@ -617,9 +617,12 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- AI 统一配置：更换第三方 token 请改 src/ai-config.js -->
+  <script src="../ai-models.js"></script>
+  <script src="ai-config.js"></script>
   <script>
     const API_URL = 'https://wnzcweb.wnzc.workers.dev/lottery';
-    const TOKEN = '6ad41ac5eed70a63382ff767103705b7';
+    const TOKEN = AI_CONFIG.thirdParty.lotteryToken;
     let currentType = 'ssq';
     let currentMun = 1;
 

@@ -498,6 +498,9 @@
     </div>
   </div>
 
+  <!-- AI 统一配置：更换第三方 key 请改 src/ai-config.js -->
+  <script src="../ai-models.js"></script>
+  <script src="ai-config.js"></script>
   <script>
     // 生成星星背景 - 简化版
     function createStars() {
@@ -539,7 +542,7 @@
 
     createStars();
 
-    const API_KEY = 'ak_4e467bef570aafa08c488b57bd3c54946e25f2b0ff2064a1';
+    const API_KEY = AI_CONFIG.thirdParty.uuhbApiKey;
     const API_URL = 'https://v1.uuhb.cn/v1/answerbook';
 
     const bookCover = document.getElementById('bookCover');
