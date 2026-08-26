@@ -39,13 +39,13 @@ async def root():
 async def chat(request: ChatRequest):
     if not AI_API_KEY:
         raise HTTPException(status_code=500, detail="AI_API_KEY not configured")
-    
+
     payload = {
         "model": AI_MODEL,
         "messages": request.messages,
         "stream": request.stream
     }
-    
+
     if request.temperature is not None:
         payload["temperature"] = request.temperature
     if request.max_tokens is not None:
@@ -53,66 +53,73 @@ async def chat(request: ChatRequest):
     if request.thinking is not None:
         # thinking 可以是布尔值或对象，直接传递
         payload["thinking"] = request.thinking
-    
-    async with httpx.AsyncClient() as client:
+
+    headers = {
+        "Authorization": f"Bearer {AI_API_KEY}",
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream" if request.stream else "application/json",
+    }
+    # 流式响应可能持续很久，read/pool 超时放宽到 300 秒
+    timeout = httpx.Timeout(connect=15.0, read=300.0, write=30.0, pool=300.0)
+
+    # 注意：不能用 async with！上下文退出会提前关闭连接，
+    # 导致 StreamingResponse 读不到数据（前端表现为一直转圈无输出）。
+    # 改为手动管理生命周期：在生成器的 finally 中关闭。
+    client = httpx.AsyncClient(timeout=timeout)
+    try:
+        req = client.build_request("POST", AI_API_URL, json=payload, headers=headers)
+        upstream = await client.send(req, stream=True)
+    except httpx.HTTPError as e:
+        await client.aclose()
+        print(f"[ERROR] chat upstream connect failed: {e!r}")
+        raise HTTPException(status_code=502, detail=f"上游服务连接失败：{e!r}")
+
+    content_type = upstream.headers.get("content-type", "application/json")
+    is_sse = request.stream or "text/event-stream" in content_type
+
+    if is_sse:
+        # 流式：原样透传字节流，保留 SSE 的空行分隔符
+        async def stream_gen():
+            try:
+                async for chunk in upstream.aiter_raw():
+                    yield chunk
+            except httpx.HTTPError as e:
+                print(f"[ERROR] chat stream interrupted: {e!r}")
+            finally:
+                await upstream.aclose()
+                await client.aclose()
+
+        return StreamingResponse(
+            stream_gen(),
+            status_code=upstream.status_code,
+            media_type=content_type or "text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
+    else:
+        # 非流式：读完即关
         try:
-            # 流式请求
-            if request.stream:
-                async with client.stream(
-                    "POST",
-                    AI_API_URL,
-                    json=payload,
-                    headers={
-                        "Authorization": f"Bearer {AI_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    timeout=120.0
-                ) as response:
-                    if response.status_code != 200:
-                        error_text = await response.aread()
-                        raise HTTPException(
-                            status_code=response.status_code,
-                            detail=f"上游服务错误: {error_text.decode()}"
-                        )
-                    
-                    # 返回流式响应
-                    async def generate():
-                        async for line in response.aiter_lines():
-                            if line:
-                                yield line + "\n"
-                    
-                    return StreamingResponse(
-                        generate(),
-                        media_type="text/event-stream",
-                        headers={
-                            "Cache-Control": "no-cache",
-                            "X-Accel-Buffering": "no"
-                        }
-                    )
-            else:
-                # 非流式请求
-                response = await client.post(
-                    AI_API_URL,
-                    json=payload,
-                    headers={
-                        "Authorization": f"Bearer {AI_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    timeout=60.0
-                )
-                
-                if response.status_code != 200:
-                    raise HTTPException(
-                        status_code=response.status_code,
-                        detail=f"上游服务错误: {response.text}"
-                    )
-                
+            if upstream.status_code != 200:
+                body = await upstream.aread()
+                print(f"[ERROR] chat upstream {upstream.status_code}: {body[:500]!r}")
                 return JSONResponse(
-                    content=response.json(),
-                    headers={"Access-Control-Allow-Origin": "*"}
+                    content={"error": f"上游服务错误: {body.decode(errors='replace')[:500]}"},
+                    status_code=upstream.status_code,
+                    headers={"Access-Control-Allow-Origin": "*"},
                 )
-        except httpx.HTTPError as e:
-            raise HTTPException(status_code=502, detail=f"上游服务错误：{str(e)}")
+            data = await upstream.aread()
+            return Response(
+                content=data,
+                status_code=upstream.status_code,
+                media_type=content_type or "application/json",
+                headers={"Access-Control-Allow-Origin": "*"},
+            )
+        finally:
+            await upstream.aclose()
+            await client.aclose()
 
 @app.get("/uuhb/{service}")
 async def uuhb_proxy(service: str, request: Request):
