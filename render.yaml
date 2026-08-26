@@ -1,0 +1,5 @@
+build-commands: []
+
+commands:
+  - pip install -r server/requirements.txt
+  - cd server && python -m uvicorn app:app --host 0.0.0.0 --port $PORT

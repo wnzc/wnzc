@@ -3,6 +3,8 @@
 //  所有 AI 相关的 URL / model / Authorization 都集中管理。
 //  如需修改模型配置（glm / deepseek / agnes），请同步更新根目录 ai-models.js。
 //  页面通过 <script src="../ai-models.js"></script> + <script src="ai-config.js"></script> 引入。
+//
+//  ⚠️ 安全说明：所有第三方密钥必须从环境变量获取，严禁硬编码！
 // ============================================================
 
 const AI_CONFIG = {
@@ -19,12 +21,12 @@ const AI_CONFIG = {
         defaultStyle: 'general'
     },
 
-    // ---------- 其他第三方接口（各自的 key / token） ----------
+    // ---------- 其他第三方接口（通过代理服务器，密钥由服务端注入） ----------
     thirdParty: {
         // 运势 / 答案之书 等 uuhb.cn 系列
-        uuhbApiKey: 'ak_4e467bef570aafa08c488b57bd3c54946e25f2b0ff2064a1',
-        // 彩票 token
-        lotteryToken: '6ad41ac5eed70a63382ff767103705b7'
+        uuhbApiUrl: 'https://你的代理服务器地址/uuhb',  // 替换为你的 Render 地址
+        // 彩票 token（可选）
+        lotteryApiUrl: 'https://你的代理服务器地址/lottery'  // 替换为你的 Render 地址
     }
 };
 
@@ -34,8 +36,8 @@ const ACTIVE_CONFIG = AI_MODELS[AI_MODELS.ACTIVE_MODEL];
 // ---------- 兼容旧变量名（业务页面可直接使用以下常量，无需改动） ----------
 const API_URL = ACTIVE_CONFIG.apiUrl;
 const API_HEADER = {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + ACTIVE_CONFIG.apiKey
+    'Content-Type': 'application/json'
+    // Authorization 由 Worker 服务端注入，前端无需处理
 };
 const GLM_MODEL = ACTIVE_CONFIG.model;
 const VOICE_API_URLS = AI_CONFIG.tts.voiceApiUrls;
