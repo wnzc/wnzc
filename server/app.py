@@ -109,11 +109,15 @@ async def uuhb_proxy(service: str, request: Request):
                 timeout=30.0
             )
             
+            # 记录日志便于调试
+            print(f"[DEBUG] uuhb proxy: status={response.status_code}, url={target_url}, params={params}")
+            
             return JSONResponse(
                 content=response.json(),
                 headers={"Access-Control-Allow-Origin": "*"}
             )
         except httpx.HTTPError as e:
+            print(f"[ERROR] uuhb proxy error: {str(e)}")
             raise HTTPException(status_code=502, detail=f"上游服务错误：{str(e)}")
 
 @app.get("/lottery")
