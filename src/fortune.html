@@ -675,8 +675,8 @@
 
     const STORAGE_KEY = 'selected_constellation';
     const CACHE_KEY = 'fortune_cache';
-    const API_KEY = AI_CONFIG.thirdParty.uuhbApiKey;
-    const API_URL = 'https://v1.uuhb.cn/v1/fortune';
+    // API_KEY 和 API_URL 已在 ai-config.js 中定义，直接使用
+    const uuhbApiUrl = AI_CONFIG.thirdParty.uuhbApiUrl;
 
     const constellationSelect = document.getElementById('constellationSelect');
     const contentArea = document.getElementById('contentArea');
@@ -732,7 +732,7 @@
       `;
 
       try {
-        const response = await fetch(`${API_URL}?apiKey=${API_KEY}&constellation=${encodeURIComponent(constellation)}`);
+        const response = await fetch(`${uuhbApiUrl}/fortune?constellation=${encodeURIComponent(constellation)}`);
         const result = await response.json();
 
         if (result.success && result.data) {
@@ -751,7 +751,7 @@
 
     async function fetchAndUpdateCache(constellation) {
       try {
-        const response = await fetch(`${API_URL}?apiKey=${API_KEY}&constellation=${encodeURIComponent(constellation)}`);
+        const response = await fetch(`${uuhbApiUrl}/fortune?constellation=${encodeURIComponent(constellation)}`);
         const result = await response.json();
         if (result.success && result.data) {
           saveFortuneCache(constellation, result.data);
