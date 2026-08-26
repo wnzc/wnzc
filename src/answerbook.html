@@ -542,8 +542,8 @@
 
     createStars();
 
-    const API_KEY = AI_CONFIG.thirdParty.uuhbApiKey;
-    const API_URL = 'https://v1.uuhb.cn/v1/answerbook';
+    // API_KEY 和 API_URL 已在 ai-config.js 中定义，直接使用
+    const uuhbApiUrl = AI_CONFIG.thirdParty.uuhbApiUrl;
 
     const bookCover = document.getElementById('bookCover');
     const bookContent = document.getElementById('bookContent');
