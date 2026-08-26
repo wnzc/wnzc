@@ -14,19 +14,19 @@ const AI_MODELS = {
 
   // ---------- 智谱 GLM 大模型 ----------
   glm: {
-    apiUrl: 'https://wnzc-proxy.onrender.com/chat',  // 替换为你的 Render 地址
+    apiUrl: 'https://wnzc-proxy.onrender.com/chat',
     model: 'glm-4.7-flash'
   },
 
   // ---------- DeepSeek 大模型 ----------
   deepseek: {
-    apiUrl: 'https://wnzc-proxy.onrender.com/chat',  // 替换为你的 Render 地址
+    apiUrl: 'https://wnzc-proxy.onrender.com/chat',
     model: 'deepseek-v4-flash'
   },
 
   // ---------- Agnes 大模型 ----------
   agnes: {
-    apiUrl: 'https://wnzc-proxy.onrender.com/chat',  // 替换为你的 Render 地址
+    apiUrl: 'https://wnzc-proxy.onrender.com/chat',
     model: 'agnes-2.5-flash'
   }
 };

@@ -24,9 +24,9 @@ const AI_CONFIG = {
     // ---------- 其他第三方接口（通过代理服务器，密钥由服务端注入） ----------
     thirdParty: {
         // 运势 / 答案之书 等 uuhb.cn 系列
-        uuhbApiUrl: 'https://wnzc-proxy.onrender.com/uuhb',  // 替换为你的 Render 地址
+        uuhbApiUrl: 'https://wnzc-proxy.onrender.com/uuhb',
         // 彩票 token（可选）
-        lotteryApiUrl: 'https://wnzc-proxy.onrender.com/lottery'  // 替换为你的 Render 地址
+        lotteryApiUrl: 'https://wnzc-proxy.onrender.com/lottery'
     }
 };
 
