@@ -582,7 +582,7 @@
       loading.classList.add('show');
 
       try {
-        const url = `${API_URL}?apiKey=${API_KEY}&question=${encodeURIComponent(question)}`;
+        const url = `${uuhbApiUrl}/answerbook?question=${encodeURIComponent(question)}`;
         const response = await fetch(url);
         const result = await response.json();
 
