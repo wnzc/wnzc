@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>海龟汤</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(160deg, #1e1e2e 0%, #2d2d44 100%);
+    min-height: 100vh;
+    color: #e8e8f0;
+    padding: 16px 14px 48px;
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ---------- 返回（仅首屏显示） ---------- */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 12px;
+    padding: 7px 13px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+  .back-btn:active {
+    background: rgba(255,255,255,0.16);
+  }
+
+  /* ---------- 首屏大卡片 ---------- */
+  .start-card {
+    margin-top: 8vh;
+    text-align: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 36px 22px 30px;
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .start-card .icon {
+    font-size: 58px;
+    margin-bottom: 10px;
+  }
+  .start-card h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #ffffff;
+  }
+  .start-card .subtitle {
+    margin-top: 10px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    color: rgba(255,255,255,0.55);
+  }
+  .start-btn {
+    margin-top: 26px;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #ff9800, #ff6d00);
+    border: none;
+    border-radius: 16px;
+    color: #ffffff;
+    font-size: 16.5px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 6px 22px rgba(255,111,0,0.32);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .start-btn:active {
+    transform: scale(0.97);
+    box-shadow: 0 3px 12px rgba(255,111,0,0.25);
+  }
+  .start-rule {
+    margin-top: 16px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.38);
+  }
+
+  /* ---------- 游戏界面 ---------- */
+  #screenGame { display: none; }
+
+  /* 汤面卡片：固定顶部、橙色描边高亮 */
+  .soup-card {
+    position: sticky;
+    top: 10px;
+    z-index: 20;
+    background: rgba(30,30,46,0.93);
+    backdrop-filter: blur(12px);
+    border: 1.5px solid rgba(255,152,0,0.65);
+    border-radius: 16px;
+    padding: 13px 15px;
+    margin-bottom: 14px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.38);
+    animation: fadeUp 0.35s ease both;
+  }
+  .soup-label {
+    display: inline-block;
+    margin-bottom: 8px;
+    padding: 2px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffb74d;
+    background: rgba(255,152,0,0.14);
+    border: 1px solid rgba(255,152,0,0.5);
+    border-radius: 10px;
+  }
+  .soup-text {
+    font-size: 14.5px;
+    line-height: 1.85;
+    color: #f3ecdd;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .cursor {
+    display: inline-block;
+    color: #ff9800;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  /* ---------- 对话流 ---------- */
+  #chatArea {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .msg { max-width: 84%; }
+  .msg.user { align-self: flex-end; animation: fadeUp 0.28s ease both; }
+  .msg.ai   { align-self: flex-start; max-width: 90%; animation: fadeUp 0.28s ease both; }
+  .bubble {
+    padding: 9px 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .bubble-user {
+    background: rgba(255,152,0,0.18);
+    border: 1px solid rgba(255,152,0,0.42);
+    border-radius: 14px 14px 4px 14px;
+    color: #ffe2b8;
+    font-size: 14px;
+  }
+  /* AI 回答很短，用大字号突出「是。」「否。」 */
+  .bubble-ai {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 14px 14px 14px 4px;
+    color: #ffffff;
+    font-size: 17.5px;
+    font-weight: 600;
+    padding: 10px 14px;
+  }
+  .error-hint {
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: #ff8a80;
+  }
+  .retry-btn {
+    margin-top: 6px;
+    width: 100%;
+    background: transparent;
+    border: 1.5px solid #ff9800;
+    color: #ffc078;
+    font-size: 13.5px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .retry-btn:active {
+    background: #ff9800;
+    color: #1e1e2e;
+  }
+
+  /* ---------- 结果卡片（破案 / 放弃后） ---------- */
+  .result-card {
+    align-self: stretch;
+    background: rgba(255,152,0,0.08);
+    border: 1.5px solid rgba(255,152,0,0.6);
+    border-radius: 16px;
+    padding: 14px 15px;
+    animation: fadeUp 0.35s ease both;
+  }
+  .result-title {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #ffd08a;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .result-row {
+    display: flex;
+    gap: 8px;
+  }
+  .result-btn {
+    flex: 1;
+    padding: 11px 6px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.88);
+    font-size: 13.5px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .result-btn.voice {
+    background: rgba(255,152,0,0.16);
+    border-color: rgba(255,152,0,0.55);
+    color: #ffc078;
+  }
+  .result-btn:active {
+    background: rgba(255,255,255,0.18);
+  }
+  .result-btn:disabled {
+    opacity: 0.55;
+  }
+
+  /* ---------- 底部输入区 ---------- */
+  .input-dock {
+    position: sticky;
+    bottom: 10px;
+    z-index: 20;
+    background: rgba(30,30,46,0.93);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 11px 12px;
+  }
+  .func-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .func-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.8);
+    font-size: 12px;
+    padding: 8px 2px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .func-btn:active {
+    background: rgba(255,255,255,0.16);
+  }
+  .func-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .func-btn.active {
+    border-color: #ff9800;
+    background: rgba(255,152,0,0.16);
+    color: #ffb74d;
+    font-weight: 600;
+  }
+  .ask-row {
+    display: flex;
+    gap: 8px;
+  }
+  .ask-row input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px;
+    padding: 11px 13px;
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .ask-row input:focus {
+    border-color: rgba(255,152,0,0.65);
+  }
+  .ask-row input::placeholder {
+    color: rgba(255,255,255,0.35);
+  }
+  .ask-row input:disabled {
+    opacity: 0.4;
+  }
+  .ask-send {
+    width: 48px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1.5px solid #ff9800;
+    color: #ff9800;
+    border-radius: 12px;
+    font-size: 17px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .ask-send:active {
+    background: #ff9800;
+    color: #1e1e2e;
+  }
+  .ask-send:disabled {
+    opacity: 0.35;
+  }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+    max-width: 86vw;
+    text-align: center;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <a href="../../index.html" class="back-btn" id="backBtn">← 返回工具箱</a>
+
+    <!-- 首屏 -->
+    <div id="screenStart">
+      <div class="start-card">
+        <div class="icon">🐢</div>
+        <h1>海龟汤</h1>
+        <div class="subtitle">一碗汤，一个离奇的故事。<br>提问逼近真相。</div>
+        <button class="start-btn" id="startBtn">🎬 开始新的一局</button>
+        <div class="start-rule">主持人只回答「是 / 否 / 与此无关」，随时可以猜真相或放弃</div>
+      </div>
+    </div>
+
+    <!-- 游戏界面 -->
+    <div id="screenGame">
+      <!-- 顶部固定汤面卡片 -->
+      <div class="soup-card" id="soupCard">
+        <span class="soup-label">🍲 汤面</span>
+        <div class="soup-text" id="soupFaceText"></div>
+      </div>
+
+      <!-- 对话流 -->
+      <div id="chatArea"></div>
+
+      <!-- 底部输入区 -->
+      <div class="input-dock">
+        <div class="func-row">
+          <button class="func-btn" id="guessBtn">🎯 我要猜真相</button>
+          <button class="func-btn" id="giveupBtn">😵 放弃看答案</button>
+          <button class="func-btn" id="restartBtn">🔄 新的一局</button>
+        </div>
+        <div class="ask-row">
+          <input type="text" id="questionInput" placeholder="自由提问，我只回答 是 / 否 / 无关…" maxlength="150">
+          <button class="ask-send" id="sendBtn" title="发送">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <audio id="ttsAudio"></audio>
+  <div class="toast" id="toast"></div>
+
+<script src="../../ai-models.js"></script>
+<script src="../ai-config.js"></script>
+<script src="../ai-history.js"></script>
+<script>
+
+// ============================================================
+//  海龟汤：AI 主持的情境推理游戏（是 / 否 / 无关）
+// ============================================================
+
+// ---------- 常量区 ----------
+var SYSTEM_PROMPT = [
+  '你是「海龟汤」情境推理游戏的主持人（出题人）。严格按以下规则运行：',
+  '1. 当玩家让你开局时：编造一个逻辑自洽、表面离奇、细思极有味道的情境谜题。先输出【汤面】+2~3句谜面描述（不透露任何答案），再输出一行提示：「你可以向我自由提问，我只会回答 是 / 否 / 与此无关。准备好了就开始吧！」',
+  '2. 玩家提问时：你只能从「是。」「否。」「是也不是。」「与此无关。」四种回答里选一个作为整轮输出（最多允许在后面追加一句不超过15字的方向性提示）。绝不透露答案细节。',
+  '3. 玩家输入以「猜真相：」开头时视为最终推理：若抓住了核心逻辑（细节可有出入），输出【恭喜破案！】并完整还原【汤底】真相故事（100-200字）；若方向错误，输出「还差一点～给你个提示：」+一条不剧透的关键提示。',
+  '4. 玩家输入「放弃」时：直接输出【汤底】完整真相。',
+  '5. 题目适合消遣、不描写血腥猎奇细节、逻辑必须能自圆其说；每次开局换一个全新题材（可涵盖日常误会、时间诡计、身份错位等）。'
+].join('\n');
+
+// ---------- 状态 ----------
+var storyMessages = [];   // 多轮对话状态：[{role, content}]，首位恒为 system
+var isGenerating = false;
+var currentAbort = null;  // 当前流式请求的 AbortController
+var genToken = 0;         // 代际标记：重置后使旧轮次的收尾逻辑失效
+var soupFace = '';        // 汤面文本（顶部卡片 + 保存用）
+var soupBottom = '';      // 汤底文本（TTS + 保存用）
+var gameOver = false;
+var guessMode = false;    // 猜真相模式：发送时自动加「猜真相：」前缀
+var savedRecord = false;
+var currentAudioUrl = '';
+
+var DEFAULT_PLACEHOLDER = '自由提问，我只回答 是 / 否 / 无关…';
+
+// ---------- 工具 ----------
+function $(id) { return document.getElementById(id); }
+
+function showToast(msg) {
+  var toast = $('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(function () { toast.classList.remove('show'); }, 2000);
+}
+
+function scrollToBottom() {
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function makeSystemMessage() {
+  return { role: 'system', content: SYSTEM_PROMPT };
+}
+
+// 组装请求消息：只保留最近 17 条防 token 膨胀，并确保第一条始终是 system
+function getRequestMessages() {
+  var recent = storyMessages.slice(-17);
+  if (recent.length && recent[0].role === 'system') return recent;
+  var rest = recent.filter(function (m) { return m.role !== 'system'; });
+  return [makeSystemMessage()].concat(rest.slice(0, 16));
+}
+
+// 从开场白中提取汤面：截掉引导行与【汤面】标签本身
+function extractSoupFace(text) {
+  var t = String(text || '');
+  var guideIdx = t.indexOf('你可以向我自由提问');
+  if (guideIdx >= 0) t = t.slice(0, guideIdx);
+  var labelIdx = t.indexOf('【汤面】');
+  if (labelIdx >= 0) t = t.slice(labelIdx + 4);
+  t = t.replace(/^[\s\-—=_*·、]+/, '').replace(/[\s\-—=_*·、]+$/, '');
+  return t.trim() || String(text || '').trim();
+}
+
+// ---------- 开局 ----------
+function startGame() {
+  if (isGenerating) return;
+  if (!API_URL) {
+    showToast('请先在代码中配置 API_URL');
+    return;
+  }
+
+  // 首轮：system + 开局指令
+  storyMessages = [
+    makeSystemMessage(),
+    { role: 'user', content: '开始新的一局，请给我出一道海龟汤。' }
+  ];
+  soupFace = '';
+  soupBottom = '';
+  gameOver = false;
+  guessMode = false;
+  savedRecord = false;
+
+  $('screenStart').style.display = 'none';
+  $('backBtn').style.display = 'none';   // 进入游戏后隐藏返回链接，避免误触
+  $('screenGame').style.display = 'block';
+
+  $('chatArea').innerHTML = '';
+  $('soupFaceText').textContent = '';
+  setInputEnabled(true);
+  setGuessMode(false);
+  window.scrollTo(0, 0);
+
+  // 开场白直接流式渲染进顶部汤面卡片，完成后自动填充汤面
+  performRound({
+    textEl: $('soupFaceText'),
+    errorHost: $('soupCard'),
+    onSuccess: function (fullText) { handleAIReply(fullText, true); }
+  });
+}
+
+// ---------- 流式请求（SSE 解析写法同 adventure.html） ----------
+async function performRound(parts) {
+  if (isGenerating) return;
+  if (!API_URL) {
+    showToast('请先在代码中配置 API_URL');
+    return;
+  }
+
+  isGenerating = true;
+  var myToken = ++genToken;
+  currentAbort = new AbortController();
+  setInputEnabled(false);
+
+  var textEl = parts.textEl;
+  textEl.textContent = '';
+  var cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  cursor.textContent = '▌';
+  textEl.appendChild(cursor);
+  scrollToBottom();
+
+  var fullText = '';
+
+  // 单行 SSE 数据处理
+  function handleLine(line) {
+    var trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) return false;
+    var data = trimmed.slice(5).trim();
+    if (data === '[DONE]') return true;
+    try {
+      var json = JSON.parse(data);
+      var content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+      if (content) {
+        fullText += content;
+        textEl.textContent = fullText;
+        textEl.appendChild(cursor);
+        scrollToBottom();
+      }
+    } catch (e) { /* 忽略无法解析的行 */ }
+    return false;
+  }
+
+  try {
+    var response = await fetch(API_URL, {
+      method: 'POST',
+      headers: API_HEADER,
+      body: JSON.stringify({
+        model: GLM_MODEL,
+        messages: getRequestMessages(),
+        stream: true
+      }),
+      signal: currentAbort.signal
+    });
+    if (!response.ok) throw new Error('API请求失败');
+
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = '';
+    var doneFlag = false;
+
+    while (true) {
+      var res = await reader.read();
+      if (res.done) break;
+      buf += decoder.decode(res.value, { stream: true });
+      var lines = buf.split('\n');
+      buf = lines.pop(); // 最后一段可能是半行，留到下一块
+      for (var i = 0; i < lines.length; i++) {
+        if (handleLine(lines[i])) { doneFlag = true; break; }
+      }
+      if (doneFlag) break;
+    }
+    if (buf && !doneFlag) doneFlag = handleLine(buf);
+
+    if (!fullText.trim()) throw new Error('空回复');
+
+    cursor.remove();
+
+    // 本轮完成：写入对话状态
+    storyMessages.push({ role: 'assistant', content: fullText });
+    if (myToken === genToken && parts.onSuccess) parts.onSuccess(fullText);
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      cursor.remove();
+      return; // 用户主动重置，静默退出
+    }
+    console.error('Error:', err);
+    cursor.remove();
+    if (!fullText) textEl.textContent = '（加载失败）';
+
+    // 失败提示 + 重试按钮（assistant 未入列，原样重发即可）
+    var hint = document.createElement('div');
+    hint.className = 'error-hint';
+    hint.textContent = '⚠️ 主持人走神了，回答加载失败';
+    var retry = document.createElement('button');
+    retry.className = 'retry-btn';
+    retry.textContent = '🔄 重试这一轮';
+    retry.onclick = function () {
+      hint.remove();
+      retry.remove();
+      performRound(parts);
+    };
+    parts.errorHost.appendChild(hint);
+    parts.errorHost.appendChild(retry);
+    showToast('请求失败，请重试');
+  } finally {
+    if (myToken === genToken) {
+      isGenerating = false;
+      currentAbort = null;
+      if (!gameOver) setInputEnabled(true);
+    }
+  }
+}
+
+// ---------- AI 回复后处理 ----------
+function handleAIReply(fullText, isOpening) {
+  if (isOpening) {
+    // 开场白：把汤面填进顶部卡片
+    soupFace = extractSoupFace(fullText);
+    $('soupFaceText').textContent = soupFace;
+  }
+
+  var solved = fullText.indexOf('【恭喜破案') >= 0;
+  var revealed = fullText.indexOf('【汤底】') >= 0;
+
+  if (solved || revealed) {
+    gameOver = true;
+    var bottomIdx = fullText.indexOf('【汤底】');
+    soupBottom = bottomIdx >= 0 ? fullText.slice(bottomIdx) : fullText;
+    setGuessMode(false);
+    setInputEnabled(false);
+    $('guessBtn').disabled = true;
+    $('giveupBtn').disabled = true;
+    appendResultCard(solved);
+  }
+}
+
+// ---------- 气泡渲染 ----------
+function addUserBubble(text) {
+  var wrap = document.createElement('div');
+  wrap.className = 'msg user';
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble bubble-user';
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  $('chatArea').appendChild(wrap);
+  scrollToBottom();
+}
+
+function addAIBubble() {
+  var wrap = document.createElement('div');
+  wrap.className = 'msg ai';
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble bubble-ai';
+  wrap.appendChild(bubble);
+  $('chatArea').appendChild(wrap);
+  scrollToBottom();
+  return { wrapper: wrap, textEl: bubble };
+}
+
+// ---------- 结果卡片 ----------
+function appendResultCard(solved) {
+  var card = document.createElement('div');
+  card.className = 'result-card';
+
+  var title = document.createElement('div');
+  title.className = 'result-title';
+  title.textContent = solved ? '🎉 恭喜破案！真相已还原' : '🥲 已为你揭晓汤底';
+  card.appendChild(title);
+
+  var row = document.createElement('div');
+  row.className = 'result-row';
+
+  var voiceBtn = document.createElement('button');
+  voiceBtn.className = 'result-btn voice';
+  voiceBtn.textContent = '🔊 听主持人揭晓';
+  voiceBtn.onclick = function () { speakText(voiceBtn, soupBottom); };
+  row.appendChild(voiceBtn);
+
+  var saveBtn = document.createElement('button');
+  saveBtn.className = 'result-btn';
+  saveBtn.textContent = '💾 保存战绩';
+  saveBtn.onclick = function () { saveRecord(saveBtn); };
+  row.appendChild(saveBtn);
+
+  card.appendChild(row);
+  $('chatArea').appendChild(card);
+  scrollToBottom();
+}
+
+// ---------- 玩家输入 ----------
+function setInputEnabled(enabled) {
+  $('questionInput').disabled = !enabled;
+  $('sendBtn').disabled = !enabled;
+}
+
+function setGuessMode(on) {
+  guessMode = !!on;
+  $('guessBtn').classList.toggle('active', guessMode);
+  $('questionInput').placeholder = guessMode ? '说出你的完整推理…' : DEFAULT_PLACEHOLDER;
+  if (guessMode && !$('questionInput').disabled) $('questionInput').focus();
+}
+
+function submitPlayer(content, displayText) {
+  storyMessages.push({ role: 'user', content: content });
+  addUserBubble(displayText);
+  var bubble = addAIBubble();
+  performRound({
+    textEl: bubble.textEl,
+    errorHost: bubble.wrapper,
+    onSuccess: function (fullText) { handleAIReply(fullText, false); }
+  });
+}
+
+function sendQuestion() {
+  if (isGenerating || gameOver) return;
+  var input = $('questionInput');
+  var val = input.value.trim();
+  if (!val) {
+    showToast(guessMode ? '请先说出你的完整推理' : '请先输入你的问题');
+    return;
+  }
+  input.value = '';
+  var content = guessMode ? ('猜真相：' + val) : val;
+  setGuessMode(false); // 猜真相为一次性动作，发完自动切回普通提问
+  submitPlayer(content, val);
+}
+
+function giveUp() {
+  if (isGenerating || gameOver) return;
+  if (!confirm('确定要放弃并直接查看真相吗？')) return;
+  submitPlayer('放弃', '放弃 😵');
+}
+
+function restartGame() {
+  if (!confirm('确定要结束本局，重新熬一锅新汤吗？')) return;
+
+  if (currentAbort) currentAbort.abort();
+  ++genToken;            // 使旧轮次未完成的收尾逻辑失效
+  isGenerating = false;
+  currentAbort = null;
+
+  $('screenGame').style.display = 'none';
+  $('screenStart').style.display = 'block';
+  $('backBtn').style.display = '';       // 仅首屏恢复返回链接
+  storyMessages = [];
+  soupFace = '';
+  soupBottom = '';
+  gameOver = false;
+  guessMode = false;
+  savedRecord = false;
+  window.scrollTo(0, 0);
+}
+
+// ---------- 朗读（TTS 写法同 adventure.html）----------
+async function speakText(btn, text) {
+  if (!text) {
+    showToast('暂无可朗读的内容');
+    return;
+  }
+  var oldLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 合成中';
+
+  try {
+    var audioBlob = null;
+    for (var i = 0; i < VOICE_API_URLS.length; i++) {
+      try {
+        var response = await fetch(VOICE_API_URLS[i], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: text,
+            voice: 'zh-CN-XiaomengNeural',
+            speed: 0.9,
+            pitch: 0
+          })
+        });
+        if (response.ok) {
+          audioBlob = await response.blob();
+          break;
+        }
+      } catch (e) { continue; } // 尝试下一个备用地址
+    }
+    if (!audioBlob) throw new Error('TTS请求失败');
+
+    if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+    currentAudioUrl = URL.createObjectURL(audioBlob);
+    var audio = $('ttsAudio');
+    audio.src = currentAudioUrl;
+    audio.play();
+    showToast('🔊 主持人正在揭晓汤底');
+  } catch (err) {
+    console.error('TTS Error:', err);
+    showToast('语音生成失败');
+  }
+
+  btn.disabled = false;
+  btn.textContent = oldLabel;
+}
+
+// ---------- 保存战绩 ----------
+function saveRecord(btn) {
+  if (savedRecord) {
+    showToast('本局战绩已经保存过啦');
+    return;
+  }
+  if (!window.aiHistory) {
+    showToast('历史组件未加载');
+    return;
+  }
+  aiHistory.save('海龟汤', soupFace || '一局海龟汤', soupBottom, {
+    voice: 'zh-CN-XiaomengNeural',
+    speed: 0.9
+  });
+  savedRecord = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '✅ 已保存';
+  }
+  showToast('💾 战绩已保存');
+}
+
+// ---------- 事件绑定 ----------
+$('startBtn').onclick = startGame;
+$('sendBtn').onclick = sendQuestion;
+$('guessBtn').onclick = function () { if (!isGenerating && !gameOver) setGuessMode(!guessMode); };
+$('giveupBtn').onclick = giveUp;
+$('restartBtn').onclick = restartGame;
+$('questionInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') sendQuestion();
+});
+
+</script>
+</body>
+</html>

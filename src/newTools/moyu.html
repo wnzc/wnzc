@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>摸鱼日历</title>
+    <!-- 假期数据与 holiday.html 同源：国务院办公厅2026年安排，每年11月更新 -->
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.6);
+            --accent-color: #ff9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 16px 40px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        /* 头部 */
+        .hero {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .hero-emoji {
+            font-size: 46px;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .hero h1 {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+
+        .hero p {
+            margin-top: 6px;
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px 18px;
+            margin-bottom: 14px;
+        }
+
+        /* 摸鱼指数 */
+        .score-card {
+            text-align: center;
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 87, 34, 0.08));
+            border-color: rgba(255, 152, 0, 0.3);
+        }
+
+        .score-stars {
+            font-size: 30px;
+            letter-spacing: 6px;
+            margin-bottom: 8px;
+        }
+
+        .score-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 6px;
+        }
+
+        .score-sub {
+            font-size: 12px;
+            color: var(--text-sub);
+            line-height: 1.6;
+        }
+
+        /* 双列倒数卡 */
+        .duo {
+            display: flex;
+            gap: 12px;
+        }
+
+        .duo .card {
+            flex: 1;
+            min-width: 0;
+            margin-bottom: 14px;
+            text-align: center;
+            padding: 14px 10px;
+        }
+
+        .mini-label {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+        }
+
+        .mini-num {
+            font-size: 34px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mini-unit {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* 进度条 */
+        .progress-row {
+            margin-bottom: 14px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+        }
+
+        .progress-track {
+            height: 10px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #ff9800, #ff5722);
+            transition: width 0.6s ease;
+        }
+
+        /* 发薪日设置 */
+        .pay-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pay-row input {
+            width: 74px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            padding: 8px;
+            font-size: 14px;
+            text-align: center;
+            outline: none;
+        }
+
+        .pay-row input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .pay-num {
+            font-weight: 800;
+            color: var(--accent-color);
+        }
+
+        /* 语录 */
+        .quote-card {
+            border-left: 3px solid var(--accent-color);
+            font-size: 14px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.85);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a class="back-link" href="../../index.html">‹ 返回首页</a>
+
+        <div class="hero">
+            <div class="hero-emoji" id="heroEmoji">🐟</div>
+            <h1>摸鱼日历</h1>
+            <p id="dateLine"></p>
+        </div>
+
+        <div class="card score-card">
+            <div class="score-stars" id="scoreStars"></div>
+            <div class="score-text" id="scoreText"></div>
+            <div class="score-sub" id="scoreSub"></div>
+        </div>
+
+        <div class="duo">
+            <div class="card">
+                <div class="mini-label">距离周末</div>
+                <div class="mini-num" id="weekendNum">—</div>
+                <div class="mini-unit" id="weekendUnit">天</div>
+            </div>
+            <div class="card">
+                <div class="mini-label" id="holidayLabel">下个假期</div>
+                <div class="mini-num" id="holidayNum">—</div>
+                <div class="mini-unit" id="holidayName"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="progress-row">
+                <div class="progress-label"><span>本周进度</span><span id="weekPct"></span></div>
+                <div class="progress-track"><div class="progress-fill" id="weekBar"></div></div>
+            </div>
+            <div class="progress-row">
+                <div class="progress-label"><span>今年进度</span><span id="yearPct"></span></div>
+                <div class="progress-track"><div class="progress-fill" id="yearBar"></div></div>
+            </div>
+            <div class="progress-row" style="margin-bottom:0;">
+                <div class="progress-label"><span>发薪日倒计时</span></div>
+                <div class="pay-row">
+                    <input type="number" id="payDay" min="1" max="28" placeholder="每月几号发薪？" title="填写后自动保存">
+                    <span style="font-size:13px;color:var(--text-sub)">还有 <b class="pay-num" id="payNum">—</b> 天发钱 💰</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card quote-card" id="dailyQuote"></div>
+    </div>
+
+    <script>
+        'use strict';
+        // ==================== 数据区：与 holiday.html 同源 ====================
+        const HOLIDAYS = [
+            { name: '元旦', icon: '🎉', start: '2026-01-01', end: '2026-01-03' },
+            { name: '春节', icon: '🧨', start: '2026-02-15', end: '2026-02-23' },
+            { name: '清明节', icon: '🌿', start: '2026-04-04', end: '2026-04-06' },
+            { name: '劳动节', icon: '💪', start: '2026-05-01', end: '2026-05-05' },
+            { name: '端午节', icon: '🚣', start: '2026-06-19', end: '2026-06-21' },
+            { name: '中秋节', icon: '🥮', start: '2026-09-25', end: '2026-09-27' },
+            { name: '国庆节', icon: '🇨🇳', start: '2026-10-01', end: '2026-10-07' },
+        ];
+
+        const QUOTES = [
+            '上班是为了下班，下班是为了不上班。',
+            '只要我摸鱼摸得够快，KPI 就追不上我。',
+            '带薪如厕十分钟，快乐一整天。',
+            '工作只是生活的一部分，摸鱼也是。',
+            '不是我要摸鱼，是鱼它自己游过来的。',
+            '认真你就输了，但工资不能输。',
+            '今天也是元气满满地假装忙碌呢。',
+            '摸鱼一时爽，一直摸鱼一直爽。',
+            '别人的周一叫开始，我的周一叫渡劫。',
+            '水群使我快乐，划水使我平静。',
+            '工位是我的海，我就是那条咸鱼。',
+            '努力不一定成功，但不摸鱼一定很累。',
+            '上班摸鱼不可耻，可耻的是被抓住。',
+            '只要胆子大，天天寒暑假。',
+            '摸鱼的尽头，是退休。',
+            '带薪喝水、带薪思考人生，都是基本权益。',
+            '我不是在摸鱼，我是在给灵感留门。',
+            '今日事今日毕？那明天的我干什么。',
+            '键盘敲得越响，离摸鱼的本质越远。',
+            '愿你摸鱼半生，归来仍有工资到账。'
+        ];
+        // =====================================================================
+
+        const $ = (id) => document.getElementById(id);
+
+        function parseDate(s) { return new Date(s + 'T00:00:00'); }
+        function midnight(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
+        function dayDiff(a, b) { return Math.round((midnight(b) - midnight(a)) / 86400000); }
+
+        function nextHolidayInfo(today) {
+            for (const h of HOLIDAYS) {
+                if (today >= parseDate(h.start) && today <= parseDate(h.end)) {
+                    return { ...h, ongoing: true };
+                }
+                const diff = dayDiff(today, parseDate(h.start));
+                if (diff > 0) return { ...h, diff };
+            }
+            return null;
+        }
+
+        function render() {
+            const now = new Date();
+            const wd = now.getDay();
+            const WEEK = ['日', '一', '二', '三', '四', '五', '六'];
+            $('dateLine').textContent =
+                `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 · 星期${WEEK[wd]}`;
+
+            // 表情按星期换装
+            $('heroEmoji').textContent = ['🐟', '😩', '😌', '😐', '😏', '🥳', '🎉'][wd];
+
+            // ---- 摸鱼指数 ----
+            const holi = nextHolidayInfo(now);
+            let stars, text, sub;
+            if (holi && holi.ongoing) {
+                stars = 0; text = '🏖️ 假期进行中'; sub = '放假日摸什么鱼，痛快去玩！';
+            } else {
+                stars = [1, 2, 3, 3, 4, 5][wd] || 5; // 日一二三四五六
+                const comments = {
+                    0: '周日晚上焦虑预警，且行且珍惜。',
+                    1: '周一渡劫日，装忙是第一生产力。',
+                    2: '周二的摸鱼，是对周末最基本的尊重。',
+                    3: '周三已过半，黎明就在眼前。',
+                    4: '周四了！已经能闻到周末的味道。',
+                    5: '周五不摸鱼，更待何时？',
+                    6: '周六还在摸鱼？你是真热爱这份事业。',
+                };
+                text = comments[wd];
+                if (holi && holi.diff <= 3) { stars = 5; text = '🔥 临近假期，全员疯癫'; }
+                sub = holi ? `坚持住，${holi.name}在向你招手` : '本年度假期余额已用完，明年再战';
+            }
+            $('scoreStars').textContent = '⭐'.repeat(stars) + '・' + '☆'.repeat(5 - stars);
+            $('scoreText').textContent = text;
+            $('scoreSub').textContent = sub;
+
+            // ---- 距离周末 ----
+            if (wd === 6 || wd === 0) {
+                $('weekendNum').textContent = '中';
+                $('weekendUnit').textContent = '周末进行时 🎉';
+            } else {
+                const d = 6 - wd;
+                $('weekendNum').textContent = d;
+                $('weekendUnit').textContent = d === 1 ? '天（明天就是周六！）' : '天';
+            }
+
+            // ---- 下个假期 ----
+            if (holi) {
+                if (holi.ongoing) {
+                    $('holidayNum').textContent = '中';
+                    $('holidayName').textContent = holi.icon + ' ' + holi.name + ' 放假中';
+                } else {
+                    $('holidayNum').textContent = holi.diff;
+                    $('holidayName').textContent = holi.icon + ' ' + holi.name;
+                }
+                $('holidayLabel').textContent = '下个假期';
+            } else {
+                $('holidayNum').textContent = '—';
+                $('holidayName').textContent = '静待国务院官宣';
+            }
+
+            // ---- 进度条 ----
+            const weekIdx = (wd + 6) % 7;             // 周一=0 … 周日=6
+            const weekPct = Math.round(((weekIdx + 1) / 7) * 100);
+            const start = new Date(now.getFullYear(), 0, 1);
+            const y = now.getFullYear();
+            const daysInYear = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
+            const yearPct = Math.round((dayDiff(start, now) + 1) / daysInYear * 100);
+            $('weekPct').textContent = weekPct + '%';
+            $('weekBar').style.width = weekPct + '%';
+            $('yearPct').textContent = yearPct + '%';
+            $('yearBar').style.width = Math.min(yearPct, 100) + '%';
+
+            // ---- 每日语录（按当年第几天轮换）----
+            const doy = dayDiff(new Date(now.getFullYear(), 0, 1), now);
+            $('dailyQuote').textContent = '「' + QUOTES[doy % QUOTES.length] + '」';
+
+            renderPayday(now);
+        }
+
+        // ---- 发薪日 ----
+        function renderPayday(now) {
+            let day = parseInt(localStorage.getItem('moyu_payday'), 10);
+            if (!day || day < 1 || day > 28) {
+                $('payNum').textContent = '—';
+                return;
+            }
+            $('payDay').value = day;
+
+            let target = new Date(now.getFullYear(), now.getMonth(), day);
+            if (midnight(target) < midnight(now)) {
+                target = new Date(now.getFullYear(), now.getMonth() + 1, day);
+            }
+            $('payNum').textContent = dayDiff(now, target);
+        }
+
+        $('payDay').addEventListener('input', () => {
+            const v = parseInt($('payDay').value, 10);
+            if (v >= 1 && v <= 28) {
+                localStorage.setItem('moyu_payday', String(v));
+                renderPayday(new Date());
+            }
+        });
+
+        (function initPayday() {
+            const saved = parseInt(localStorage.getItem('moyu_payday'), 10);
+            if (saved >= 1 && saved <= 28) $('payDay').value = saved;
+        })();
+
+        render();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>成语接龙陪练</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(160deg, #1e1e2e 0%, #2d2d44 100%);
+    min-height: 100vh;
+    color: #e8e8f0;
+    padding: 16px 14px 48px;
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ---------- 返回 ---------- */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 12px;
+    padding: 7px 13px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+  .back-btn:active {
+    background: rgba(255,255,255,0.16);
+  }
+
+  /* ---------- 首屏（设置） ---------- */
+  .page-header {
+    text-align: center;
+    padding: 14px 0 22px;
+  }
+  .page-header .icon {
+    font-size: 46px;
+    margin-bottom: 8px;
+  }
+  .page-header h1 {
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #ffffff;
+  }
+  .page-header .subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+  }
+
+  .setup-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+    animation: fadeUp 0.35s ease both;
+  }
+  .field-label {
+    display: block;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 8px;
+  }
+  .diff-select {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    background: rgba(255,255,255,0.07)
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%23ff9800' stroke-width='2' fill='none' stroke-linecap='round'/></svg>")
+      no-repeat right 14px center;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px;
+    padding: 12px 36px 12px 13px;
+    color: #ffffff;
+    font-size: 14.5px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .diff-select:focus {
+    border-color: rgba(255,152,0,0.65);
+  }
+  .diff-select option {
+    background: #2d2d44;
+    color: #ffffff;
+  }
+
+  .start-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-top: 12px;
+    font-size: 15.5px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .start-btn.primary {
+    background: #ff9800;
+    border: none;
+    color: #1e1e2e;
+  }
+  .start-btn.primary:active {
+    transform: scale(0.97);
+    background: #ffb74d;
+  }
+  .start-btn.ghost {
+    background: transparent;
+    border: 1.5px solid #ff9800;
+    color: #ffc078;
+  }
+  .start-btn.ghost:active {
+    background: rgba(255,152,0,0.15);
+  }
+
+  .rules-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed rgba(255,255,255,0.18);
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-size: 12.5px;
+    line-height: 1.9;
+    color: rgba(255,255,255,0.55);
+    animation: fadeUp 0.45s ease both;
+  }
+  .rules-card b {
+    color: #ffb74d;
+    font-weight: 600;
+  }
+
+  /* ---------- 对局界面 ---------- */
+  #screenGame { display: none; }
+
+  .status-bar {
+    position: sticky;
+    top: 8px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    background: rgba(30,30,46,0.88);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+  }
+  .status-info {
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .combo-chip {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #ffb74d;
+    border: 1px solid rgba(255,152,0,0.5);
+    border-radius: 10px;
+    vertical-align: 1px;
+  }
+  .combo-chip.live {
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% { opacity: 0.4; }
+  }
+  .btn-restart {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #dddddd;
+    font-size: 12px;
+    padding: 7px 11px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-restart:active {
+    background: rgba(255,255,255,0.14);
+  }
+
+  /* ---------- 对话气泡 ---------- */
+  .chat-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .msg {
+    display: flex;
+    animation: fadeUp 0.3s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .msg.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 84%;
+    padding: 11px 14px;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.85;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.user .bubble {
+    background: rgba(255,152,0,0.1);
+    border: 1.5px solid rgba(255,152,0,0.8);
+    color: #ffe3bd;
+    border-top-right-radius: 4px;
+    text-align: right;
+  }
+  .msg.ai .bubble {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #eceaf6;
+    border-top-left-radius: 4px;
+  }
+  /* 【标记】橙色加粗 */
+  .mark {
+    color: #ff9800;
+    font-weight: 700;
+  }
+  /* 成语本体高亮放大 */
+  .idiom-word {
+    color: #ffcc80;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 0 2px;
+  }
+  .cursor {
+    display: inline-block;
+    color: #ff9800;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+  .card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+  .voice-mini {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.72);
+    font-size: 11px;
+    padding: 4px 11px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .voice-mini:active {
+    background: rgba(255,255,255,0.2);
+  }
+  .voice-mini:disabled {
+    opacity: 0.6;
+  }
+  .error-hint {
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: #ff8a80;
+  }
+
+  /* ---------- 底部输入行 ---------- */
+  .input-row {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0 14px;
+  }
+  .input-row input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px;
+    padding: 11px 13px;
+    color: #ffffff;
+    font-size: 15px;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .input-row input:focus {
+    border-color: rgba(255,152,0,0.65);
+  }
+  .input-row input::placeholder {
+    color: rgba(255,255,255,0.35);
+    letter-spacing: normal;
+    font-size: 13px;
+  }
+  .input-row input:disabled {
+    opacity: 0.4;
+  }
+  .input-send {
+    width: 46px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1.5px solid #ff9800;
+    color: #ff9800;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .input-send:active {
+    background: #ff9800;
+    color: #1e1e2e;
+  }
+  .input-send:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* ---------- 保存 ---------- */
+  .btn-save {
+    width: 100%;
+    padding: 13px;
+    background: rgba(255,255,255,0.08);
+    border: 1px dashed rgba(255,255,255,0.32);
+    color: rgba(255,255,255,0.82);
+    font-size: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-save:active {
+    background: rgba(255,255,255,0.16);
+  }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+    max-width: 86vw;
+    text-align: center;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <a href="../../index.html" class="back-btn" id="backBtn">← 返回工具箱</a>
+
+    <!-- 首屏：设置 -->
+    <div id="screenSetup">
+      <div class="page-header">
+        <div class="icon">🔗</div>
+        <h1>成语接龙陪练</h1>
+        <div class="subtitle">与 AI 轮流接龙，它负责判词、接招、给释义</div>
+      </div>
+
+      <div class="setup-card">
+        <label class="field-label" for="diffSel">难度</label>
+        <select class="diff-select" id="diffSel">
+          <option value="常用成语" selected>常用成语</option>
+          <option value="进阶生僻">进阶生僻</option>
+        </select>
+        <button class="start-btn primary" id="btnAiFirst">▶ AI 先出题</button>
+        <button class="start-btn ghost" id="btnMeFirst">✍️ 我先来</button>
+      </div>
+
+      <div class="rules-card">
+        <b>怎么玩：</b>你出一个成语，首字要接上一句的末字（同音不同字也算合格），
+        AI 判定合规后接着往下接。违规不扣分，但会清空连击；
+        实在接不上时 AI 会认输。
+      </div>
+    </div>
+
+    <!-- 对局界面 -->
+    <div id="screenGame">
+      <div class="status-bar">
+        <div class="status-info">
+          <span id="roundText">回合 0</span><span class="combo-chip" id="comboChip">连击 ×0</span>
+        </div>
+        <button class="btn-restart" onclick="restartGame()">🔄 重新开始</button>
+      </div>
+
+      <div class="chat-area" id="chatArea"></div>
+
+      <div class="input-row">
+        <input type="text" id="idiomInput" placeholder="输入一个四字成语" maxlength="20">
+        <button class="input-send" id="sendBtn" title="发送">➤</button>
+      </div>
+
+      <button class="btn-save" onclick="saveRecord()">💾 保存战绩</button>
+    </div>
+  </div>
+
+  <audio id="ttsAudio"></audio>
+  <div class="toast" id="toast"></div>
+
+<script src="../../ai-models.js"></script>
+<script src="../ai-config.js"></script>
+<script src="../ai-history.js"></script>
+<script>
+
+// ============================================================
+//  成语接龙陪练：玩家与 AI 轮流接龙，AI 判定合规 / 接词 / 给释义
+// ============================================================
+
+// ---------- 常量区 ----------
+var SYSTEM_PROMPT = [
+  '你是成语接龙陪练，性格轻松幽默。规则：',
+  '1. 玩家让你开局时：直接出一个常见四字成语开局，格式：【开局】成语 · 一句话释义',
+  '2. 玩家提交一个成语后，你先判定：a) 必须是真实存在的四字成语；b) 首字须与上一成语末字相同（同音不同字也算合格）。',
+  '   若违规，输出：【❌违规】原因说明 + 「试试这个：【XXXX】」给出一个符合接龙规则的成语供玩家直接使用（该成语仍需玩家自己发一遍才算他的）。',
+  '   若合规，输出：【✅好棋】简短夸奖一句 → 然后你接龙：【接招】【你的成语】· 一句话释义 → 结尾附上「该你了，接『X』！」（X为你成语的末字）。',
+  '3. 你的接龙成语必须是真实成语；若实在接不上（极罕见），诚实输出：【认输】这局你赢了！并建议重新开一局。',
+  '4. 除上述格式外不要输出任何多余内容。释义保持一句话以内。'
+].join('\n');
+
+// AI 输出中的关键标记与成语提取
+var MARK_RE   = /【(开局|✅好棋|接招|❌违规|认输)】/g;
+var OPEN_RE   = /【开局】\s*([\u4e00-\u9fa5]{4})/;
+var TAKE_RE   = /【接招】\s*【?\s*([\u4e00-\u9fa5]{4})/;
+var SUGG_RE   = /试试这个：\s*【?\s*([\u4e00-\u9fa5]{4})/;
+var IDIOM_RE  = /^[\u4e00-\u9fa5]{4}$/;
+
+// ---------- 状态 ----------
+var chatMessages = [];     // 多轮对话状态：[{role, content}]，首位恒为 system
+var diffName = '常用成语'; // 当前难度
+var rounds = 0;            // 已完成的判定轮数
+var combo = 0;             // 连续合规次数
+var expectedChar = '';     // 下一手需以该字开头（上一成语末字）；空串表示任意开局
+var gameOver = false;      // AI 认输后本局结束
+var isGenerating = false;
+var currentAbort = null;   // 当前流式请求的 AbortController
+var genToken = 0;          // 代际标记：重开后使旧请求的收尾逻辑失效
+var chatLog = [];          // 每轮对话文本（用于保存战绩）
+var currentAudioUrl = '';
+
+function $(id) { return document.getElementById(id); }
+
+// ---------- 工具 ----------
+function showToast(msg) {
+  var toast = $('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(function () { toast.classList.remove('show'); }, 2000);
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// 先 escapeHtml 防注入，再把【标记】渲染为橙色加粗、成语本体高亮放大
+function formatAiText(escaped) {
+  var s = escaped;
+  // 标记行：橙色加粗
+  MARK_RE.lastIndex = 0;
+  s = s.replace(MARK_RE, '<span class="mark">【$1】</span>');
+  // 开局 / 接招 的成语本体高亮放大
+  s = s.replace(/(<span class="mark">【开局】<\/span>)\s*([\u4e00-\u9fa5]{4})/g,
+    '$1<span class="idiom-word">$2</span>');
+  s = s.replace(/(<span class="mark">【接招】<\/span>)\s*【?\s*([\u4e00-\u9fa5]{4})\s*】?/g,
+    '$1<span class="idiom-word">$2</span>');
+  // 违规提示里的「试试这个：【XXXX】」同样放大
+  s = s.replace(/(试试这个：)\s*【\s*([\u4e00-\u9fa5]{4})\s*】/g,
+    '$1<span class="idiom-word">【$2】</span>');
+  return s;
+}
+
+function makeSystemMessage() {
+  return { role: 'system', content: SYSTEM_PROMPT };
+}
+
+// 组装请求消息：只保留最近 17 条防 token 膨胀，并确保第一条始终是 system
+function getRequestMessages() {
+  var recent = chatMessages.slice(-17);
+  if (recent.length && recent[0].role === 'system') return recent;
+  var rest = recent.filter(function (m) { return m.role !== 'system'; });
+  return [makeSystemMessage()].concat(rest.slice(0, 16));
+}
+
+function scrollToBottom() {
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function setInputEnabled(enabled) {
+  $('idiomInput').disabled = !enabled;
+  $('sendBtn').disabled = !enabled;
+}
+
+function updateStatusBar(thinking) {
+  $('roundText').textContent = '回合 ' + rounds + (thinking ? ' · 思考中…' : '');
+  var chip = $('comboChip');
+  chip.textContent = '连击 ×' + combo;
+  chip.classList.toggle('live', !!thinking || combo >= 3);
+}
+
+function updatePlaceholder() {
+  var input = $('idiomInput');
+  if (gameOver) {
+    input.placeholder = 'AI 已认输，点上方 🔄 再来一局';
+  } else if (expectedChar) {
+    input.placeholder = '输入一个以『' + expectedChar + '』开头的成语';
+  } else {
+    input.placeholder = '输入任意一个四字成语开局';
+  }
+}
+
+// ---------- 气泡渲染 ----------
+function addUserBubble(word) {
+  var row = document.createElement('div');
+  row.className = 'msg user';
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  var w = document.createElement('span');
+  w.className = 'idiom-word';
+  w.textContent = word;   // 已通过四字汉字校验，textContent 双保险
+  bubble.appendChild(w);
+  row.appendChild(bubble);
+  $('chatArea').appendChild(row);
+  scrollToBottom();
+}
+
+function addAiBubble() {
+  var row = document.createElement('div');
+  row.className = 'msg ai';
+  var bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  var textEl = document.createElement('div');
+  textEl.className = 'bubble-text';
+  var cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  cursor.textContent = '▌';
+  textEl.appendChild(cursor);
+  bubble.appendChild(textEl);
+  row.appendChild(bubble);
+  $('chatArea').appendChild(row);
+  scrollToBottom();
+  return { row: row, bubble: bubble, textEl: textEl, cursor: cursor };
+}
+
+// ---------- 流程控制 ----------
+function beginGame(mode) {
+  if (isGenerating) return;
+
+  diffName = $('diffSel').value;
+  chatMessages = [makeSystemMessage()];
+  rounds = 0;
+  combo = 0;
+  expectedChar = '';
+  gameOver = false;
+  chatLog = [];
+
+  $('chatArea').innerHTML = '';
+  $('screenSetup').style.display = 'none';
+  $('screenGame').style.display = 'block';
+  updateStatusBar(false);
+  updatePlaceholder();
+  setInputEnabled(true);
+  window.scrollTo(0, 0);
+
+  if (mode === 'ai') {
+    // ▶ AI 先出题：把难度拼进开局消息
+    chatMessages.push({ role: 'user', content: '请给我开局，难度偏好：' + diffName + '。' });
+    runRound();
+  } else {
+    // ✍️ 我先来：不开口，等玩家直接发第一个成语
+    $('idiomInput').focus();
+    showToast('你来开局：直接发一个四字成语');
+  }
+}
+
+// 推进一轮：流式渲染 AI 回复
+async function runRound() {
+  if (isGenerating) return;
+  if (!API_URL) {
+    showToast('请先在代码中配置 API_URL');
+    return;
+  }
+
+  isGenerating = true;
+  var myToken = ++genToken;
+  currentAbort = new AbortController();
+  updateStatusBar(true);
+  setInputEnabled(false);
+
+  var view = addAiBubble();
+  var fullText = '';
+
+  // 单行 SSE 数据处理
+  function handleLine(line) {
+    var trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) return false;
+    var data = trimmed.slice(5).trim();
+    if (data === '[DONE]') return true;
+    try {
+      var json = JSON.parse(data);
+      var content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+      if (content) {
+        fullText += content;
+        view.textEl.textContent = fullText;   // 流式期间纯文本展示，天然防注入
+        view.textEl.appendChild(view.cursor);
+        scrollToBottom();
+      }
+    } catch (e) { /* 忽略无法解析的行 */ }
+    return false;
+  }
+
+  try {
+    var response = await fetch(API_URL, {
+      method: 'POST',
+      headers: API_HEADER,
+      body: JSON.stringify({
+        model: GLM_MODEL,
+        messages: getRequestMessages(),
+        stream: true
+      }),
+      signal: currentAbort.signal
+    });
+    if (!response.ok) throw new Error('API请求失败');
+
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = '';
+    var doneFlag = false;
+
+    while (true) {
+      var res = await reader.read();
+      if (res.done) break;
+      buf += decoder.decode(res.value, { stream: true });
+      var lines = buf.split('\n');
+      buf = lines.pop(); // 最后一段可能是半行，留到下一块
+      for (var i = 0; i < lines.length; i++) {
+        if (handleLine(lines[i])) { doneFlag = true; break; }
+      }
+      if (doneFlag) break;
+    }
+    if (buf && !doneFlag) doneFlag = handleLine(buf);
+
+    if (!fullText.trim()) throw new Error('空回复');
+
+    view.cursor.remove();
+
+    // 本轮完成：写入多轮状态并做最终富文本渲染（escapeHtml 后替换）
+    chatMessages.push({ role: 'assistant', content: fullText });
+    view.textEl.innerHTML = formatAiText(escapeHtml(fullText));
+    addVoiceButton(view.bubble, fullText);
+
+    applyVerdict(fullText);
+    scrollToBottom();
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      view.cursor.remove();
+      return; // 用户主动重开，静默退出
+    }
+    console.error('Error:', err);
+    view.cursor.remove();
+    if (fullText) view.textEl.textContent = fullText;
+
+    var hint = document.createElement('div');
+    hint.className = 'error-hint';
+    hint.textContent = '⚠️ 本轮回复加载失败，点 ➤ 重发你的成语即可重试';
+    view.bubble.appendChild(hint);
+    showToast('请求失败，请重试');
+  } finally {
+    if (myToken === genToken) {
+      isGenerating = false;
+      currentAbort = null;
+      if (!gameOver) setInputEnabled(true);
+      updateStatusBar(false);
+      updatePlaceholder();
+      scrollToBottom();
+    }
+  }
+}
+
+// 解析 AI 本轮裁决，更新回合 / 连击 / 待接首字
+function applyVerdict(text) {
+  var m;
+  if (OPEN_RE.test(text)) {
+    // AI 开局：更新待接末字，不计回合
+    OPEN_RE.lastIndex = 0;
+    m = text.match(OPEN_RE);
+    if (m) expectedChar = m[1].charAt(3);
+    chatLog.push('AI：' + fullLineOf(text));
+  } else if (text.indexOf('【✅好棋】') !== -1) {
+    combo++;
+    rounds++;
+    m = text.match(TAKE_RE);
+    if (m) expectedChar = m[1].charAt(3);
+    chatLog.push(lastPlayerWord ? ('我方：' + lastPlayerWord) : '');
+    chatLog.push('AI：' + fullLineOf(text));
+    showToast('✅ 合规！连击 ×' + combo);
+  } else if (text.indexOf('【❌违规】') !== -1) {
+    combo = 0;   // 违规不扣分，只清空连击
+    rounds++;
+    chatLog.push(lastPlayerWord ? ('我方：' + lastPlayerWord + '（违规）') : '');
+    chatLog.push('AI：' + fullLineOf(text));
+    showToast('⚠️ 违规不计连击，按提示的成语再发一次');
+  } else {
+    chatLog.push('AI：' + fullLineOf(text));
+  }
+
+  if (text.indexOf('【认输】') !== -1) {
+    gameOver = true;
+    setInputEnabled(false);
+    showToast('🎉 AI 认输，这局你赢了！');
+  }
+  lastPlayerWord = '';
+  updateStatusBar(false);
+}
+
+function fullLineOf(text) {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+// ---------- 玩家提交 ----------
+var lastPlayerWord = '';
+
+function submitIdiom() {
+  if (isGenerating) return;
+  if (gameOver) {
+    showToast('本局已结束，点 🔄 再来一局');
+    return;
+  }
+  var input = $('idiomInput');
+  var word = input.value.trim();
+  if (!word) {
+    showToast('请先输入一个成语');
+    return;
+  }
+  if (!IDIOM_RE.test(word)) {
+    // 轻量本地预检：长度/字形不对就不打扰 AI，也不影响连击
+    showToast('请输入四个汉字组成的成语');
+    return;
+  }
+  input.value = '';
+
+  lastPlayerWord = word;
+  addUserBubble(word);
+  if (expectedChar) {
+    chatMessages.push({ role: 'user', content: '我接：' + word });
+  } else {
+    chatMessages.push({ role: 'user', content: '我先开局，我出的成语是：' + word });
+  }
+  runRound();
+}
+
+// ---------- 朗读（TTS 写法同 adventure.html）----------
+function addVoiceButton(bubble, text) {
+  var footer = document.createElement('div');
+  footer.className = 'card-footer';
+  var btn = document.createElement('button');
+  btn.className = 'voice-mini';
+  btn.textContent = '🔊 朗读本轮';
+  btn.onclick = function () { speakText(btn, text); };
+  footer.appendChild(btn);
+  bubble.appendChild(footer);
+}
+
+async function speakText(btn, text) {
+  if (!text) return;
+  var oldLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 合成中';
+
+  try {
+    var audioBlob = null;
+    for (var i = 0; i < VOICE_API_URLS.length; i++) {
+      try {
+        var response = await fetch(VOICE_API_URLS[i], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: text,
+            voice: 'zh-CN-XiaomengNeural',
+            speed: 0.95,
+            pitch: 0
+          })
+        });
+        if (response.ok) {
+          audioBlob = await response.blob();
+          break;
+        }
+      } catch (e) { continue; } // 尝试下一个备用地址
+    }
+    if (!audioBlob) throw new Error('TTS请求失败');
+
+    if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+    currentAudioUrl = URL.createObjectURL(audioBlob);
+    var audio = $('ttsAudio');
+    audio.src = currentAudioUrl;
+    audio.play();
+    showToast('🔊 正在朗读本轮');
+  } catch (err) {
+    console.error('TTS Error:', err);
+    showToast('语音生成失败');
+  }
+
+  btn.disabled = false;
+  btn.textContent = oldLabel;
+}
+
+// ---------- 保存战绩 ----------
+function saveRecord() {
+  if (!chatLog.length) {
+    showToast('还没有可保存的对局记录');
+    return;
+  }
+  if (!window.aiHistory) {
+    showToast('历史组件未加载');
+    return;
+  }
+  var summary = diffName + '｜连击' + combo + '｜回合' + rounds;
+  aiHistory.save('成语接龙', summary, chatLog.filter(Boolean).join('\n\n'), {
+    voice: 'zh-CN-XiaomengNeural',
+    speed: 0.95
+  });
+  showToast('💾 已保存「' + summary + '」');
+}
+
+// ---------- 重新开始 ----------
+function restartGame() {
+  var inProgress = isGenerating || chatMessages.length > 1;
+  if (inProgress && !confirm('确定要结束当前对局吗？')) return;
+
+  if (currentAbort) currentAbort.abort();
+  ++genToken;            // 使旧请求未完成的收尾逻辑失效
+  isGenerating = false;
+  currentAbort = null;
+  lastPlayerWord = '';
+
+  $('screenGame').style.display = 'none';
+  $('screenSetup').style.display = 'block';
+  $('backBtn').style.display = '';
+  $('chatArea').innerHTML = '';
+  chatMessages = [];
+  chatLog = [];
+  rounds = 0;
+  combo = 0;
+  expectedChar = '';
+  gameOver = false;
+  window.scrollTo(0, 0);
+}
+
+// ---------- 事件绑定 ----------
+$('btnAiFirst').onclick = function () { beginGame('ai'); };
+$('btnMeFirst').onclick = function () { beginGame('me'); };
+$('sendBtn').onclick = submitIdiom;
+$('idiomInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') submitIdiom();
+});
+
+</script>
+</body>
+</html>
