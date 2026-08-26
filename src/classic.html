@@ -293,7 +293,6 @@ async function fetchExplanation() {
           { "role": "user", "content": `请解读《${BOOK_DATA[currentBook].name}》${BOOK_DATA[currentBook].chapters[chapterNum]}` }
         ],
         "stream": true,
-        "thinking": { "type": "disabled" },
         "max_tokens": 65536,
         "temperature": 1.0
       })
