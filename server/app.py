@@ -1,11 +1,21 @@
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 import httpx
 
 app = FastAPI(title="wnzc API Proxy")
+
+# 添加 CORS 中间件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境应该限制为特定域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 从环境变量读取密钥
 AI_API_URL = os.getenv("AI_API_URL", "https://api.agnes-ai.cn/v1/chat/completions")
@@ -13,12 +23,6 @@ AI_API_KEY = os.getenv("AI_API_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "agnes-2.5-flash")
 UUHB_API_KEY = os.getenv("UUHB_API_KEY", "")
 LOTTERY_TOKEN = os.getenv("LOTTERY_TOKEN", "")
-
-ALLOWED_ORIGINS = [
-    "https://wnzc.github.io",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000"
-]
 
 class ChatRequest(BaseModel):
     messages: List[dict]
@@ -81,7 +85,7 @@ async def chat(request: ChatRequest):
             raise HTTPException(status_code=502, detail=f"上游服务错误：{str(e)}")
 
 @app.get("/uuhb/{service}")
-async def uuhb_proxy(service: str):
+async def uuhb_proxy(service: str, request: Request):
     if not UUHB_API_KEY:
         raise HTTPException(status_code=500, detail="UUHB_API_KEY not configured")
     
@@ -113,7 +117,7 @@ async def uuhb_proxy(service: str):
             raise HTTPException(status_code=502, detail=f"上游服务错误：{str(e)}")
 
 @app.get("/lottery")
-async def lottery_proxy():
+async def lottery_proxy(request: Request):
     if not LOTTERY_TOKEN:
         raise HTTPException(status_code=503, detail="LOTTERY_TOKEN not configured")
     
