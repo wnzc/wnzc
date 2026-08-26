@@ -280,6 +280,74 @@
             border: none;
             background: #000000;
         }
+        /* 分类导航 */
+        .nav-chips {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .nav-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            color: var(--text-sub);
+            border-radius: 18px;
+            padding: 7px 15px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-chip i {
+            color: var(--accent-color);
+            font-size: 12px;
+        }
+
+        .nav-chip:active {
+            transform: scale(0.95);
+            background: rgba(255, 152, 0, 0.12);
+        }
+
+        /* 分组区块 */
+        .category {
+            margin-bottom: 28px;
+            scroll-margin-top: 10px;
+        }
+
+        .category-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .category-head i {
+            color: var(--accent-color);
+            font-size: 14px;
+        }
+
+        .category-count {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--text-sub);
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1px 9px;
+            border-radius: 10px;
+        }
+
+        .category-head::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, rgba(255, 152, 0, 0.35), transparent);
+        }
     </style>
 </head>
 
@@ -318,6 +386,9 @@
             </div>
         </div>
 
+        <!-- 分类导航 -->
+        <div class="nav-chips" id="navChips"></div>
+
         <!-- 工具列表 -->
         <div class="tools-list" id="toolsList">
             <!-- 动态内容将通过JavaScript生成 -->
@@ -325,80 +396,109 @@
     </div>
 
     <script>
-        // 工具数据结构
-        const toolsData = [
-            { title: "最热新闻", desc: "全网热搜", icon: "https://newsnow.busiyi.world/icon.svg", link: "https://newsnow.busiyi.world" },
-            { title: "今日油价", desc: "全国实时油价查询", icon: "images/icon_oil.png", link: "src/oil-price.html" },
-            { title: "催眠故事", desc: "温馨童话催眠故事", icon: "fa-solid fa-bed", link: "src/hypnosis.html" },
-            { title: "教育童话", desc: "AI创作有教育意义的故事", icon: "fa-solid fa-graduation-cap", link: "src/fairytale-edu.html" },
-            { title: "儿童3D分镜", desc: "古典故事动画分镜剧本", icon: "fa-solid fa-child", link: "src/classic-kids.html" },
-            { title: "古籍解读", desc: "解读四大名著", icon: "fa-solid fa-child", link: "src/classic.html" },
-            { title: "民间故事", desc: "民间故事", icon: "fa-solid fa-child", link: "src/myth.html" },
-            { title: "催眠童话故事", desc: "催眠童话故事", icon: "fa-solid fa-child", link: "src/hypnosis.html" },
-            { title: "星座运势", desc: "星座运势", icon: "images/icon_fortune.png", link: "src/fortune.html" },
-            { title: "答案之书", desc: "答案之书", icon: "images/icon_answerbook.png", link: "src/answerbook.html" },
-            { title: "答案之书2", desc: "答案之书2", icon: "https://www.myanswersbook.com/assets/images/logo.png", link: "https://www.myanswersbook.com/zh-cn/" },
-            { title: "9个有趣小工具", desc: "9个有趣小工具", icon: "https://www.gachago.net/favicon.ico?favicon.037zapx3vjmu1.ico", link: "https://www.gachago.net/" },
-            { title: "车站大屏", desc: "火车站车次查询", icon: "images/icon_train.svg", link: "src/train-board.html" },
-            { title: "KFC文案", desc: "疯狂星期四文案", icon: "images/icon_kfc.svg", link: "src/kfc-text.html" },
-            { title: "舔狗日记", desc: "今日份的卑微", icon: "images/icon_tiangou.svg", link: "src/tiangou.html" },
-            { title: "五子棋", desc: "五子棋游戏", icon: "images/gomoku.png", link: "src/gobang-game.html" },
-            { title: "游戏合集", desc: "游戏合集", icon: "images/icon_games.png", link: "src/newGame/index.html" },
-            { title: "数独", desc: "神秘数字谜题", icon: "images/Sudoku.png", link: "src/sudoku.html" },
-            { title: "数字连线", desc: "数字连线游戏", icon: "images/numberPuzzle.svg", link: "src/NumberPuzzle.html" },
-            { title: "24点", desc: "24点计算游戏", icon: "images/24dot.svg", link: "src/24dot.html" },
-            { title: "开关灯", desc: "益智游戏-开关灯", icon: "images/lightsOut.png", link: "src/switch.html" },
-            { title: "扫雷", desc: "娱乐一下吧", icon: "images/minesweeper.png", link: "src/minesweeper.html" },
-            { title: "水压套圈", desc: "娱乐一下吧", icon: "images/icon_ringtoss.png", link: "src/RetroWaterRingToss.html" },
-            { title: "兽棋", desc: "娱乐一下吧", icon: "images/icon_animalchess.png", link: "src/AnimalChess.html" },
-            { title: "量子塔防", desc: "塔防策略游戏", icon: "fa-solid fa-chess-pawn", link: "src/tafang.html" },
-            { title: "随机选择", desc: "随机选择", icon: "images/icon_random.png", link: "src/selector.html" },
-            { title: "随机选择", desc: "随机选择", icon: "images/icon_random.png", link: "src/randomSelector.html" },
-            { title: "中国卷烟博物馆", desc: "在线香烟资料库，收录了大量国内外香烟品牌与型号信息。", icon: "https://www.ciggies.app/icon-192.png", link: "https://www.ciggies.app" },
-            { title: "全景故宫", desc: "故宫博物院VR实景项目", icon: "https://pano.dpm.org.cn/resource/favicon.ico", link: "https://pano.dpm.org.cn" },
-            { title: "故宫博物院数字文物库", desc: "高清数字影像", icon: "https://zm-digicol.dpm.org.cn/images/logo_center_v1.png", link: "https://zm-digicol.dpm.org.cn" },
-            { title: "陕西博物馆数字展厅", desc: "虚拟游览馆藏珍品", icon: "https://www.sxhm.com/favicon.ico", link: "https://www.sxhm.com/online.html" },
-            { title: "观沧海", desc: "知识地图共享平台", icon: "https://ageeye-media.oss-cn-hangzhou.aliyuncs.com/logo/ageeye-large.png", link: "https://ageeye.app.ditushu.com" },
-            { title: "煎蛋", desc: "地球上没有的新鲜事", icon: "https://jandan.net/wp-content/themes/jandan2025/images/logo2025.png", link: "https://jandan.net" },
-            { title: "FUUN", desc: "奇趣网站收藏家", icon: "https://fuun.fun/favicon-32x32.png", link: "https://fuun.fun/" },
-            { title: "中国科普博览", desc: "中国科普博览", icon: "http://www.kepu.net.cn/images/ico.jpg", link: "http://www.kepu.net.cn" },
-            { title: "全历史", desc: "用现代化方式展示历史的网站", icon: "https://m2.allhistory.com/favicon.ico", link: "https://m2.allhistory.com" },
-            { title: "TestTubeGames", desc: "多款基于真实物理、数学和生命科学原理的互动小游戏", icon: "https://www.testtubegames.com/favicon.ico", link: "https://www.testtubegames.com" },
-            { title: "CrazyGames", desc: "各类游戏合集", icon: "https://www.crazygames.com/images/logo/logo-ziggy.svg", link: "https://www.crazygames.com" },
-            { title: "wikiHow", desc: "你可以信赖的万事指南", icon: "https://zh.wikihow.com/skins/owl/images/wikihow_logo_intl.png", link: "https://zh.wikihow.com" },
-            { title: "FC在线模拟器", desc: "模拟FC游戏", icon: "https://fc.wan1234.com/favicon.ico", link: "https://fc.wan1234.com" },
-            { title: "贪吃蛇", desc: "贪吃蛇游戏", icon: "https://slither.io/s/favicon.png", link: "https://slither.io" },
-            { title: "orber", desc: "一个将数字序列和寻路结合的益智小游戏", icon: "https://slither.io/s/favicon.png", link: "https://orber.im" },
-            { title: "FamilyFunHub", desc: "趣味教育游戏平台", icon: "https://familyfunhub.com/favicon.ico", link: "https://familyfunhub.com/zh" },
-            { title: "便便计算器", desc: "了解你的如厕习惯", icon: "https://familyfunhub.com/favicon.ico", link: "https://thunderous-trifle-3dd05e.netlify.app" },
-            { title: "时钟天气", desc: "实时时钟天气", icon: "https://teojs.github.io/clock-dashboard/favicon/favicon.ico", link: "https://teojs.github.io/clock-dashboard/" },
-            { title: "穷游", desc: "很多超详细的旅游攻略", icon: "https://www.qyer.com/favicon.ico", link: "https://www.qyer.com" },
-            { title: "protobot", desc: "随机无厘头任务挑战", icon: "https://www.qyer.com/favicon.ico", link: "https://protobot.org/#zh" },
-            { title: "爱折纸", desc: "折纸大全图解", icon: "https://www.aizhezhi.com/favicon.ico", link: "https://www.aizhezhi.com/index.html" },
-            { title: "全国地铁", desc: "全国地铁可视化", icon: "https://subway.cuvii.dev/favicon.ico", link: "https://subway.cuvii.dev" },
-            { title: "免费派对游戏", desc: "免费派对游戏合集", icon: "https://subway.cuvii.dev/favicon.ico", link: "https://www.bestpartygames.net/zh" },
-            { title: "猜电影", desc: "猜电影的游戏", icon: "https://moviegame.top/favicon.ico", link: "https://moviegame.top" },
-            { title: "文字游戏", desc: "摸鱼文字游戏", icon: "http://tinywaste.maougame.com/favicon.ico", link: "http://tinywaste.maougame.com" },
-            { title: "益智小游戏", desc: "益智小游戏", icon: "https://gridspech.baublejar.com/assets/favicon-C29Vu5tQ.png", link: "https://gridspech.baublejar.com" },
-            { title: "涂色小游戏", desc: "涂色小游戏", icon: "https://www.coloringwell.com/logo.svg", link: "https://www.coloringwell.com" },
-            { title: "更多", desc: "腾讯帮小忙在线工具箱", icon: "images/icon_bangxiaomang.png", link: "https://tool.browser.qq.com" }
+        // ==================== 分类定义（调整顺序即可改变展示顺序） ====================
+        const CATEGORY_DEFS = [
+            { id: 'tool', name: '实用工具', icon: 'fa-solid fa-toolbox' },
+            { id: 'ai',   name: 'AI 智趣', icon: 'fa-solid fa-robot' },
+            { id: 'game', name: '游戏娱乐', icon: 'fa-solid fa-gamepad' },
+            { id: 'web',  name: '第三方网页', icon: 'fa-solid fa-up-right-from-square' }
         ];
 
-        // 渲染工具列表
-        function renderToolsList() {
-            const toolsContainer = document.getElementById('toolsList');
+        // 工具数据：cat -> 条目数组
+        const toolsData = {
+            // ---------- 实用工具 ----------
+            tool: [
+                { title: "今日油价", desc: "全国实时油价查询", icon: "images/icon_oil.png", link: "src/oil-price.html" },
+                // ↓ 接口失效暂时下架，恢复时取消注释即可（2026-08-25）
+                // { title: "车站大屏", desc: "火车站车次查询", icon: "images/icon_train.svg", link: "src/train-board.html" },
+                { title: "星座运势", desc: "今日运势查询", icon: "images/icon_fortune.png", link: "src/fortune.html" },
+                { title: "倒数日", desc: "重要的日子，值得倒数", icon: "fa-solid fa-calendar-days", link: "src/newTools/countdown.html" },
+                { title: "节假日助手", desc: "放假调休与倒计时", icon: "fa-solid fa-umbrella-beach", link: "src/newTools/holiday.html" },
+                { title: "单位换算", desc: "长度重量温度一键转换", icon: "fa-solid fa-right-left", link: "src/newTools/unit.html" },
+                { title: "随机选择", desc: "随机选择", icon: "images/icon_random.png", link: "src/selector.html" },
+                { title: "随机选择2", desc: "随机选择", icon: "images/icon_random.png", link: "src/randomSelector.html" }
+                // ↓ 接口失效暂时下架，恢复时取消注释即可（2026-08-25）
+                // { title: "KFC文案", desc: "疯狂星期四文案", icon: "images/icon_kfc.svg", link: "src/kfc-text.html" },
+                // { title: "舔狗日记", desc: "今日份的卑微", icon: "images/icon_tiangou.svg", link: "src/tiangou.html" }
+            ],
+            // ---------- AI 智趣 ----------
+            ai: [
+                { title: "AI文字冒险", desc: "12种题材，选项推进剧情", icon: "fa-solid fa-book-skull", link: "src/newTools/adventure.html" },
+                { title: "赛博塔罗", desc: "翻牌抽牌AI解读", icon: "fa-solid fa-hat-wizard", link: "src/newTools/tarot.html" },
+                { title: "方言翻译机", desc: "一句话翻译各地方言", icon: "fa-solid fa-language", link: "src/newTools/dialect.html" },
+                { title: "AI解梦", desc: "梦境背后的趣味解读", icon: "fa-solid fa-moon", link: "src/newTools/dream.html" },
+                { title: "AI起名", desc: "宝宝网名宠物名生成", icon: "fa-solid fa-wand-magic-sparkles", link: "src/newTools/naming.html" },
+                { title: "冰箱料理", desc: "现有食材推荐菜谱", icon: "fa-solid fa-carrot", link: "src/newTools/fridge.html" },
+                { title: "答案之书", desc: "心中有疑惑，翻一下", icon: "images/icon_answerbook.png", link: "src/answerbook.html" },
+                { title: "催眠故事", desc: "温馨童话催眠故事", icon: "fa-solid fa-bed", link: "src/hypnosis.html" },
+                { title: "教育童话", desc: "AI创作有教育意义的故事", icon: "fa-solid fa-graduation-cap", link: "src/fairytale-edu.html" },
+                { title: "儿童3D分镜", desc: "古典故事动画分镜剧本", icon: "fa-solid fa-child", link: "src/classic-kids.html" },
+                { title: "古籍解读", desc: "解读四大名著", icon: "fa-solid fa-book-open", link: "src/classic.html" },
+                { title: "民间故事", desc: "中国民间故事", icon: "fa-solid fa-fire-flame-curved", link: "src/myth.html" }
+            ],
+            // ---------- 游戏娱乐 ----------
+            game: [
+                { title: "真心话大冒险", desc: "转盘抽题聚会神器", icon: "fa-solid fa-champagne-glasses", link: "src/newTools/truth-dare.html" },
+                { title: "摇一摇骰子", desc: "手机变骰盅掷点数", icon: "fa-solid fa-dice-five", link: "src/newTools/dice.html" },
+                { title: "LED滚动字幕", desc: "全屏霓虹滚动大字", icon: "fa-solid fa-tv", link: "src/newTools/led.html" },
+                { title: "游戏合集", desc: "46个小游戏合集", icon: "images/icon_games.png", link: "src/newGame/index.html" },
+                { title: "五子棋", desc: "人机对战五子棋", icon: "images/gomoku.png", link: "src/gobang-game.html" },
+                { title: "数独", desc: "神秘数字谜题", icon: "images/Sudoku.png", link: "src/sudoku.html" },
+                { title: "扫雷", desc: "经典扫雷游戏", icon: "images/minesweeper.png", link: "src/minesweeper.html" },
+                { title: "24点", desc: "24点计算游戏", icon: "images/24dot.svg", link: "src/24dot.html" },
+                { title: "数字连线", desc: "数字连线游戏", icon: "images/numberPuzzle.svg", link: "src/NumberPuzzle.html" },
+                { title: "开关灯", desc: "益智游戏-开关灯", icon: "images/lightsOut.png", link: "src/switch.html" },
+                { title: "水压套圈", desc: "怀旧水压套圈机", icon: "images/icon_ringtoss.png", link: "src/RetroWaterRingToss.html" },
+                { title: "兽棋", desc: "经典斗兽棋", icon: "images/icon_animalchess.png", link: "src/AnimalChess.html" },
+                { title: "量子塔防", desc: "塔防策略游戏", icon: "fa-solid fa-chess-pawn", link: "src/tafang.html" },
+                { title: "CrazyGames", desc: "各类游戏合集", icon: "https://www.crazygames.com/images/logo/logo-ziggy.svg", link: "https://www.crazygames.com" },
+                { title: "TestTubeGames", desc: "物理数学科学互动小游戏", icon: "https://www.testtubegames.com/favicon.ico", link: "https://www.testtubegames.com" },
+                { title: "FC在线模拟器", desc: "模拟FC游戏", icon: "https://fc.wan1234.com/favicon.ico", link: "https://fc.wan1234.com" },
+                { title: "贪吃蛇", desc: "贪吃蛇游戏", icon: "https://slither.io/s/favicon.png", link: "https://slither.io" },
+                { title: "orber", desc: "数字序列与寻路益智游戏", icon: "https://slither.io/s/favicon.png", link: "https://orber.im" },
+                { title: "FamilyFunHub", desc: "趣味教育游戏平台", icon: "https://familyfunhub.com/favicon.ico", link: "https://familyfunhub.com/zh" },
+                { title: "免费派对游戏", desc: "免费派对游戏合集", icon: "https://subway.cuvii.dev/favicon.ico", link: "https://www.bestpartygames.net/zh" },
+                { title: "猜电影", desc: "猜电影的游戏", icon: "https://moviegame.top/favicon.ico", link: "https://moviegame.top" },
+                { title: "文字游戏", desc: "摸鱼文字游戏", icon: "http://tinywaste.maougame.com/favicon.ico", link: "http://tinywaste.maougame.com" },
+                { title: "益智小游戏", desc: "益智小游戏", icon: "https://gridspech.baublejar.com/assets/favicon-C29Vu5tQ.png", link: "https://gridspech.baublejar.com" },
+                { title: "涂色小游戏", desc: "涂色小游戏", icon: "https://www.coloringwell.com/logo.svg", link: "https://www.coloringwell.com" },
+                { title: "protobot", desc: "随机无厘头任务挑战", icon: "https://www.qyer.com/favicon.ico", link: "https://protobot.org/#zh" }
+            ],
+            // ---------- 第三方网页 ----------
+            web: [
+                { title: "最热新闻", desc: "全网热搜", icon: "https://newsnow.busiyi.world/icon.svg", link: "https://newsnow.busiyi.world" },
+                { title: "时钟天气", desc: "实时时钟天气", icon: "https://teojs.github.io/clock-dashboard/favicon/favicon.ico", link: "https://teojs.github.io/clock-dashboard/" },
+                { title: "更多", desc: "腾讯帮小忙在线工具箱", icon: "images/icon_bangxiaomang.png", link: "https://tool.browser.qq.com" },
+                { title: "9个有趣小工具", desc: "9个有趣小工具", icon: "https://www.gachago.net/favicon.ico?favicon.037zapx3vjmu1.ico", link: "https://www.gachago.net/" },
+                { title: "穷游", desc: "很多超详细的旅游攻略", icon: "https://www.qyer.com/favicon.ico", link: "https://www.qyer.com" },
+                { title: "全国地铁", desc: "全国地铁可视化", icon: "https://subway.cuvii.dev/favicon.ico", link: "https://subway.cuvii.dev" },
+                { title: "爱折纸", desc: "折纸大全图解", icon: "https://www.aizhezhi.com/favicon.ico", link: "https://www.aizhezhi.com/index.html" },
+                { title: "便便计算器", desc: "了解你的如厕习惯", icon: "https://familyfunhub.com/favicon.ico", link: "https://thunderous-trifle-3dd05e.netlify.app" },
+                { title: "全景故宫", desc: "故宫博物院VR实景项目", icon: "https://pano.dpm.org.cn/resource/favicon.ico", link: "https://pano.dpm.org.cn" },
+                { title: "故宫博物院数字文物库", desc: "高清数字影像", icon: "https://zm-digicol.dpm.org.cn/images/logo_center_v1.png", link: "https://zm-digicol.dpm.org.cn" },
+                { title: "陕西博物馆数字展厅", desc: "虚拟游览馆藏珍品", icon: "https://www.sxhm.com/favicon.ico", link: "https://www.sxhm.com/online.html" },
+                { title: "全历史", desc: "用现代化方式展示历史的网站", icon: "https://m2.allhistory.com/favicon.ico", link: "https://m2.allhistory.com" },
+                { title: "观沧海", desc: "知识地图共享平台", icon: "https://ageeye-media.oss-cn-hangzhou.aliyuncs.com/logo/ageeye-large.png", link: "https://ageeye.app.ditushu.com" },
+                { title: "中国科普博览", desc: "中国科普博览", icon: "http://www.kepu.net.cn/images/ico.jpg", link: "http://www.kepu.net.cn" },
+                { title: "wikiHow", desc: "你可以信赖的万事指南", icon: "https://zh.wikihow.com/skins/owl/images/wikihow_logo_intl.png", link: "https://zh.wikihow.com" },
+                { title: "煎蛋", desc: "地球上没有的新鲜事", icon: "https://jandan.net/wp-content/themes/jandan2025/images/logo2025.png", link: "https://jandan.net" },
+                { title: "FUUN", desc: "奇趣网站收藏家", icon: "https://fuun.fun/favicon-32x32.png", link: "https://fuun.fun/" },
+                { title: "答案之书2", desc: "在线版答案之书", icon: "https://www.myanswersbook.com/assets/images/logo.png", link: "https://www.myanswersbook.com/zh-cn/" },
+                { title: "中国卷烟博物馆", desc: "国内外香烟品牌资料库", icon: "https://www.ciggies.app/icon-192.png", link: "https://www.ciggies.app" }
+            ]
+        };
 
-            toolsData.forEach(tool => {
-                const toolElement = document.createElement('a');
-                toolElement.href = tool.link;
-                toolElement.className = 'tool-item';
+        // 构建单个工具条目
+        function buildToolItem(tool) {
+            const toolElement = document.createElement('a');
+            toolElement.href = tool.link;
+            toolElement.className = 'tool-item';
 
-                // 使用模板字符串构建HTML
-                toolElement.innerHTML = `
+            toolElement.innerHTML = `
                 <div class="item-icon">
-                    ${tool.icon.startsWith('fa-') 
-                        ? `<i class="${tool.icon}" style="font-size:28px;color:#ff9800;"></i>` 
-                        : `<img src="${tool.icon}" alt="${tool.title}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50?text=Icon';">`}
+                    ${tool.icon.startsWith('fa-')
+                        ? `<i class="${tool.icon}" style="font-size:28px;color:#ff9800;"></i>`
+                        : `<img src="${tool.icon}" alt="${tool.title}">`}
                 </div>
                 <div class="item-content">
                     <div class="item-title">${tool.title}</div>
@@ -409,8 +509,57 @@
                 </div>
             `;
 
-                toolsContainer.appendChild(toolElement);
+            // 图标加载失败时降级为通用图标（via.placeholder.com 已失效，不再使用）
+            const img = toolElement.querySelector('.item-icon img');
+            if (img) {
+                img.addEventListener('error', () => {
+                    const fallback = document.createElement('i');
+                    fallback.className = 'fas fa-image';
+                    fallback.style.cssText = 'font-size:28px;color:#ff9800;opacity:.6;';
+                    img.replaceWith(fallback);
+                });
+            }
+            return toolElement;
+        }
+
+        // 渲染分类导航
+        function renderNavChips() {
+            const nav = document.getElementById('navChips');
+            CATEGORY_DEFS.forEach(cat => {
+                if (!(toolsData[cat.id] || []).length) return;
+                const chip = document.createElement('button');
+                chip.className = 'nav-chip';
+                chip.innerHTML = `<i class="${cat.icon}"></i>${cat.name}`;
+                chip.onclick = () => {
+                    document.getElementById('cat-' + cat.id)
+                        .scrollIntoView({ behavior: 'smooth', block: 'start' });
+                };
+                nav.appendChild(chip);
             });
+        }
+
+        // 按分类渲染工具列表
+        function renderToolsList() {
+            const toolsContainer = document.getElementById('toolsList');
+
+            CATEGORY_DEFS.forEach(cat => {
+                const items = toolsData[cat.id] || [];
+                if (!items.length) return;
+
+                const section = document.createElement('div');
+                section.className = 'category';
+                section.id = 'cat-' + cat.id;
+
+                const head = document.createElement('div');
+                head.className = 'category-head';
+                head.innerHTML = `<i class="${cat.icon}"></i><span>${cat.name}</span><span class="category-count">${items.length}</span>`;
+                section.appendChild(head);
+
+                items.forEach(tool => section.appendChild(buildToolItem(tool)));
+                toolsContainer.appendChild(section);
+            });
+
+            renderNavChips();
         }
 
         // 页面加载完成后渲染列表

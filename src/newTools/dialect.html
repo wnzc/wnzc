@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>方言翻译机</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(160deg, #1e1e2e 0%, #2d2d44 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #e8e8f0;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* 顶部返回首页：低调样式 */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255, 255, 255, 0.5);
+      text-decoration: none;
+      font-size: 13px;
+      margin-bottom: 16px;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+      color: #ff9800;
+      border-color: rgba(255, 152, 0, 0.4);
+    }
+
+    .main-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 28px 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .card-header .icon {
+      font-size: 44px;
+      margin-bottom: 8px;
+    }
+
+    .card-header h1 {
+      font-size: 22px;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .card-header .subtitle {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 6px;
+    }
+
+    .dialect-input {
+      display: block;
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px;
+      color: #e8e8f0;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.7;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .dialect-input:focus {
+      border-color: rgba(255, 152, 0, 0.6);
+    }
+
+    .dialect-input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* 方言选择 chips */
+    .dialect-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .chip {
+      padding: 8px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .chip:hover {
+      border-color: rgba(255, 152, 0, 0.4);
+      color: #fff;
+    }
+
+    .chip.active {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      border-color: transparent;
+      color: #fff;
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(255, 152, 0, 0.35);
+    }
+
+    /* 快捷例句 */
+    .example-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .example-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .example-chip {
+      padding: 4px 12px;
+      border: 1px dashed rgba(255, 152, 0, 0.35);
+      border-radius: 14px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .example-chip:hover {
+      color: #ff9800;
+      border-style: solid;
+      background: rgba(255, 152, 0, 0.08);
+    }
+
+    .get-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 15px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 152, 0, 0.35);
+      transition: all 0.3s ease;
+    }
+
+    .get-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 152, 0, 0.45);
+    }
+
+    .get-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .get-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 18px;
+      min-height: 140px;
+      margin-top: 16px;
+    }
+
+    .result-text {
+      font-size: 14px;
+      line-height: 1.9;
+      color: #ddd;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .result-text .placeholder {
+      display: block;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 14px;
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    .result-text .section-title {
+      color: #ff9800;
+      font-weight: 700;
+    }
+
+    .loading-dots {
+      display: inline-block;
+    }
+
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.5s infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    /* 完成后的操作按钮 */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .action-row.hidden {
+      display: none;
+    }
+
+    .voice-btn,
+    .copy-btn {
+      flex: 1;
+      padding: 13px 8px;
+      border: 1px solid rgba(255, 152, 0, 0.5);
+      border-radius: 50px;
+      background: rgba(255, 152, 0, 0.08);
+      color: #ff9800;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .voice-btn:hover:not(:disabled),
+    .copy-btn:hover:not(:disabled) {
+      background: rgba(255, 152, 0, 0.18);
+    }
+
+    .voice-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .audio-section {
+      margin-top: 12px;
+      display: none;
+    }
+
+    .audio-section.show {
+      display: block;
+    }
+
+    .audio-section audio {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .disclaimer {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 14px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+      .main-card {
+        padding: 24px 16px;
+      }
+      .card-header h1 {
+        font-size: 19px;
+      }
+      .dialect-input {
+        min-height: 80px;
+        font-size: 14px;
+      }
+      .chip {
+        padding: 7px 13px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="../../index.html" class="back-btn">← 返回首页</a>
+
+    <div class="main-card">
+      <div class="card-header">
+        <div class="icon">🗣️</div>
+        <h1>方言翻译机</h1>
+        <div class="subtitle">普通话一句话，秒变各路家乡腔</div>
+      </div>
+
+      <textarea class="dialect-input" id="inputText" placeholder="比如：你在干啥呢，晚上一起吃饭去啊？"></textarea>
+
+      <div class="dialect-chips" id="dialectChips">
+        <button class="chip active" data-dialect="东北话" onclick="selectDialect(this)">东北话</button>
+        <button class="chip" data-dialect="四川话" onclick="selectDialect(this)">四川话</button>
+        <button class="chip" data-dialect="粤语" onclick="selectDialect(this)">粤语</button>
+        <button class="chip" data-dialect="上海话" onclick="selectDialect(this)">上海话</button>
+        <button class="chip" data-dialect="河南话" onclick="selectDialect(this)">河南话</button>
+        <button class="chip" data-dialect="天津话" onclick="selectDialect(this)">天津话</button>
+      </div>
+
+      <div class="example-row" id="exampleRow">
+        <span class="example-label">试试：</span>
+        <button class="example-chip" onclick="fillExample('吃了吗')">吃了吗</button>
+        <button class="example-chip" onclick="fillExample('干啥去')">干啥去</button>
+        <button class="example-chip" onclick="fillExample('太贵了吧')">太贵了吧</button>
+        <button class="example-chip" onclick="fillExample('你真好看')">你真好看</button>
+      </div>
+
+      <button class="get-btn" id="getBtn" onclick="translateSentence()">
+        🗣️ 开整
+      </button>
+
+      <div class="result-card">
+        <div class="result-text" id="resultText">
+          <span class="placeholder">输入一句普通话，选个方言，<br>看看它在家乡话里怎么说</span>
+        </div>
+      </div>
+
+      <div class="action-row hidden" id="actionRow">
+        <button class="voice-btn" id="voiceBtn" onclick="playDialect()">🔊 方言朗读</button>
+        <button class="copy-btn" id="copyBtn" onclick="copyDialect()">📋 复制方言版</button>
+      </div>
+
+      <div class="audio-section" id="audioSection">
+        <audio id="audioEl" controls></audio>
+      </div>
+
+      <p class="disclaimer">方言表达仅供娱乐参考，各地说法不尽相同</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../../ai-models.js"></script>
+  <script src="../ai-config.js"></script>
+  <script src="../ai-history.js"></script>
+  <script>
+    const SYSTEM_PROMPT = "你是方言大师。用户给你一句普通话和一个目标方言，你把它改写成该方言的口头表达：尽量用真实方言词汇和语气词，按普通话汉字拼写（不要造生僻字），保留原意且更接地气。输出格式严格如下：\n【方言版】改写后的句子\n【小词典】列出2-4个关键方言词的普通话对照，格式如「整啥玩意儿=干什么」\n支持方言：东北话 / 四川话 / 粤语（粤语书面语）/ 上海话 / 河南话 / 天津话。若目标方言无法准确表达则诚实说明并给最接近版本。";
+
+    const VOICE_PARAMS = { voice: 'zh-CN-XiaomengNeural', speed: 0.9 };
+
+    let currentResult = '';
+    let currentInput = '';
+    let currentDialect = '东北话';
+    let currentAudioUrl = '';
+    let completed = false;
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function selectDialect(el) {
+      const chips = document.querySelectorAll('#dialectChips .chip');
+      chips.forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      currentDialect = el.dataset.dialect;
+    }
+
+    function fillExample(text) {
+      document.getElementById('inputText').value = text;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // 流式渲染：【方言版】【小词典】标题行橙色加粗
+    function renderResult() {
+      const el = document.getElementById('resultText');
+      if (!currentResult) return;
+      const html = escapeHtml(currentResult)
+        .replace(/^【(方言版|小词典)】/gm, '<span class="section-title">【$1】</span>');
+      el.innerHTML = html;
+    }
+
+    function extractDialectText() {
+      const m = currentResult.match(/【方言版】\s*([^\n\r]+)/);
+      return m ? m[1].trim() : '';
+    }
+
+    async function translateSentence() {
+      const sentence = document.getElementById('inputText').value.trim();
+      if (!sentence) {
+        showToast('先说句普通话呗');
+        return;
+      }
+      if (!API_URL) {
+        showToast('请先在代码中配置 API_URL');
+        return;
+      }
+
+      const btn = document.getElementById('getBtn');
+      const actionRow = document.getElementById('actionRow');
+      const resultText = document.getElementById('resultText');
+      const audioSection = document.getElementById('audioSection');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ 翻译中...';
+      actionRow.classList.add('hidden');
+      audioSection.classList.remove('show');
+      resultText.innerHTML = '<span class="placeholder"><span class="loading-dots">' + currentDialect + '正在酝酿中</span></span>';
+      currentResult = '';
+      currentInput = sentence;
+      completed = false;
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: API_HEADER,
+          body: JSON.stringify({
+            model: GLM_MODEL,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: '目标方言：' + currentDialect + '\n普通话句子：' + sentence }
+            ],
+            stream: true
+          })
+        });
+
+        if (!response.ok) throw new Error('API请求失败');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                finishGeneration();
+                return;
+              }
+              try {
+                const json = JSON.parse(data);
+                const content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+                if (content) {
+                  currentResult += content;
+                  renderResult();
+                }
+              } catch (e) {}
+            }
+          }
+        }
+        // 流正常结束但未收到 [DONE]，同样收尾
+        finishGeneration();
+      } catch (error) {
+        console.error('Error:', error);
+        if (!currentResult) {
+          resultText.innerHTML = '<span class="placeholder">请求失败，请检查网络后重试</span>';
+        }
+        showToast('请求失败');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🗣️ 开整';
+      }
+    }
+
+    function finishGeneration() {
+      if (completed || !currentResult) return;
+      completed = true;
+      document.getElementById('actionRow').classList.remove('hidden');
+      showToast('✨ 翻译完成');
+      if (window.aiHistory) {
+        aiHistory.save('方言翻译机', currentInput + '→' + currentDialect, currentResult, { voice: VOICE_PARAMS.voice, speed: VOICE_PARAMS.speed });
+      }
+    }
+
+    async function playDialect() {
+      const dialectText = extractDialectText() || currentResult.replace(/【[^】]*】/g, '').trim();
+      if (!dialectText) {
+        showToast('暂无方言内容可朗读');
+        return;
+      }
+
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioEl = document.getElementById('audioEl');
+      const audioSection = document.getElementById('audioSection');
+
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 合成语音中...';
+
+      try {
+        let audioBlob = null;
+
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: dialectText,
+                voice: VOICE_PARAMS.voice,
+                speed: VOICE_PARAMS.speed,
+                pitch: 0,
+                style: 'general'
+              })
+            });
+
+            const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
+            if (response.ok && contentType.indexOf('audio/mpeg') !== -1) {
+              audioBlob = await response.blob();
+              break;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+
+        if (!audioBlob) throw new Error('TTS请求失败');
+
+        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = URL.createObjectURL(audioBlob);
+        audioEl.src = currentAudioUrl;
+        audioSection.classList.add('show');
+        audioEl.play();
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 重新朗读';
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('语音生成失败');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 方言朗读';
+      }
+    }
+
+    function copyDialect() {
+      const dialectText = extractDialectText();
+      if (!dialectText) {
+        showToast('暂无方言版可复制');
+        return;
+      }
+      navigator.clipboard.writeText(dialectText).then(() => {
+        showToast('方言版已复制');
+      }).catch(() => {
+        showToast('复制失败');
+      });
+    }
+  </script>
+</body>
+</html>

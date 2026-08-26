@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LED滚动字幕</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.6);
+            --accent-color: #ff9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 16px 40px;
+        }
+
+        body.fullscreen-mode {
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* 屏幕区 */
+        .led-screen {
+            position: relative;
+            background: #000;
+            border-radius: 14px;
+            border: 2px solid #222;
+            height: 42vh;
+            min-height: 200px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+        }
+
+        /* 点阵纹理 */
+        .led-screen::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.09) 1px, transparent 1.4px);
+            background-size: 7px 7px;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .led-track {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            white-space: nowrap;
+            will-change: transform;
+            z-index: 2;
+        }
+
+        .led-text {
+            display: inline-block;
+            font-weight: 900;
+            letter-spacing: 6px;
+            white-space: pre;
+            line-height: 1;
+        }
+
+        .paused .led-text {
+            animation-play-state: paused !important;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(var(--screen-w)); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* 全屏模式 */
+        body.fullscreen-mode .led-screen {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            border: none;
+            border-radius: 0;
+            z-index: 50;
+        }
+
+        .fs-exit-tip {
+            display: none;
+            position: fixed;
+            top: 10px;
+            right: 14px;
+            z-index: 60;
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        body.fullscreen-mode .fs-exit-tip {
+            display: block;
+        }
+
+        body.fullscreen-mode .panel,
+        body.fullscreen-mode .back-link,
+        body.fullscreen-mode .header {
+            visibility: hidden;
+        }
+
+        /* 控制面板 */
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 18px;
+        }
+
+        .field-label {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 8px;
+        }
+
+        .text-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-main);
+            padding: 12px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .text-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .color-row {
+            display: flex;
+            gap: 10px;
+            margin: 14px 0;
+        }
+
+        .color-dot {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+
+        .color-dot.active {
+            border-color: #fff;
+            transform: scale(1.12);
+        }
+
+        .speed-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .speed-row input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-color);
+        }
+
+        .btn-fs {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            padding: 13px;
+            cursor: pointer;
+            margin-top: 14px;
+        }
+
+        .btn-fs:active {
+            transform: scale(0.98);
+        }
+
+        .tip-line {
+            margin-top: 12px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a class="back-link" href="../../index.html">‹ 返回首页</a>
+
+        <div class="header">
+            <h1>💡 LED滚动字幕</h1>
+            <p>接机 · 追星 · 表白 · 酒吧卡座</p>
+        </div>
+
+        <div class="led-screen" id="ledScreen">
+            <div class="led-track" id="ledTrack"></div>
+        </div>
+        <div class="fs-exit-tip">点击屏幕退出全屏</div>
+
+        <div class="panel">
+            <div class="field-label">字幕内容</div>
+            <input type="text" class="text-input" id="textInput" maxlength="60"
+                placeholder="输入要滚动的内容…" value="让一让 我要开始装了 ✨">
+
+            <div class="field-label" style="margin-top:14px;">霓虹颜色</div>
+            <div class="color-row" id="colorRow"></div>
+
+            <div class="field-label">滚动速度</div>
+            <div class="speed-row">
+                <span style="font-size:12px;color:var(--text-sub)">慢</span>
+                <input type="range" id="speedRange" min="1" max="10" value="5">
+                <span style="font-size:12px;color:var(--text-sub)">快</span>
+            </div>
+
+            <button class="btn-fs" id="btnFs">⛶ 全屏播放</button>
+            <div class="tip-line">播放中点击屏幕可暂停/继续</div>
+        </div>
+    </div>
+
+    <script>
+        'use strict';
+        const $ = (id) => document.getElementById(id);
+
+        const COLORS = [
+            { name: '红', hex: '#ff2233' },
+            { name: '橙', hex: '#ff9900' },
+            { name: '绿', hex: '#22ee66' },
+            { name: '蓝', hex: '#33aaff' },
+            { name: '紫', hex: '#cc55ff' },
+            { name: '白', hex: '#ffffff' },
+        ];
+
+        let curColor = COLORS[0].hex;
+        let paused = false;
+
+        function buildColors() {
+            const row = $('colorRow');
+            COLORS.forEach((c, i) => {
+                const d = document.createElement('div');
+                d.className = 'color-dot' + (i === 0 ? ' active' : '');
+                d.style.background = c.hex;
+                d.title = c.name;
+                d.onclick = () => {
+                    row.querySelectorAll('.color-dot').forEach(x => x.classList.remove('active'));
+                    d.classList.add('active');
+                    curColor = c.hex;
+                    applyText(true);
+                };
+                row.appendChild(d);
+            });
+        }
+
+        // 核据文本长度与速度计算一轮时长：字越多越久，速度档位越高越快
+        function startMarquee() {
+            const track = $('ledTrack');
+            const text = $('textInput').value || '蜗牛工具箱';
+            const screenH = $('ledScreen').clientHeight;
+
+            track.innerHTML = '';
+            const span = document.createElement('span');
+            span.className = 'led-text';
+            span.textContent = text + '　　　　'; // 尾部留空形成循环间隔
+            span.style.color = curColor;
+            span.style.fontSize = Math.round(screenH * 0.42) + 'px';
+            span.style.textShadow = `
+                0 0 6px ${curColor},
+                0 0 18px ${curColor},
+                0 0 40px ${curColor}`;
+            track.appendChild(span);
+
+            const chars = [...text].length + 4;
+            const speed = parseInt($('speedRange').value, 10);           // 1~10
+            const pxPerSec = 120 + speed * 130;                          // 滚动线速度
+            const approxWidth = chars * (Math.round(screenH * 0.42) + 6); // 粗估宽度
+            const duration = Math.max(approxWidth / pxPerSec, 3);
+
+            span.style.setProperty('--screen-w', $('ledScreen').clientWidth + 'px');
+            span.style.animation = `marquee ${duration.toFixed(2)}s linear infinite`;
+            span.style.animationPlayState = paused ? 'paused' : 'running';
+        }
+
+        function applyText(keepPause) {
+            if (!keepPause) paused = false;
+            $('ledScreen').classList.toggle('paused', paused);
+            startMarquee();
+        }
+
+        // 点击屏幕：全屏时退出全屏；否则暂停/继续
+        $('ledScreen').addEventListener('click', () => {
+            if (document.body.classList.contains('fullscreen-mode')) {
+                exitFs();
+                return;
+            }
+            paused = !paused;
+            $('ledScreen').classList.toggle('paused', paused);
+        });
+
+        // 输入防抖重建
+        let typeTimer = null;
+        $('textInput').addEventListener('input', () => {
+            clearTimeout(typeTimer);
+            typeTimer = setTimeout(() => applyText(false), 350);
+        });
+        $('speedRange').addEventListener('input', () => applyText(true));
+
+        // 记住上次内容
+        try {
+            const saved = localStorage.getItem('led_last_text');
+            if (saved) $('textInput').value = saved;
+        } catch (e) { }
+        $('textInput').addEventListener('change', () => {
+            try { localStorage.setItem('led_last_text', $('textInput').value); } catch (e) { }
+        });
+
+        // 全屏（Fullscreen API，不支持时用固定遮罩模式兜底）
+        function enterFs() {
+            const el = document.documentElement;
+            paused = false;
+            document.body.classList.add('fullscreen-mode');
+            applyText(true);
+            setTimeout(() => applyText(true), 350); // 尺寸变化后按新尺寸重算
+            if (el.requestFullscreen) el.requestFullscreen().catch(() => { });
+            else if ($('ledScreen').requestFullscreen) $('ledScreen').requestFullscreen().catch(() => { });
+        }
+        function exitFs() {
+            document.body.classList.remove('fullscreen-mode');
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
+            paused = false;
+            applyText(true);
+            setTimeout(() => applyText(true), 350);
+        }
+        $('btnFs').addEventListener('click', enterFs);
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement && document.body.classList.contains('fullscreen-mode') &&
+                window.innerHeight === window.outerHeight) {
+                // 浏览器原生退出时同步状态
+            }
+            setTimeout(() => applyText(true), 300);
+        });
+
+        buildColors();
+        // 初始渲染等布局稳定后再启动
+        requestAnimationFrame(() => requestAnimationFrame(startMarquee));
+        window.addEventListener('resize', () => applyText(true));
+    </script>
+</body>
+
+</html>

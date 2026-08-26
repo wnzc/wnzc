@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>单位换算</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.6);
+            --accent-color: #ff9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 16px 40px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* 分类 Tab */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 2px;
+            margin-bottom: 18px;
+            scrollbar-width: none;
+        }
+
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            flex-shrink: 0;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            color: var(--text-sub);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.25), rgba(255, 87, 34, 0.2));
+            border-color: rgba(255, 152, 0, 0.55);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        /* 转换卡片 */
+        .convert-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .conv-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .conv-col {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .unit-select,
+        .num-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .unit-select {
+            padding: 9px 10px;
+            font-size: 14px;
+        }
+
+        .num-input {
+            padding: 13px 12px;
+            font-size: 22px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .unit-select:focus,
+        .num-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .num-input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .swap-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 12px 0;
+        }
+
+        .btn-swap {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 1px solid var(--card-border);
+            background: rgba(255, 152, 0, 0.15);
+            color: var(--accent-color);
+            font-size: 17px;
+            cursor: pointer;
+            transition: transform 0.25s, background 0.2s;
+        }
+
+        .btn-swap.spun {
+            transform: rotate(180deg);
+        }
+
+        .btn-swap:active {
+            transform: rotate(180deg) scale(0.92);
+            background: rgba(255, 152, 0, 0.3);
+        }
+
+        .hint-line {
+            margin-top: 14px;
+            font-size: 12px;
+            color: var(--text-sub);
+            text-align: center;
+            line-height: 1.6;
+            word-break: break-all;
+            min-height: 19px;
+        }
+
+        .hint-line strong {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a class="back-link" href="../../index.html">‹ 返回首页</a>
+
+        <div class="header">
+            <h1>📐 单位换算</h1>
+            <p>输入任意一侧，另一侧实时换算</p>
+        </div>
+
+        <div class="tabs" id="tabs"></div>
+
+        <div class="convert-card">
+            <div class="conv-row">
+                <div class="conv-col">
+                    <select class="unit-select" id="fromUnit"></select>
+                    <input type="text" inputmode="decimal" class="num-input" id="fromVal"
+                        placeholder="输入数值">
+                </div>
+                <div class="swap-wrap">
+                    <button class="btn-swap" id="btnSwap">⇅</button>
+                </div>
+                <div class="conv-col">
+                    <select class="unit-select" id="toUnit"></select>
+                    <input type="text" inputmode="decimal" class="num-input" id="toVal"
+                        placeholder="结果">
+                </div>
+            </div>
+            <div class="hint-line" id="hintLine"></div>
+        </div>
+    </div>
+
+    <script>
+        'use strict';
+        // ============ 单位定义：factor 为相对该类基准单位的倍率；温度用 convert 特殊处理 ============
+        const CATEGORIES = [
+            {
+                name: '长度', base: 'm',
+                units: [
+                    ['毫米 mm', 0.001], ['厘米 cm', 0.01], ['分米 dm', 0.1], ['米 m', 1],
+                    ['千米 km', 1000], ['英寸 in', 0.0254], ['英尺 ft', 0.3048],
+                    ['码 yd', 0.9144], ['英里 mi', 1609.344], ['海里 nmi', 1852], ['华里', 500]
+                ]
+            },
+            {
+                name: '重量', base: 'kg',
+                units: [
+                    ['毫克 mg', 1e-6], ['克 g', 0.001], ['千克 kg', 1], ['吨 t', 1000],
+                    ['两', 0.05], ['斤', 0.5], ['克拉 ct', 0.0002],
+                    ['盎司 oz', 0.0283495231], ['磅 lb', 0.45359237]
+                ]
+            },
+            {
+                name: '温度', base: '°C', isTemp: true,
+                units: [['摄氏度 °C', 'C'], ['华氏度 °F', 'F'], ['开尔文 K', 'K']]
+            },
+            {
+                name: '面积', base: 'm²',
+                units: [
+                    ['平方毫米 mm²', 1e-6], ['平方厘米 cm²', 1e-4], ['平方米 m²', 1],
+                    ['平方千米 km²', 1e6], ['公顷 ha', 1e4], ['亩', 2000 / 3],
+                    ['平方英尺 ft²', 0.09290304], ['英亩 acre', 4046.8564224]
+                ]
+            },
+            {
+                name: '体积', base: 'L',
+                units: [
+                    ['毫升 mL', 0.001], ['升 L', 1], ['立方米 m³', 1000],
+                    ['美制加仑 gal', 3.785411784], ['美制品脱 pt', 0.473176473],
+                    ['液量盎司 fl oz', 0.0295735296]
+                ]
+            },
+            {
+                name: '速度', base: 'm/s',
+                units: [
+                    ['米/秒 m/s', 1], ['千米/时 km/h', 1 / 3.6], ['英里/时 mph', 0.44704],
+                    ['节 kn', 0.514444444], ['英尺/秒 ft/s', 0.3048]
+                ]
+            },
+            {
+                name: '数据', base: 'MB',
+                units: [
+                    ['字节 B', 1 / 1048576], ['KB', 1 / 1024], ['MB', 1], ['GB', 1024],
+                    ['TB', 1048576], ['PB', 1073741824]
+                ]
+            }
+        ];
+
+        const $ = (id) => document.getElementById(id);
+        let catIndex = 0;
+
+        function fillTabs() {
+            $('tabs').innerHTML = '';
+            CATEGORIES.forEach((cat, i) => {
+                const b = document.createElement('button');
+                b.className = 'tab' + (i === catIndex ? ' active' : '');
+                b.textContent = cat.name;
+                b.onclick = () => { catIndex = i; fillTabs(); fillUnits(); convertFrom('from'); };
+                $('tabs').appendChild(b);
+            });
+        }
+
+        function fillUnits() {
+            const cat = CATEGORIES[catIndex];
+            for (const selId of ['fromUnit', 'toUnit']) {
+                const sel = $(selId);
+                sel.innerHTML = '';
+                cat.units.forEach(([label], i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.textContent = label;
+                    sel.appendChild(opt);
+                });
+            }
+            // 默认选第一个和第二个单位
+            $('fromUnit').selectedIndex = 0;
+            $('toUnit').selectedIndex = cat.units.length > 1 ? 1 : 0;
+        }
+
+        // 数值格式化：最多保留 8 位有效小数，去掉多余的 0
+        function fmt(n) {
+            if (!isFinite(n)) return '—';
+            if (n === 0) return '0';
+            const abs = Math.abs(n);
+            if (abs >= 1e12 || abs < 1e-9) return n.toExponential(6).replace(/\.?0+e/, 'e');
+            let s = parseFloat(n.toPrecision(10)).toString();
+            return s;
+        }
+
+        // 统一经摄氏度中转
+        const TEMP_TO_C = {
+            C: (v) => v,
+            F: (v) => (v - 32) * 5 / 9,
+            K: (v) => v - 273.15,
+        };
+        const TEMP_FROM_C = {
+            C: (c) => c,
+            F: (c) => c * 9 / 5 + 32,
+            K: (c) => c + 273.15,
+        };
+
+        function toBase(cat, unitIdx, value) {
+            if (cat.isTemp) return TEMP_TO_C[cat.units[unitIdx][1]](value);
+            return value * cat.units[unitIdx][1];
+        }
+
+        function fromBase(cat, unitIdx, baseValue) {
+            if (cat.isTemp) return TEMP_FROM_C[cat.units[unitIdx][1]](baseValue);
+            return baseValue / cat.units[unitIdx][1];
+        }
+
+        function parseNum(str) {
+            if (str === '' || str === null) return null;
+            const n = Number(str);
+            return isNaN(n) ? null : n;
+        }
+
+        // direction: 'from' 表示以左侧为源，'to' 表示以右侧为源
+        function convertFrom(direction) {
+            const cat = CATEGORIES[catIndex];
+            const srcInput = direction === 'from' ? $('fromVal') : $('toVal');
+            const dstInput = direction === 'from' ? $('toVal') : $('fromVal');
+
+            const value = parseNum(srcInput.value.replace(/，/g, '.'));
+            if (value === null) {
+                dstInput.value = '';
+                renderHint();
+                return;
+            }
+            const fi = parseInt($('fromUnit').value, 10);
+            const ti = parseInt($('toUnit').value, 10);
+            const result = fromBase(cat, ti, toBase(cat, fi, value));
+            dstInput.value = fmt(result);
+            renderHint();
+        }
+
+        function renderHint() {
+            const cat = CATEGORIES[catIndex];
+            const fi = parseInt($('fromUnit').value, 10);
+            const ti = parseInt($('toUnit').value, 10);
+            const hintEl = $('hintLine');
+            if (fi === ti) { hintEl.innerHTML = '&nbsp;'; return; }
+            // 用 1 个源单位演示换算关系
+            let ratioText;
+            if (cat.isTemp) {
+                ratioText = `1 ${cat.units[fi][0]} ⇄ ${fmt(fromBase(cat, ti, toBase(cat, fi, 1)))} ${cat.units[ti][0]}`;
+            } else {
+                ratioText = `1 ${cat.units[fi][0]} = ${fmt(fromBase(cat, ti, cat.units[fi][1]))} ${cat.units[ti][0]}`;
+            }
+            hintEl.innerHTML = `<strong>${ratioText}</strong>`;
+        }
+
+        function swap() {
+            const fSel = $('fromUnit'), tSel = $('toUnit');
+            const fv = $('fromVal').value, tv = $('toVal').value;
+            const fi = fSel.selectedIndex;
+            fSel.selectedIndex = tSel.selectedIndex;
+            tSel.selectedIndex = fi;
+            $('fromVal').value = tv;
+            $('toVal').value = fv;
+            const btn = $('btnSwap');
+            btn.classList.toggle('spun');
+            setTimeout(() => btn.classList.remove('spun'), 260);
+            renderHint();
+        }
+
+        $('btnSwap').addEventListener('click', swap);
+        $('fromUnit').addEventListener('change', () => convertFrom('from'));
+        $('toUnit').addEventListener('change', () => convertFrom('from'));
+        $('fromVal').addEventListener('input', () => convertFrom('from'));
+        $('toVal').addEventListener('input', () => convertTo());
+        function convertTo() { convertFrom('to'); }
+
+        fillTabs();
+        fillUnits();
+        renderHint();
+    </script>
+</body>
+
+</html>

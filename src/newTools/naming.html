@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI 起名 - 蜗牛工具箱</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #e8e8f0;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .back-link {
+      display: inline-block;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      font-size: 13px;
+      margin-bottom: 14px;
+      transition: color 0.2s ease;
+    }
+
+    .back-link:hover {
+      color: #ff9800;
+    }
+
+    .main-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 16px;
+      padding: 24px 20px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .card-header .icon {
+      font-size: 42px;
+    }
+
+    .card-header h1 {
+      font-size: 22px;
+      color: #fff;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .card-header .subtitle {
+      font-size: 13px;
+      color: #9a9ab0;
+      margin-top: 4px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #b8b8cc;
+      margin-bottom: 6px;
+    }
+
+    select,
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 10px;
+      color: #eee;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    select:focus,
+    input[type="text"]:focus {
+      border-color: #ff9800;
+    }
+
+    select option {
+      background: #2d2d44;
+      color: #eee;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .start-btn {
+      width: 100%;
+      margin-top: 6px;
+      padding: 15px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #ffb74d, #ff9800);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 18px rgba(255,152,0,0.35);
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 22px rgba(255,152,0,0.45);
+    }
+
+    .start-btn:active {
+      transform: translateY(0);
+    }
+
+    .start-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result-box {
+      background: rgba(0,0,0,0.28);
+      border-radius: 12px;
+      padding: 16px 14px;
+      margin-top: 18px;
+      min-height: 120px;
+    }
+
+    .result-box .placeholder {
+      color: #77788e;
+      font-size: 13px;
+      text-align: center;
+      padding: 34px 0;
+      line-height: 1.8;
+    }
+
+    .result-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 14px;
+      line-height: 1.9;
+      color: #dddde8;
+    }
+
+    .line-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 9px 8px;
+      border-bottom: 1px dashed rgba(255,255,255,0.08);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .line-item:last-child {
+      border-bottom: none;
+    }
+
+    .line-item:hover {
+      background: rgba(255,152,0,0.10);
+    }
+
+    .line-item:active {
+      background: rgba(255,152,0,0.20);
+    }
+
+    .name-line .line-index {
+      flex: none;
+      min-width: 22px;
+      height: 22px;
+      margin-top: 2px;
+      border-radius: 50%;
+      background: rgba(255,152,0,0.18);
+      color: #ffb74d;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .name-line .line-main {
+      color: #fff;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .plain-line {
+      color: #a9aabd;
+      font-size: 13px;
+      word-break: break-word;
+    }
+
+    .copy-tip {
+      flex: none;
+      margin-left: auto;
+      padding-top: 4px;
+      font-size: 11px;
+      color: #ff9800;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .line-item:hover .copy-tip {
+      opacity: 0.9;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .secondary-btn {
+      padding: 13px;
+      border: none;
+      border-radius: 50px;
+      background: rgba(255,255,255,0.10);
+      color: #eee;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .secondary-btn:hover {
+      background: rgba(255,255,255,0.18);
+    }
+
+    .secondary-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .audio-section {
+      display: none;
+      margin-top: 14px;
+    }
+
+    .audio-section.show {
+      display: block;
+    }
+
+    .audio-section audio {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+      max-width: 86vw;
+      text-align: center;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+      .main-card {
+        padding: 20px 16px;
+      }
+      .card-header h1 {
+        font-size: 19px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="../../index.html" class="back-link">← 返回首页</a>
+
+    <div class="main-card">
+      <div class="card-header">
+        <div class="icon">✨</div>
+        <h1>AI 起名</h1>
+        <div class="subtitle">选好类型和风格，一键生成 8 个好名字</div>
+      </div>
+
+      <div class="form-group">
+        <label for="typeSelect">起名类型</label>
+        <select id="typeSelect">
+          <option value="baby" selected>宝宝取名</option>
+          <option value="net">网名</option>
+          <option value="pet">宠物名</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="surnameGroup">
+        <label for="surnameInput">姓氏</label>
+        <input type="text" id="surnameInput" placeholder="例如：李" maxlength="4">
+      </div>
+
+      <div class="form-group" id="genderGroup">
+        <label for="genderSelect">性别气质</label>
+        <select id="genderSelect">
+          <option value="男孩风" selected>男孩风</option>
+          <option value="女孩风">女孩风</option>
+          <option value="中性">中性</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="styleSelect">命名风格</label>
+        <select id="styleSelect">
+          <option value="诗经楚辞" selected>诗经楚辞</option>
+          <option value="武侠古风">武侠古风</option>
+          <option value="现代简约">现代简约</option>
+          <option value="可爱萌系">可爱萌系</option>
+          <option value="大气磅礴">大气磅礴</option>
+        </select>
+      </div>
+
+      <button class="start-btn" id="startBtn" onclick="startNaming()">✨ 开始起名</button>
+
+      <div class="result-box" id="resultBox">
+        <span class="placeholder">填好左侧选项，点击「开始起名」<br>AI 将为你生成 8 个名字及寓意说明<br>生成后点击任意一行即可复制</span>
+      </div>
+
+      <div class="action-row hidden" id="actionRow">
+        <button class="secondary-btn" id="copyAllBtn" onclick="copyAll()">📋 复制全部</button>
+        <button class="secondary-btn" id="voiceBtn" onclick="generateVoice()">🔊 朗读全部</button>
+      </div>
+
+      <div class="audio-section" id="audioSection">
+        <audio id="audioEl" controls></audio>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../../ai-models.js"></script>
+  <script src="../ai-config.js"></script>
+  <script src="../ai-history.js"></script>
+  <script>
+
+    // ---------- 系统提示词 ----------
+    const SYSTEM_PROMPT = [
+      '你是精通中华命名文化的起名顾问。请根据用户的起名类型与要求，生成8个名字。严格按以下格式逐行输出：',
+      '1. 名字（拼音）',
+      '寓意：一两句解释出处或寓意；宝宝名可引用诗经、楚辞、唐诗宋词等出处；网名需顺口好记有记忆点；宠物名需可爱顺口',
+      '要求：8个名字风格在指定大方向内有变化；宝宝名只用通用规范汉字、不用生僻字、避免不良谐音；性别气质符合选择；除编号行与寓意行外不要输出任何多余内容。'
+    ].join('\n');
+
+    const SAVE_VOICE = 'zh-CN-XiaomengNeural';
+    const SAVE_SPEED = 0.9;
+
+    let currentResult = '';
+    let currentSummary = '';
+    let currentAudioUrl = '';
+    let finalized = false;
+
+    // ---------- 通用 ----------
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // ---------- 表单联动 ----------
+    function updateTypeUI() {
+      const isBaby = document.getElementById('typeSelect').value === 'baby';
+      document.getElementById('surnameGroup').classList.toggle('hidden', !isBaby);
+      document.getElementById('genderGroup').classList.toggle('hidden', !isBaby);
+      document.getElementById('surnameInput').required = isBaby;
+    }
+    document.getElementById('typeSelect').addEventListener('change', updateTypeUI);
+    updateTypeUI();
+
+    function collectParams() {
+      const type = document.getElementById('typeSelect').value;
+      const style = document.getElementById('styleSelect').value;
+
+      if (type === 'baby') {
+        const surname = document.getElementById('surnameInput').value.trim();
+        if (!surname) {
+          showToast('请先填写姓氏');
+          document.getElementById('surnameInput').focus();
+          return null;
+        }
+        const gender = document.getElementById('genderSelect').value;
+        return {
+          summary: '宝宝取名｜姓' + surname + '｜' + gender + '｜' + style,
+          user: '起名类型：宝宝取名\n姓氏：' + surname + '\n性别气质：' + gender + '\n命名风格：' + style + '\n请严格按要求生成8个名字。'
+        };
+      }
+
+      const label = type === 'net' ? '网名' : '宠物名';
+      return {
+        summary: label + '｜' + style,
+        user: '起名类型：' + label + '\n命名风格：' + style + '\n（此类型无需姓氏与性别）\n请严格按要求生成8个' + label + '。'
+      };
+    }
+
+    // ---------- 流式请求 ----------
+    async function startNaming() {
+      if (!API_URL) {
+        showToast('请先在代码中配置 API_URL');
+        return;
+      }
+
+      const params = collectParams();
+      if (!params) return;
+
+      const btn = document.getElementById('startBtn');
+      const resultBox = document.getElementById('resultBox');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ 起名中...';
+      resultBox.innerHTML = '<span class="placeholder"><span class="loading-dots">正在构思好名字</span></span>';
+      document.getElementById('actionRow').classList.add('hidden');
+      document.getElementById('audioSection').classList.remove('show');
+      currentResult = '';
+      currentSummary = params.summary;
+      finalized = false;
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: API_HEADER,
+          body: JSON.stringify({
+            model: GLM_MODEL,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: params.user }
+            ],
+            stream: true
+          })
+        });
+
+        if (!response.ok) throw new Error('API请求失败');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          let doneReceived = false;
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') {
+              doneReceived = true;
+              break;
+            }
+            try {
+              const json = JSON.parse(data);
+              const content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+              if (content) {
+                currentResult += content;
+                resultBox.innerHTML = '<div class="result-text"></div>';
+                resultBox.firstChild.textContent = currentResult;
+              }
+            } catch (e) {}
+          }
+          if (doneReceived) break;
+        }
+
+        finalizeResult();
+      } catch (error) {
+        console.error('Error:', error);
+        resultBox.innerHTML = '<span class="placeholder">请求失败，请检查接口配置后重试</span>';
+        showToast('请求失败');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = finalized ? '✨ 换一批名字' : '✨ 开始起名';
+      }
+    }
+
+    function finalizeResult() {
+      if (finalized) return;
+      finalized = true;
+
+      if (!currentResult.trim()) {
+        document.getElementById('resultBox').innerHTML = '<span class="placeholder">未获取到内容，请重试</span>';
+        showToast('未获取到内容，请重试');
+        return;
+      }
+
+      renderNameList(currentResult);
+      document.getElementById('actionRow').classList.remove('hidden');
+      showToast('起名完成，点击任意一行可复制');
+
+      if (window.aiHistory) {
+        aiHistory.save('AI起名', currentSummary, currentResult, { voice: SAVE_VOICE, speed: SAVE_SPEED });
+      }
+    }
+
+    // ---------- 结果解析为列表 ----------
+    function renderNameList(text) {
+      const resultBox = document.getElementById('resultBox');
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (!lines.length) return;
+
+      resultBox.innerHTML = '';
+      lines.forEach(line => {
+        const item = document.createElement('div');
+        item.className = 'line-item';
+
+        const matched = line.match(/^(\d+)\s*[\.、．]\s*(.+)$/);
+        if (matched) {
+          item.classList.add('name-line');
+          const index = document.createElement('span');
+          index.className = 'line-index';
+          index.textContent = matched[1];
+          const main = document.createElement('span');
+          main.className = 'line-main';
+          main.textContent = matched[2];
+          item.appendChild(index);
+          item.appendChild(main);
+        } else {
+          const body = document.createElement('span');
+          body.className = 'plain-line';
+          body.textContent = line;
+          item.appendChild(body);
+        }
+
+        const tip = document.createElement('span');
+        tip.className = 'copy-tip';
+        tip.textContent = '复制';
+        item.appendChild(tip);
+
+        item.addEventListener('click', () => copyLine(line));
+        resultBox.appendChild(item);
+      });
+    }
+
+    // ---------- 复制 ----------
+    function copyLine(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('复制成功');
+      }).catch(() => {
+        showToast('复制失败');
+      });
+    }
+
+    function copyAll() {
+      if (!currentResult.trim()) {
+        showToast('暂无内容可复制');
+        return;
+      }
+      navigator.clipboard.writeText(currentResult).then(() => {
+        showToast('复制成功');
+      }).catch(() => {
+        showToast('复制失败');
+      });
+    }
+
+    // ---------- TTS 朗读 ----------
+    async function generateVoice() {
+      if (!currentResult.trim()) {
+        showToast('暂无内容可朗读');
+        return;
+      }
+      speakText(currentResult, SAVE_VOICE, SAVE_SPEED);
+    }
+
+    function speakText(text, voice, speed) {
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioSection = document.getElementById('audioSection');
+      const audioEl = document.getElementById('audioEl');
+
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 生成中...';
+
+      (async function() {
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: text,
+                voice: voice || SAVE_VOICE,
+                speed: speed || SAVE_SPEED,
+                pitch: 0
+              })
+            });
+
+            if (response.ok) {
+              const blob = await response.blob();
+              if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+              currentAudioUrl = URL.createObjectURL(blob);
+              audioEl.src = currentAudioUrl;
+              audioSection.classList.add('show');
+              audioEl.play();
+              voiceBtn.disabled = false;
+              voiceBtn.textContent = '🔊 重新朗读';
+              return;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 朗读全部';
+        showToast('语音生成失败');
+      })();
+    }
+
+    // 历史记录页回放朗读钩子
+    window.generateVoiceFromContent = function(text, params) {
+      speakText(text, (params && params.voice) || SAVE_VOICE, (params && params.speed) || SAVE_SPEED);
+    };
+  </script>
+</body>
+</html>

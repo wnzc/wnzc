@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>倒数日</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.6);
+            --accent-color: #ff9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 16px 40px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* 添加表单 */
+        .add-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-row input[type="text"],
+        .form-row input[type="date"] {
+            flex: 1;
+            min-width: 0;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            color: var(--text-main);
+            padding: 11px 12px;
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-row input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .form-row input[type="date"] {
+            color-scheme: dark;
+        }
+
+        .repeat-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-sub);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .repeat-toggle input {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--accent-color);
+        }
+
+        .btn-add {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            padding: 12px;
+            cursor: pointer;
+            transition: transform 0.15s, opacity 0.15s;
+            margin-top: 12px;
+        }
+
+        .btn-add:active {
+            transform: scale(0.97);
+        }
+
+        /* 列表 */
+        .list-empty {
+            text-align: center;
+            color: var(--text-sub);
+            font-size: 13px;
+            padding: 50px 0;
+            display: none;
+        }
+
+        .event-card {
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 16px 18px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            overflow: hidden;
+            animation: slideIn 0.25s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .event-card.is-past {
+            opacity: 0.55;
+        }
+
+        .event-card.is-today {
+            border-color: rgba(255, 152, 0, 0.55);
+            box-shadow: 0 0 18px rgba(255, 152, 0, 0.15);
+        }
+
+        .days-box {
+            min-width: 86px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .days-num {
+            font-size: 38px;
+            font-weight: 800;
+            line-height: 1.05;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .is-past .days-num {
+            background: none;
+            -webkit-text-fill-color: var(--text-sub);
+            color: var(--text-sub);
+        }
+
+        .days-unit {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        .event-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .event-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            word-break: break-all;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tag-repeat,
+        .tag-today {
+            font-size: 10px;
+            font-weight: normal;
+            padding: 2px 7px;
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+
+        .tag-repeat {
+            background: rgba(72, 219, 251, 0.15);
+            color: #48dbfb;
+        }
+
+        .tag-today {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--accent-color);
+        }
+
+        .event-date {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .btn-del {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 71, 87, 0.12);
+            color: #ff4757;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .btn-del:active {
+            transform: scale(0.9);
+            background: rgba(255, 71, 87, 0.28);
+        }
+
+        /* toast */
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 60px;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            font-size: 13px;
+            padding: 9px 18px;
+            border-radius: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s;
+            z-index: 99;
+            max-width: 80vw;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a class="back-link" href="../../index.html">‹ 返回首页</a>
+
+        <div class="header">
+            <h1>⏳ 倒数日</h1>
+            <p>记录重要的日子，期待让时间有了方向</p>
+        </div>
+
+        <div class="add-card">
+            <div class="form-row">
+                <input type="text" id="evName" placeholder="事件名称，如：发工资、生日、旅行…" maxlength="30">
+            </div>
+            <div class="form-row">
+                <input type="date" id="evDate">
+                <label class="repeat-toggle"><input type="checkbox" id="evRepeat">每年重复</label>
+            </div>
+            <button class="btn-add" id="btnAdd">＋ 添加</button>
+        </div>
+
+        <div class="list-empty" id="listEmpty">还没有记录，添加一个重要的日子吧 🐌</div>
+        <div id="eventList"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        'use strict';
+        const STORE_KEY = 'countdown_events_v1';
+        const $ = (id) => document.getElementById(id);
+
+        function showToast(msg) {
+            const t = $('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        function loadEvents() {
+            try {
+                return JSON.parse(localStorage.getItem(STORE_KEY)) || [];
+            } catch (e) { return []; }
+        }
+
+        function saveEvents(events) {
+            localStorage.setItem(STORE_KEY, JSON.stringify(events));
+        }
+
+        // 把 Date 归一到当天零点，保证按自然日计算差值
+        function midnight(d) {
+            const m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            return m.getTime();
+        }
+
+        // 计算某事件距离今天的天数；每年重复的事件自动指向下一次周年
+        function calcDays(event) {
+            const today = new Date();
+            let target = new Date(event.date + 'T00:00:00');
+            if (isNaN(target.getTime())) return null;
+
+            if (!event.repeat) {
+                return Math.round((midnight(target) - midnight(today)) / 86400000);
+            }
+            // 每年重复：取今年的月/日；若今年已过则取明年
+            let next = new Date(today.getFullYear(), target.getMonth(), target.getDate());
+            if (midnight(next) < midnight(today)) {
+                next = new Date(today.getFullYear() + 1, target.getMonth(), target.getDate());
+            }
+            return Math.round((midnight(next) - midnight(today)) / 86400000);
+        }
+
+        function fmtDate(dateStr, repeat) {
+            const d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d.getTime())) return dateStr;
+            const week = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+            const base = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 周${week}`;
+            if (repeat) {
+                const lunarFree = `${String(d.getMonth() + 1).padStart(2, '0')}-${
+                    String(d.getDate()).padStart(2, '0')}`;
+                return base + ` · 每年 ${lunarFree}`;
+            }
+            return base;
+        }
+
+        function render() {
+            const events = loadEvents();
+            const listEl = $('eventList');
+
+            const decorated = events.map((ev, idx) => ({ ev, idx, days: calcDays(ev) }))
+                .filter((x) => x.days !== null)
+                .sort((a, b) => a.days - b.days);
+
+            $('listEmpty').style.display = decorated.length ? 'none' : 'block';
+
+            listEl.innerHTML = '';
+            decorated.forEach(({ ev, days }) => {
+                const card = document.createElement('div');
+                card.className = 'event-card' +
+                    (days === 0 ? ' is-today' : '') +
+                    (days < 0 && !ev.repeat ? ' is-past' : '');
+
+                let numText, unitText;
+                if (days === 0) {
+                    numText = '今天';
+                    unitText = ev.repeat ? '周年快乐' : '就是今天';
+                } else if (days > 0) {
+                    numText = days;
+                    unitText = '天';
+                } else {
+                    numText = -days;
+                    unitText = '天前';
+                }
+
+                const title = document.createElement('div');
+                title.className = 'event-title';
+                title.textContent = ev.name || '未命名事件';
+                if (ev.repeat) {
+                    const tagR = document.createElement('span');
+                    tagR.className = 'tag-repeat';
+                    tagR.textContent = '循环';
+                    title.appendChild(tagR);
+                }
+                if (days === 0) {
+                    const tagT = document.createElement('span');
+                    tagT.className = 'tag-today';
+                    tagT.textContent = '🎉';
+                    title.appendChild(tagT);
+                }
+
+                const info = document.createElement('div');
+                info.className = 'event-info';
+                info.appendChild(title);
+                const dateLine = document.createElement('div');
+                dateLine.className = 'event-date';
+                dateLine.textContent = fmtDate(ev.date, ev.repeat);
+                info.appendChild(dateLine);
+
+                const daysBox = document.createElement('div');
+                daysBox.className = 'days-box';
+                const numDiv = document.createElement('div');
+                numDiv.className = 'days-num';
+                numDiv.textContent = numText;
+                const unitDiv = document.createElement('div');
+                unitDiv.className = 'days-unit';
+                unitDiv.textContent = unitText;
+                daysBox.appendChild(numDiv);
+                daysBox.appendChild(unitDiv);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn-del';
+                delBtn.textContent = '✕';
+                delBtn.setAttribute('aria-label', '删除');
+                delBtn.onclick = () => removeEvent(ev.id);
+
+                card.appendChild(daysBox);
+                card.appendChild(info);
+                card.appendChild(delBtn);
+                listEl.appendChild(card);
+            });
+        }
+
+        function addEvent() {
+            const name = $('evName').value.trim();
+            const date = $('evDate').value;
+            if (!date) { showToast('请选择一个日期'); return; }
+
+            const events = loadEvents();
+            events.push({
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                name: name || null,
+                date: date,
+                repeat: $('evRepeat').checked,
+                createdAt: Date.now(),
+            });
+            saveEvents(events);
+
+            $('evName').value = '';
+            $('evDate').value = '';
+            $('evRepeat').checked = false;
+            render();
+            showToast('已添加 ✓');
+        }
+
+        function removeEvent(id) {
+            const events = loadEvents().filter((ev) => ev.id !== id);
+            saveEvents(events);
+            render();
+            showToast('已删除');
+        }
+
+        $('btnAdd').addEventListener('click', addEvent);
+        $('evName').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addEvent();
+        });
+
+        // 默认日期给到一个月后，减少点击次数
+        (function initDefaultDate() {
+            const d = new Date();
+            d.setDate(d.getDate() + 30);
+            $('evDate').value = d.toISOString().slice(0, 10);
+        })();
+
+        render();
+        // 跨天自动刷新（长时间停留在页面时）
+        setInterval(() => {
+            if (document.visibilityState === 'visible') render();
+        }, 60000);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>赛博塔罗</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+      min-height: 100vh;
+      padding: 16px;
+      color: #eceaf6;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ---------- 星点背景 ---------- */
+    #starsField {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    #starsField span {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: twinkle 3s ease-in-out infinite;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: .15; transform: scale(.8); }
+      50% { opacity: .95; transform: scale(1.2); }
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 14px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 24px 20px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(8px);
+    }
+
+    .page-header { text-align: center; margin-bottom: 20px; }
+    .page-header .icon { font-size: 46px; }
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 6px;
+      background: linear-gradient(90deg, #ffb74d, #ff9800, #ffcc80);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 4px;
+    }
+    .page-header .subtitle { font-size: 12px; color: #9a94b8; margin-top: 6px; letter-spacing: 2px; }
+
+    /* ---------- 首屏 ---------- */
+    .field-label { font-size: 13px; color: #cfcadf; margin-bottom: 8px; display: block; }
+    #questionInput {
+      width: 100%;
+      min-height: 72px;
+      resize: none;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.28);
+      color: #f0eefb;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.7;
+      outline: none;
+      transition: border-color .25s;
+    }
+    #questionInput:focus { border-color: #ff9800; }
+    #questionInput::placeholder { color: #6f6a8a; }
+
+    .divider { text-align: center; font-size: 12px; color: #7d7799; margin: 18px 0 12px; letter-spacing: 3px; }
+
+    .spread-options { display: flex; flex-direction: column; gap: 12px; }
+    .spread-btn {
+      text-align: left;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,152,0,0.35);
+      background: linear-gradient(135deg, rgba(255,152,0,0.14), rgba(255,152,0,0.04));
+      cursor: pointer;
+      transition: all .25s ease;
+      color: #fff;
+      font-family: inherit;
+    }
+    .spread-btn:hover {
+      transform: translateY(-2px);
+      border-color: #ff9800;
+      box-shadow: 0 8px 22px rgba(255,152,0,0.22);
+    }
+    .spread-btn .t { font-size: 16px; font-weight: 600; color: #ffd08a; }
+    .spread-btn .d { font-size: 12px; color: #b3adc9; margin-top: 5px; }
+
+    /* ---------- 发牌界面 ---------- */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .draw-title { text-align: center; font-size: 14px; color: #ffd08a; letter-spacing: 3px; margin-bottom: 6px; }
+
+    /* 洗牌动画区 */
+    .shuffle-zone { margin: 26px auto 8px; }
+    .sh-stack { position: relative; width: 84px; height: 126px; margin: 0 auto; }
+    .sh-card {
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      border: 1.5px solid rgba(255,152,0,0.75);
+      background:
+        radial-gradient(circle at 24% 22%, rgba(255,216,148,.8) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 76% 30%, rgba(255,216,148,.7) 0 .8px, transparent 1.4px),
+        radial-gradient(circle at 66% 76%, rgba(255,216,148,.8) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 30% 80%, rgba(255,216,148,.6) 0 .8px, transparent 1.4px),
+        linear-gradient(165deg, #33241a 0%, #20160e 100%);
+    }
+    .sh-card::before {
+      content: '';
+      position: absolute;
+      left: 50%; top: 50%;
+      width: 26px; height: 26px;
+      margin: -13px 0 0 -13px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffe0a3, #ffb74d 62%, #f59d1f);
+      box-shadow: 0 0 10px rgba(255,183,77,.8);
+    }
+    .shuffle-zone.shuffling .sh-card:nth-child(1) { animation: shuf1 .5s ease-in-out infinite alternate; }
+    .shuffle-zone.shuffling .sh-card:nth-child(2) { animation: shuf2 .5s ease-in-out infinite alternate; }
+    .shuffle-zone.shuffling .sh-card:nth-child(3) { animation: shuf3 .5s ease-in-out infinite alternate; }
+    .shuffle-zone.cutting .sh-card:nth-child(1)   { animation: cut1 .42s ease-in-out infinite alternate; }
+    .shuffle-zone.cutting .sh-card:nth-child(2)   { animation: cut2 .42s ease-in-out infinite alternate; }
+    .shuffle-zone.cutting .sh-card:nth-child(3)   { animation: cut3 .42s ease-in-out infinite alternate; }
+    @keyframes shuf1 { from { transform: translate(-16px,-8px) rotate(-11deg); } to { transform: translate(12px,6px) rotate(9deg); } }
+    @keyframes shuf2 { from { transform: translate(14px,-4px) rotate(10deg); }  to { transform: translate(-10px,8px) rotate(-8deg); } }
+    @keyframes shuf3 { from { transform: translate(-6px,6px) rotate(-5deg); }   to { transform: translate(8px,-6px) rotate(6deg); } }
+    @keyframes cut1  { from { transform: translateX(-30px) rotate(-5deg); }     to { transform: translateX(30px) rotate(5deg); } }
+    @keyframes cut2  { from { transform: translateY(-5px) scale(1.02); }        to { transform: translateY(3px) scale(1.02); } }
+    @keyframes cut3  { from { transform: translateX(28px) rotate(4deg); }       to { transform: translateX(-28px) rotate(-4deg); } }
+    #shuffleText { text-align: center; font-size: 13px; color: #b3adc9; margin-top: 16px; letter-spacing: 4px; }
+
+    /* 牌阵 */
+    .spread-area {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 16px;
+      margin: 22px 0 6px;
+      perspective: 1100px;
+      min-height: 190px;
+    }
+    .spread-area.single { min-height: 260px; }
+
+    .slot { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .slot-label { font-size: 12px; color: #ffb74d; letter-spacing: 3px; }
+
+    .tarot-card {
+      position: relative;
+      width: 108px;
+      height: 174px;
+      cursor: pointer;
+      animation: dealIn .55s cubic-bezier(.2,.7,.3,1.12) backwards;
+      transition: transform .3s ease;
+    }
+    .spread-area.single .tarot-card { width: 158px; height: 250px; }
+    .tarot-card:not(.flipped):hover { transform: translateY(-6px); }
+    @keyframes dealIn {
+      from { opacity: 0; transform: translateY(-38px) rotate(-7deg) scale(.85); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .card-inner {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      transition: transform .75s cubic-bezier(.4,.15,.2,1);
+    }
+    .tarot-card.flipped .card-inner { transform: rotateY(180deg); }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0,0,0,.5);
+    }
+
+    /* 卡背：橙色星月纹样 */
+    .face.is-back {
+      border: 1px solid rgba(255,152,0,.7);
+      background:
+        radial-gradient(circle at 22% 16%, rgba(255,216,148,.85) 0 1.1px, transparent 1.8px),
+        radial-gradient(circle at 80% 24%, rgba(255,216,148,.75) 0 .9px, transparent 1.5px),
+        radial-gradient(circle at 28% 74%, rgba(255,216,148,.7) 0 .9px, transparent 1.5px),
+        radial-gradient(circle at 72% 86%, rgba(255,216,148,.8) 0 1.1px, transparent 1.8px),
+        radial-gradient(circle at 52% 8%,  rgba(255,216,148,.5) 0 .8px, transparent 1.4px),
+        linear-gradient(165deg, #37281b 0%, #21170e 58%, #2b1e12 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .back-frame {
+      position: absolute;
+      inset: 7px;
+      border: 1px dashed rgba(255,152,0,.55);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bk-moon {
+      width: 32%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffe3ab, #ffb74d 62%, #f59d1f);
+      box-shadow: 0 0 14px rgba(255,183,77,.85);
+    }
+    .bk-star {
+      position: absolute;
+      background: #ffd894;
+      clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+      animation: starPulse 2.4s ease-in-out infinite;
+    }
+    .bk-star.s1 { width: 11%; aspect-ratio: 1; top: 13%; left: 16%; }
+    .bk-star.s2 { width: 8%;  aspect-ratio: 1; top: 68%; left: 24%; animation-delay: .7s; }
+    .bk-star.s3 { width: 9%;  aspect-ratio: 1; top: 20%; right: 14%; animation-delay: 1.4s; }
+    .bk-star.s4 { width: 7%;  aspect-ratio: 1; bottom: 14%; right: 22%; animation-delay: .3s; }
+    @keyframes starPulse {
+      0%, 100% { opacity: .3; transform: scale(.85); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    /* 牌面 */
+    .face.is-front {
+      transform: rotateY(180deg);
+      border: 1px solid rgba(255,152,0,.55);
+      background: linear-gradient(168deg, #2f2843 0%, #1d192e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .card-content {
+      width: 100%;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+    }
+    .card-content.reversed { transform: rotate(180deg); }
+    .c-emoji { font-size: 40px; line-height: 1.15; filter: drop-shadow(0 0 10px rgba(255,152,0,.35)); }
+    .c-name { font-size: 17px; font-weight: 700; color: #ffd08a; letter-spacing: 3px; }
+    .c-kw { font-size: 11px; color: #b6b0cb; line-height: 1.7; }
+    .spread-area:not(.single) .c-emoji { font-size: 31px; }
+    .spread-area:not(.single) .c-name { font-size: 13.5px; letter-spacing: 2px; }
+    .spread-area:not(.single) .c-kw { font-size: 9.5px; }
+
+    .rev-badge {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      background: #ff9800;
+      color: #1e1e2e;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9px;
+      display: none;
+      z-index: 2;
+      letter-spacing: 1px;
+    }
+    .tarot-card.reversed .rev-badge { display: block; }
+
+    /* 按钮 */
+    .btn-col { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+    .btn-row { display: flex; gap: 12px; }
+    .btn-row > button { flex: 1; }
+
+    .main-btn, .ghost-btn {
+      padding: 14px;
+      border: none;
+      border-radius: 50px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .3s ease;
+      font-family: inherit;
+    }
+    .main-btn {
+      color: #fff;
+      background: linear-gradient(135deg, #ff9800, #ff5722);
+      box-shadow: 0 4px 16px rgba(255,152,0,.35);
+    }
+    .main-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(255,152,0,.45); }
+    .main-btn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+    .ghost-btn {
+      color: #ffd08a;
+      background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,152,0,.4);
+    }
+    .ghost-btn:hover { background: rgba(255,152,0,.14); }
+    .ghost-btn:disabled { opacity: .65; cursor: not-allowed; }
+
+    .fade-in { animation: fadeIn .5s ease backwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+    /* 解读结果 */
+    .result-box {
+      background: rgba(0,0,0,.28);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 120px;
+      max-height: 340px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.95;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #ded9ee;
+    }
+    .placeholder { color: #6f6a8a; font-size: 13px; }
+    .loading-dots::after { content: ''; animation: dots 1.5s infinite; }
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    .hidden { display: none !important; }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0,0,0,0.85);
+      border: 1px solid rgba(255,152,0,.4);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all .3s ease;
+      z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    @media (max-width: 400px) {
+      .spread-area { gap: 10px; }
+      .tarot-card { width: 96px; height: 156px; }
+      .spread-area:not(.single) .c-emoji { font-size: 27px; }
+      .spread-area:not(.single) .c-kw { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="starsField"></div>
+
+  <div class="container">
+    <a href="../../index.html" class="back-btn">← 返回首页</a>
+
+    <div class="page-header">
+      <div class="icon">🔮</div>
+      <h1>赛博塔罗</h1>
+      <div class="subtitle">深夜电台 · 让星辰替你说话</div>
+    </div>
+
+    <!-- 首屏：问题 + 牌阵选择 -->
+    <div class="screen active" id="setupScreen">
+      <div class="panel">
+        <label class="field-label" for="questionInput">想问什么？（选填）</label>
+        <textarea id="questionInput" placeholder="你想问什么？感情/事业/抉择…" maxlength="200"></textarea>
+
+        <div class="divider">✦ 选择一个牌阵 ✦</div>
+
+        <div class="spread-options">
+          <button class="spread-btn" onclick="startRound('one')">
+            <div class="t">🃏 单张 · 今日指引</div>
+            <div class="d">抽一张牌，听听宇宙今天想对你说的话</div>
+          </button>
+          <button class="spread-btn" onclick="startRound('three')">
+            <div class="t">🌌 三张 · 过去现在未来</div>
+            <div class="d">时间之流牌阵，看清来路、当下与去向</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 发牌界面 -->
+    <div class="screen" id="drawScreen">
+      <div class="panel">
+        <div class="draw-title" id="drawTitle">静心默念你的问题…</div>
+
+        <!-- 洗牌 / 切牌动画 -->
+        <div class="shuffle-zone shuffling" id="shuffleZone">
+          <div class="sh-stack">
+            <div class="sh-card"></div>
+            <div class="sh-card"></div>
+            <div class="sh-card"></div>
+          </div>
+          <div id="shuffleText">正在洗牌…</div>
+        </div>
+
+        <!-- 牌阵区域 -->
+        <div class="spread-area hidden" id="spreadArea"></div>
+
+        <!-- 解读按钮 / 结果 -->
+        <div class="btn-col hidden" id="interpretWrap">
+          <button class="main-btn" id="interpretBtn" onclick="startInterpretation()">🔮 开始解读</button>
+        </div>
+
+        <div class="hidden" id="readingPanel">
+          <div class="divider">✦ 塔罗师的低语 ✦</div>
+          <div class="result-box" id="resultBox">
+            <span class="placeholder" id="resultPlaceholder">解读将在这里缓缓浮现…</span>
+          </div>
+          <div class="btn-row hidden" id="doneRow" style="margin-top:14px;">
+            <button class="ghost-btn" id="voiceBtn" onclick="playReading()">🔊 朗读</button>
+            <button class="ghost-btn" id="restartBtn" onclick="restart()">🔄 再来一局</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <audio id="audioEl" style="display:none;"></audio>
+
+  <script src="../../ai-models.js"></script>
+  <script src="../ai-config.js"></script>
+  <script src="../ai-history.js"></script>
+  <script>
+    // ===================== 数据 =====================
+    const SYSTEM_PROMPT = "你是神秘而温柔的塔罗师。用户会告诉你抽到的牌（含正位/逆位）与问题。你先逐一简述每张牌在此位置的含义，再综合给出整体解读与一条具体建议。语言风格：像深夜电台主播，安静、有画面感、偶尔引用星辰月亮意象。全程娱乐向，绝不预测死亡、疾病、赌博输赢，不作医疗或投资建议。总长300-450字。";
+
+    const VOICE_PARAMS = { voice: 'zh-CN-XiaomengNeural', speed: 0.9 };
+    const REVERSED_RATE = 0.35; // 逆位概率约 35%
+
+    const SPREADS = {
+      one:   { label: '单张·今日指引',     slots: ['今日指引'] },
+      three: { label: '三张·过去现在未来', slots: ['过去', '现在', '未来'] }
+    };
+
+    const TAROT_DECK = [
+      { name: '愚者',     emoji: '🚶', kw: ['新开始', '冒险', '未知'] },
+      { name: '魔术师',   emoji: '🎩', kw: ['创造', '行动', '潜能'] },
+      { name: '女祭司',   emoji: '🌙', kw: ['直觉', '智慧', '神秘'] },
+      { name: '皇后',     emoji: '👑', kw: ['丰饶', '滋养', '感官'] },
+      { name: '皇帝',     emoji: '🏛️', kw: ['权威', '秩序', '掌控'] },
+      { name: '教皇',     emoji: '⛪', kw: ['传统', '信仰', '指引'] },
+      { name: '恋人',     emoji: '💞', kw: ['爱情', '选择', '结合'] },
+      { name: '战车',     emoji: '🐎', kw: ['意志', '胜利', '前进'] },
+      { name: '力量',     emoji: '🦁', kw: ['勇气', '温柔', '耐心'] },
+      { name: '隐士',     emoji: '🕯️', kw: ['内省', '独处', '寻觅'] },
+      { name: '命运之轮', emoji: '🎡', kw: ['转机', '循环', '命运'] },
+      { name: '正义',     emoji: '⚖️', kw: ['公平', '因果', '平衡'] },
+      { name: '倒吊人',   emoji: '🙃', kw: ['换位', '等待', '沉淀'] },
+      { name: '死神',     emoji: '🦋', kw: ['结束', '重生', '蜕变'] },
+      { name: '节制',     emoji: '🍷', kw: ['调和', '平衡', '适度'] },
+      { name: '恶魔',     emoji: '😈', kw: ['诱惑', '束缚', '欲望'] },
+      { name: '塔',       emoji: '⚡', kw: ['突变', '崩塌', '觉醒'] },
+      { name: '星星',     emoji: '✨', kw: ['希望', '治愈', '灵感'] },
+      { name: '月亮',     emoji: '🌕', kw: ['迷惘', '梦境', '潜意识'] },
+      { name: '太阳',     emoji: '☀️', kw: ['快乐', '成功', '活力'] },
+      { name: '审判',     emoji: '📯', kw: ['觉醒', '召唤', '新生'] },
+      { name: '世界',     emoji: '🌍', kw: ['圆满', '完成', '旅程'] }
+    ];
+
+    // ===================== 状态 =====================
+    let currentSpreadKey = null;
+    let roundCards = [];        // [{ card, reversed, flipped }]
+    let currentReading = '';
+    let readingFinished = false;
+    let interpreting = false;
+    let currentAudioUrl = null;
+    let roundTimers = [];
+
+    // ===================== 工具 =====================
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function initStars() {
+      const field = document.getElementById('starsField');
+      let html = '';
+      for (let i = 0; i < 70; i++) {
+        const size = (Math.random() * 1.8 + 0.6).toFixed(1);
+        html += '<span style="left:' + (Math.random() * 100).toFixed(2) + '%;top:' + (Math.random() * 100).toFixed(2)
+          + '%;width:' + size + 'px;height:' + size + 'px;animation-duration:' + (2 + Math.random() * 3.5).toFixed(2)
+          + 's;animation-delay:' + (Math.random() * 3).toFixed(2) + 's;"></span>';
+      }
+      field.innerHTML = html;
+    }
+
+    function shuffledDeck() {
+      const d = TAROT_DECK.slice();
+      for (let i = d.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = d[i]; d[i] = d[j]; d[j] = tmp;
+      }
+      return d;
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo({ top: 0 });
+    }
+
+    // ===================== 流程 =====================
+    function startRound(key) {
+      currentSpreadKey = key;
+      const spread = SPREADS[key];
+
+      // 洗牌并抽取，同时预先决定正逆位
+      roundCards = shuffledDeck().slice(0, spread.slots.length).map(card => ({
+        card: card,
+        reversed: Math.random() < REVERSED_RATE,
+        flipped: false
+      }));
+
+      currentReading = '';
+      readingFinished = false;
+      interpreting = false;
+
+      // 重置界面元素
+      document.getElementById('spreadArea').classList.add('hidden');
+      document.getElementById('interpretWrap').classList.add('hidden');
+      document.getElementById('readingPanel').classList.add('hidden');
+      document.getElementById('doneRow').classList.add('hidden');
+      document.getElementById('resultBox').innerHTML = '<span class="placeholder" id="resultPlaceholder">解读将在这里缓缓浮现…</span>';
+      document.getElementById('interpretBtn').textContent = '🔮 开始解读';
+      document.getElementById('interpretBtn').disabled = false;
+      document.getElementById('voiceBtn').textContent = '🔊 朗读';
+
+      showScreen('drawScreen');
+
+      // 洗牌 → 切牌 → 发牌
+      const zone = document.getElementById('shuffleZone');
+      const text = document.getElementById('shuffleText');
+      zone.classList.remove('hidden', 'cutting');
+      zone.classList.add('shuffling');
+      text.textContent = '正在洗牌…';
+
+      roundTimers.push(setTimeout(() => {
+        zone.classList.remove('shuffling');
+        zone.classList.add('cutting');
+        text.textContent = '切牌中…';
+      }, 1100));
+
+      roundTimers.push(setTimeout(() => {
+        zone.classList.add('hidden');
+        dealCards();
+      }, 2100));
+    }
+
+    function dealCards() {
+      const spread = SPREADS[currentSpreadKey];
+      const area = document.getElementById('spreadArea');
+      area.classList.remove('hidden');
+      area.className = 'spread-area' + (currentSpreadKey === 'one' ? ' single' : '');
+
+      document.getElementById('drawTitle').textContent =
+        (currentSpreadKey === 'one' ? '在心里默念问题，然后点开这张牌' : '在心里默念问题，依次点开三张牌');
+
+      area.innerHTML = roundCards.map((item, i) => (
+        '<div class="slot">'
+        + '<div class="tarot-card" data-i="' + i + '" style="animation-delay:' + (i * 0.16) + 's" onclick="flipCard(' + i + ')">'
+        +   '<div class="card-inner">'
+        +     '<div class="face is-back">'
+        +       '<div class="back-frame">'
+        +         '<div class="bk-moon"></div>'
+        +         '<i class="bk-star s1"></i><i class="bk-star s2"></i><i class="bk-star s3"></i><i class="bk-star s4"></i>'
+        +       '</div>'
+        +     '</div>'
+        +     '<div class="face is-front">'
+        +       '<span class="rev-badge">逆位</span>'
+        +       '<div class="card-content' + (item.reversed ? ' reversed' : '') + '">'
+        +         '<div class="c-emoji">' + item.card.emoji + '</div>'
+        +         '<div class="c-name">' + item.card.name + '</div>'
+        +         '<div class="c-kw">' + item.card.kw.join(' · ') + '</div>'
+        +       '</div>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="slot-label">' + spread.slots[i] + '</div>'
+        + '</div>'
+      )).join('');
+    }
+
+    function flipCard(i) {
+      const item = roundCards[i];
+      if (!item || item.flipped || interpreting) return;
+      item.flipped = true;
+
+      const el = document.querySelector('.tarot-card[data-i="' + i + '"]');
+      el.classList.add('flipped');
+      if (item.reversed) el.classList.add('reversed');
+
+      if (roundCards.every(c => c.flipped)) {
+        roundTimers.push(setTimeout(() => {
+          const wrap = document.getElementById('interpretWrap');
+          wrap.classList.remove('hidden');
+          wrap.classList.add('fade-in');
+        }, 700));
+      }
+    }
+
+    // ===================== AI 解读 =====================
+    function buildUserMessage() {
+      const spread = SPREADS[currentSpreadKey];
+      const q = document.getElementById('questionInput').value.trim();
+      let msg = '问题：' + (q || '未提供具体问题，请围绕提问者当下的整体状态给出指引');
+      msg += '\n牌阵：' + spread.label;
+      roundCards.forEach((item, i) => {
+        msg += '\n' + (i + 1) + '.【' + spread.slots[i] + '】' + item.card.name
+          + '（' + (item.reversed ? '逆位' : '正位') + '）— 关键词：' + item.card.kw.join('、');
+      });
+      msg += '\n请开始解读。';
+      return msg;
+    }
+
+    async function startInterpretation() {
+      if (interpreting || readingFinished) return;
+      if (!API_URL) {
+        showToast('请先在代码中配置 API_URL');
+        return;
+      }
+      interpreting = true;
+
+      const btn = document.getElementById('interpretBtn');
+      const panel = document.getElementById('readingPanel');
+      const box = document.getElementById('resultBox');
+      btn.disabled = true;
+      btn.textContent = '⏳ 星辰排列中…';
+      panel.classList.remove('hidden');
+      box.innerHTML = '<span class="loading-dots" style="color:#9a94b8;">塔罗师正在凝视星盘</span>';
+
+      currentReading = '';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: API_HEADER,
+          body: JSON.stringify({
+            model: GLM_MODEL,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: buildUserMessage() }
+            ],
+            stream: true,
+            thinking: { type: 'disabled' }
+          })
+        });
+
+        if (!response.ok) throw new Error('API请求失败');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const res = await reader.read();
+          if (res.done) break;
+
+          buffer += decoder.decode(res.value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop(); // 留存可能被截断的半行
+
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith('data:')) continue;
+            const data = t.slice(5).trim();
+            if (data === '[DONE]') {
+              finishReading();
+              return;
+            }
+            try {
+              const json = JSON.parse(data);
+              const delta = json.choices && json.choices[0] && json.choices[0].delta;
+              const content = delta && delta.content;
+              if (content) appendReading(content);
+            } catch (e) {}
+          }
+        }
+        // 流正常结束但未收到 [DONE]，同样收尾
+        finishReading();
+      } catch (error) {
+        console.error('Error:', error);
+        if (!currentReading) {
+          box.innerHTML = '<span class="placeholder">星辰暂时被云遮住了，请求失败，请稍后重试</span>';
+        }
+        showToast('解读失败，请重试');
+        btn.disabled = false;
+        btn.textContent = '🔮 重新解读';
+      } finally {
+        interpreting = false;
+      }
+    }
+
+    function appendReading(text) {
+      const box = document.getElementById('resultBox');
+      if (document.getElementById('resultPlaceholder')) box.innerHTML = '';
+      currentReading += text;
+      box.textContent = currentReading;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function finishReading() {
+      if (readingFinished || !currentReading) return;
+      readingFinished = true;
+
+      document.getElementById('interpretWrap').classList.add('hidden');
+      document.getElementById('doneRow').classList.remove('hidden');
+      document.getElementById('doneRow').classList.add('fade-in');
+      showToast('✨ 解读完成');
+
+      if (window.aiHistory) {
+        const spread = SPREADS[currentSpreadKey];
+        const q = document.getElementById('questionInput').value.trim();
+        const cardList = roundCards.map((item, i) =>
+          spread.slots[i] + '·' + item.card.name + (item.reversed ? '(逆位)' : '(正位)')
+        ).join('、');
+        aiHistory.save('赛博塔罗', (q || '无问题') + '｜' + spread.label + '｜' + cardList, currentReading,
+          { voice: VOICE_PARAMS.voice, speed: VOICE_PARAMS.speed });
+      }
+    }
+
+    // ===================== TTS 朗读 =====================
+    async function playReading() {
+      if (!currentReading) {
+        showToast('暂无解读可播放');
+        return;
+      }
+      const voiceBtn = document.getElementById('voiceBtn');
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 合成中...';
+      showToast('⏳ 语音生成中...');
+
+      try {
+        let audioBlob = null;
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: currentReading,
+                voice: VOICE_PARAMS.voice,
+                speed: VOICE_PARAMS.speed,
+                pitch: 0
+              })
+            });
+            if (response.ok) {
+              audioBlob = await response.blob();
+              break;
+            }
+          } catch (e) { continue; }
+        }
+        if (!audioBlob) throw new Error('TTS请求失败');
+
+        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = URL.createObjectURL(audioBlob);
+        const audioEl = document.getElementById('audioEl');
+        audioEl.src = currentAudioUrl;
+        audioEl.play();
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 重新朗读';
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('语音生成失败');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 朗读';
+      }
+    }
+
+    // 供 ai-history 面板「生成音频」调用的钩子
+    window.generateVoiceFromContent = function (text, params) {
+      const voice = (params && params.voice) || VOICE_PARAMS.voice;
+      const speed = (params && params.speed) || VOICE_PARAMS.speed;
+      const audioEl = document.getElementById('audioEl');
+      if (!audioEl || !text) return;
+      (async function () {
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const res = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ input: text, voice: voice, speed: speed, pitch: 0 })
+            });
+            if (res.ok) {
+              const blob = await res.blob();
+              if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+              currentAudioUrl = URL.createObjectURL(blob);
+              audioEl.src = currentAudioUrl;
+              audioEl.play();
+              return;
+            }
+          } catch (e) { continue; }
+        }
+        showToast('语音生成失败');
+      })();
+    };
+
+    // ===================== 再来一局 =====================
+    function restart() {
+      roundTimers.forEach(clearTimeout);
+      roundTimers = [];
+      const audioEl = document.getElementById('audioEl');
+      if (audioEl) audioEl.pause();
+      if (currentAudioUrl) {
+        URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = null;
+      }
+      document.getElementById('questionInput').value = '';
+      roundCards = [];
+      currentReading = '';
+      readingFinished = false;
+      interpreting = false;
+      showScreen('setupScreen');
+    }
+
+    initStars();
+  </script>
+</body>
+</html>

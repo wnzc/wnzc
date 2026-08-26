@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>摇一摇骰子</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.6);
+            --accent-color: #ff9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 16px 40px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* 模式切换 */
+        .mode-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+
+        .mode-chip {
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            color: var(--text-sub);
+            border-radius: 20px;
+            padding: 8px 22px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-chip.active {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.25), rgba(255, 87, 34, 0.2));
+            border-color: rgba(255, 152, 0, 0.55);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        /* 骰子数量 */
+        .count-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 22px;
+        }
+
+        .count-chip {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            color: var(--text-sub);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .count-chip.active {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background: rgba(255, 152, 0, 0.14);
+        }
+
+        /* 游戏桌面 */
+        .table-felt {
+            min-height: 260px;
+            border-radius: 18px;
+            border: 1px solid var(--card-border);
+            background:
+                radial-gradient(ellipse at center, rgba(46, 125, 50, 0.28) 0%, rgba(20, 30, 25, 0.35) 78%),
+                var(--card-bg);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 24px;
+            margin-bottom: 18px;
+        }
+
+        .result-line {
+            width: 100%;
+            text-align: center;
+            font-size: 15px;
+            color: var(--accent-color);
+            font-weight: 700;
+            letter-spacing: 2px;
+            min-height: 22px;
+        }
+
+        /* 骰子 */
+        .die {
+            width: 74px;
+            height: 74px;
+            background: linear-gradient(145deg, #ffffff, #dcdcdc);
+            border-radius: 16px;
+            box-shadow: inset 0 -4px 8px rgba(0, 0, 0, 0.18), 0 6px 14px rgba(0, 0, 0, 0.45);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 10px;
+            gap: 2px;
+        }
+
+        .die.rolling {
+            animation: tumble 0.35s ease-in-out infinite;
+        }
+
+        @keyframes tumble {
+            0% { transform: rotate(0deg) translateY(0); }
+            25% { transform: rotate(-14deg) translateY(-7px); }
+            50% { transform: rotate(10deg) translateY(0); }
+            75% { transform: rotate(-8deg) translateY(-5px); }
+            100% { transform: rotate(0deg) translateY(0); }
+        }
+
+        .pip {
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 34% 30%, #555, #111);
+            place-self: center;
+            opacity: 0;
+        }
+
+        .pip.on {
+            opacity: 1;
+        }
+
+        /* 硬币 */
+        .coin {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 32% 28%, #ffe08a, #d69a1e 58%, #9c6b08);
+            box-shadow: inset 0 -6px 12px rgba(0, 0, 0, 0.3), 0 8px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            font-weight: 900;
+            color: #7a5200;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+        }
+
+        .coin.rolling {
+            animation: coinflip 0.42s ease-in-out infinite;
+        }
+
+        @keyframes coinflip {
+            0% { transform: rotateX(0) translateY(0); }
+            50% { transform: rotateX(180deg) translateY(-26px); }
+            100% { transform: rotateX(360deg) translateY(0); }
+        }
+
+        /* 底部按钮 */
+        .btn-roll {
+            display: block;
+            width: 100%;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: #fff;
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 6px;
+            padding: 16px;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(255, 87, 34, 0.35);
+            transition: transform 0.15s;
+        }
+
+        .btn-roll:active {
+            transform: scale(0.97);
+        }
+
+        .btn-roll:disabled {
+            opacity: 0.6;
+        }
+
+        .perm-tip {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a class="back-link" href="../../index.html">‹ 返回首页</a>
+
+        <div class="header">
+            <h1>🎲 摇一摇</h1>
+            <p>拿起手机摇一摇，或者点下面的按钮</p>
+        </div>
+
+        <div class="mode-row">
+            <button class="mode-chip active" id="modeDice">🎲 骰子</button>
+            <button class="mode-chip" id="modeCoin">🪙 硬币</button>
+        </div>
+
+        <div class="count-row" id="countRow"></div>
+
+        <div class="table-felt" id="felt">
+            <div class="result-line" id="resultLine"></div>
+        </div>
+
+        <button class="btn-roll" id="btnRoll">摇 一 摇</button>
+        <div class="perm-tip" id="permTip">支持体感的手机可直接摇动设备<br><span id="iosGate" style="display:none"><button class="mode-chip" id="btnPerm" style="margin-top:8px;">📱 开启体感权限</button></span></div>
+    </div>
+
+    <script>
+        'use strict';
+        const $ = (id) => document.getElementById(id);
+
+        let mode = 'dice';       // dice | coin
+        let diceCount = 2;
+        let rolling = false;
+        let rollTimer = null;
+
+        // 骰子点数 -> 3x3 网格中亮起的格位（索引 0~8）
+        const PIPS = {
+            1: [4],
+            2: [0, 8],
+            3: [0, 4, 8],
+            4: [0, 2, 6, 8],
+            5: [0, 2, 4, 6, 8],
+            6: [0, 2, 3, 5, 6, 8],
+        };
+        const rand = (n) => Math.floor(Math.random() * n);
+
+        function buildCountChips() {
+            const row = $('countRow');
+            row.innerHTML = '';
+            if (mode !== 'dice') { row.style.display = 'none'; return; }
+            row.style.display = 'flex';
+            for (let n = 1; n <= 6; n++) {
+                const b = document.createElement('button');
+                b.className = 'count-chip' + (n === diceCount ? ' active' : '');
+                b.textContent = n;
+                b.onclick = () => { diceCount = n; buildCountChips(); renderIdle(); };
+                row.appendChild(b);
+            }
+        }
+
+        // 生成一颗骰子的 DOM，value 为点数
+        function makeDie(value) {
+            const die = document.createElement('div');
+            die.className = 'die';
+            for (let i = 0; i < 9; i++) {
+                const pip = document.createElement('span');
+                pip.className = 'pip';
+                die.appendChild(pip);
+            }
+            setDieFace(die, value);
+            return die;
+        }
+
+        function setDieFace(die, v) {
+            const pips = die.children;
+            for (let i = 0; i < 9; i++) pips[i].classList.toggle('on', PIPS[v].includes(i));
+        }
+
+        // 待机状态铺上当前配置的道具
+        function renderIdle() {
+            const felt = $('felt');
+            felt.innerHTML = '';
+            const line = document.createElement('div');
+            line.className = 'result-line';
+            line.id = 'resultLine';
+            line.textContent = mode === 'dice'
+                ? `${diceCount} 颗骰子已就位`
+                : '硬币已就位';
+            felt.appendChild(line);
+
+            if (mode === 'dice') {
+                for (let i = 0; i < diceCount; i++) {
+                    felt.insertBefore(makeDie(rand(6) + 1), line);
+                }
+            } else {
+                const coin = document.createElement('div');
+                coin.className = 'coin';
+                coin.id = 'theCoin';
+                coin.textContent = '正';
+                felt.insertBefore(coin, line);
+            }
+        }
+
+        function roll() {
+            if (rolling) return;
+            rolling = true;
+            $('btnRoll').disabled = true;
+
+            if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+
+            if (mode === 'dice') rollDice();
+            else rollCoin();
+        }
+
+        function rollDice() {
+            const felt = $('felt');
+            const diceEls = [...felt.querySelectorAll('.die')];
+            const line = $('resultLine');
+            line.textContent = '旋转中…';
+
+            diceEls.forEach(d => d.classList.add('rolling'));
+            const finals = diceEls.map(() => rand(6) + 1);
+            let ticks = 0;
+
+            rollTimer = setInterval(() => {
+                diceEls.forEach(d => setDieFace(d, rand(6) + 1));
+                if (++ticks >= 9) { // 约 0.9s 后定格
+                    clearInterval(rollTimer);
+                    diceEls.forEach((d, i) => setDieFace(d, finals[i]));
+                    diceEls.forEach(d => d.classList.remove('rolling'));
+                    if (navigator.vibrate) navigator.vibrate(90);
+                    const sum = finals.reduce((a, b) => a + b, 0);
+                    line.textContent = diceEls.length > 1
+                        ? `点数 ${finals.join(' + ')} ＝ ${sum}${sum === diceEls.length * 6 ? ' · 豹！' : ''}`
+                        : `掷出 ${finals[0]} 点`;
+                    rolling = false;
+                    $('btnRoll').disabled = false;
+                }
+            }, 95);
+        }
+
+        function rollCoin() {
+            const coin = $('theCoin');
+            const line = $('resultLine');
+            line.textContent = '抛掷中…';
+            coin.classList.add('rolling');
+
+            setTimeout(() => {
+                coin.classList.remove('rolling');
+                const face = rand(2) === 0 ? '正' : '反';
+                coin.textContent = face;
+                if (navigator.vibrate) navigator.vibrate(90);
+                line.textContent = `—— ${face}面 ——`;
+                rolling = false;
+                $('btnRoll').disabled = false;
+            }, 1300);
+        }
+
+        // ---------- 体感摇一摇 ----------
+        let lx = 0, ly = 0, lz = 0, motionReady = false, lastShake = 0;
+
+        function onMotion(e) {
+            const a = e.accelerationIncludingGravity;
+            if (!a || a.x === null || rolling) return;
+            const now = Date.now();
+            if (!motionReady) return;
+            if (now - lastShake < 1200) { lx = a.x; ly = a.y; lz = a.z; return; }
+
+            const delta = Math.abs(a.x - lx) + Math.abs(a.y - ly) + Math.abs(a.z - lz);
+            lx = a.x; ly = a.y; lz = a.z;
+            if (delta > 34) {
+                lastShake = now;
+                roll();
+            }
+        }
+
+        function enableMotion() {
+            if (motionReady) return;
+            window.addEventListener('devicemotion', onMotion);
+            motionReady = true;
+        }
+
+        // iOS 12+ 需要用户手势触发权限申请
+        (function setupPermission() {
+            if (typeof DeviceMotionEvent !== 'undefined' &&
+                typeof DeviceMotionEvent.requestPermission === 'function') {
+                $('iosGate').style.display = 'inline-block';
+                $('btnPerm').addEventListener('click', () => {
+                    DeviceMotionEvent.requestPermission()
+                        .then(state => {
+                            if (state === 'granted') {
+                                enableMotion();
+                                $('permTip').innerHTML = '体感已开启 📳 摇起来！';
+                            } else {
+                                $('permTip').innerHTML = '未授权也没关系，用下面的按钮一样能玩';
+                            }
+                        })
+                        .catch(() => { });
+                });
+            } else if (typeof DeviceMotionEvent !== 'undefined') {
+                enableMotion(); // Android / 其他：直接监听
+            }
+        })();
+
+        $('btnRoll').addEventListener('click', roll);
+        $('modeDice').addEventListener('click', () => setMode('dice'));
+        $('modeCoin').addEventListener('click', () => setMode('coin'));
+
+        function setMode(m) {
+            mode = m;
+            $('modeDice').classList.toggle('active', m === 'dice');
+            $('modeCoin').classList.toggle('active', m === 'coin');
+            buildCountChips();
+            renderIdle();
+        }
+
+        buildCountChips();
+        renderIdle();
+    </script>
+</body>
+
+</html>

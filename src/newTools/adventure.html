@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AI 文字冒险</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(160deg, #1e1e2e 0%, #2d2d44 100%);
+    min-height: 100vh;
+    color: #e8e8f0;
+    padding: 16px 14px 48px;
+  }
+
+  .container {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ---------- 返回（仅题材选择首屏显示） ---------- */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 12px;
+    padding: 7px 13px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+  .back-btn:active {
+    background: rgba(255,255,255,0.16);
+  }
+
+  /* ---------- 首屏 ---------- */
+  .page-header {
+    text-align: center;
+    padding: 16px 0 24px;
+  }
+  .page-header .icon {
+    font-size: 46px;
+    margin-bottom: 8px;
+  }
+  .page-header h1 {
+    font-size: 23px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #ffffff;
+  }
+  .page-header .subtitle {
+    margin-top: 6px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.55);
+  }
+
+  .theme-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    text-align: left;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    color: #eeeeee;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    animation: fadeUp 0.4s ease both;
+  }
+  .theme-card:nth-child(1) { animation-delay: 0.02s; }
+  .theme-card:nth-child(2) { animation-delay: 0.08s; }
+  .theme-card:nth-child(3) { animation-delay: 0.14s; }
+  .theme-card:nth-child(4) { animation-delay: 0.20s; }
+  .theme-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,152,0,0.45);
+  }
+  .theme-card:active {
+    transform: scale(0.97);
+    border-color: #ff9800;
+  }
+  .t-emoji {
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+  .t-name {
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .t-desc {
+    margin-top: 3px;
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* ---------- 冒险界面 ---------- */
+  #screenGame { display: none; }
+
+  .status-bar {
+    position: sticky;
+    top: 8px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    background: rgba(30,30,46,0.88);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+  }
+  .status-info {
+    min-width: 0;
+  }
+  .status-theme {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .round-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #ffb74d;
+    border: 1px solid rgba(255,152,0,0.5);
+    border-radius: 10px;
+    vertical-align: 1px;
+  }
+  .round-badge.live {
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    50% { opacity: 0.4; }
+  }
+  .btn-restart {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #dddddd;
+    font-size: 12px;
+    padding: 7px 11px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-restart:active {
+    background: rgba(255,255,255,0.14);
+  }
+
+  /* ---------- 剧情卡片 ---------- */
+  .story-card {
+    position: relative;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+    animation: fadeUp 0.35s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .story-text {
+    font-size: 15px;
+    line-height: 1.95;
+    color: #eceaf6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .cursor {
+    display: inline-block;
+    color: #ff9800;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+  .card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  .voice-mini {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.72);
+    font-size: 11px;
+    padding: 4px 11px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .voice-mini:active {
+    background: rgba(255,255,255,0.2);
+  }
+  .voice-mini:disabled {
+    opacity: 0.6;
+  }
+  .error-hint {
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: #ff8a80;
+  }
+  .gen-hint {
+    text-align: center;
+    padding: 4px 0 2px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+  }
+
+  /* ---------- 选项按钮 ---------- */
+  .opt-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1.5px solid #ff9800;
+    color: #ffc078;
+    font-size: 14.5px;
+    line-height: 1.65;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    animation: fadeUp 0.3s ease both;
+  }
+  .opt-btn:hover {
+    background: rgba(255,152,0,0.12);
+  }
+  .opt-btn:active {
+    background: #ff9800;
+    color: #1e1e2e;
+  }
+  .opt-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .opt-btn.chosen {
+    opacity: 1;
+    background: #ff9800;
+    color: #1e1e2e;
+    font-weight: 600;
+  }
+  .opt-letter {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .fallback-btn,
+  .retry-btn {
+    justify-content: center;
+  }
+
+  /* ---------- 自创行动 ---------- */
+  .custom-row {
+    display: flex;
+    gap: 8px;
+    margin: 4px 0 14px;
+  }
+  .custom-row input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 12px;
+    padding: 11px 13px;
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .custom-row input:focus {
+    border-color: rgba(255,152,0,0.65);
+  }
+  .custom-row input::placeholder {
+    color: rgba(255,255,255,0.35);
+  }
+  .custom-row input:disabled {
+    opacity: 0.4;
+  }
+  .custom-send {
+    width: 46px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1.5px solid #ff9800;
+    color: #ff9800;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .custom-send:active {
+    background: #ff9800;
+    color: #1e1e2e;
+  }
+
+  /* ---------- 保存 ---------- */
+  .btn-save {
+    width: 100%;
+    padding: 13px;
+    background: rgba(255,255,255,0.08);
+    border: 1px dashed rgba(255,255,255,0.32);
+    color: rgba(255,255,255,0.82);
+    font-size: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-save:active {
+    background: rgba(255,255,255,0.16);
+  }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+    max-width: 86vw;
+    text-align: center;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <a href="../../index.html" class="back-btn" id="backBtn">← 返回工具箱</a>
+
+    <!-- 首屏：题材选择 -->
+    <div id="screenSelect">
+      <div class="page-header">
+        <div class="icon">🗺️</div>
+        <h1>AI 文字冒险</h1>
+        <div class="subtitle">选择一个题材，故事由你亲手推进</div>
+      </div>
+      <div id="themeList"></div>
+    </div>
+
+    <!-- 冒险界面 -->
+    <div id="screenGame">
+      <div class="status-bar">
+        <div class="status-info">
+          <span class="status-theme" id="themeName"></span><span class="round-badge" id="roundBadge">第 1 回合</span>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-restart" onclick="restartAdventure()" style="background:none;border:1px solid var(--card-border);color:var(--text-sub);box-shadow:none;">⬅ 返回</button>
+          <button class="btn-restart" onclick="restartAdventure()">🔄 新的冒险</button>
+        </div>
+      </div>
+
+      <div id="storyArea"></div>
+      <div id="optionArea"></div>
+
+      <div class="custom-row">
+        <input type="text" id="customInput" placeholder="✏️ 或输入自创行动，改写命运…" maxlength="120">
+        <button class="custom-send" id="customSend" title="发送">➤</button>
+      </div>
+
+      <button class="btn-save" onclick="saveStory()">💾 结束并保存</button>
+    </div>
+  </div>
+
+  <audio id="ttsAudio"></audio>
+  <div class="toast" id="toast"></div>
+
+<script src="../../ai-models.js"></script>
+<script src="../ai-config.js"></script>
+<script src="../ai-history.js"></script>
+<script>
+
+// ============================================================
+//  AI 文字冒险：多轮流式剧情 + A/B/C 选项循环
+// ============================================================
+
+// ---------- 常量区 ----------
+var SYSTEM_PROMPT = [
+  '你是一位顶级文字冒险游戏主持人。玩家选择了题材后，你用第二人称「你」叙述剧情。规则：',
+  '1. 每轮推进200-350字的剧情，有画面感、有悬念，允许出现挫折与意外转折；',
+  '2. 剧情结尾必须给出恰好三个行动选项，每个选项单独一行，格式严格为：',
+  'A. 选项内容',
+  'B. 选项内容',
+  'C. 选项内容',
+  '3. 除以上格式外不要输出任何多余说明、不要询问玩家意见；',
+  '4. 内容安全：可以有紧张刺激情节，但不描写血腥细节、不涉黄、不引导现实危险行为；',
+  '5. 玩家可能输入自创行动而非选项，把它合理编织进剧情即可。'
+].join('\n');
+
+// 选项提取正则：行首 A/B/C + 中西文句点/顿号 + 内容
+var OPTION_RE = /^([ABC])[\.、．]\s*(.+)$/gm;
+
+var THEMES = [
+  { emoji: '😆', name: '沙雕日常',   desc: '离谱展开，全程高能爆笑' },
+  { emoji: '🍜', name: '美食小镇',   desc: '用一道菜留住整条街的人心' },
+  { emoji: '🏫', name: '青春校园',   desc: '课桌、暗恋和一场运动会' },
+  { emoji: '🐱', name: '猫咪物语',   desc: '一觉醒来，你变成了一只猫' },
+  { emoji: '🪄', name: '魔法学院',   desc: '新生入学，隐藏天赋觉醒' },
+  { emoji: '⚔️', name: '武侠江湖',   desc: '刀光剑影，恩怨情仇' },
+  { emoji: '👑', name: '宫廷风云',   desc: '步步为营，宫墙内的生存法则' },
+  { emoji: '💼', name: '职场逆袭',   desc: '小职员的大翻身剧本' },
+  { emoji: '🚀', name: '星际漫游',   desc: '登上飞船，去没人到过的地方' },
+  { emoji: '🕵️', name: '民国探案',   desc: '十里洋场，谜案重重' },
+  { emoji: '⛰️', name: '仙侠修真',   desc: '逆天改命的登仙路' },
+  { emoji: '🐙', name: '克苏鲁怪谈', desc: '理智与未知的较量（高能预警）' }
+];
+
+// ---------- 状态 ----------
+var storyMessages = [];   // 多轮对话状态：[{role, content}]，首位恒为 system
+var currentTheme = null;
+var finishedRounds = 0;   // 已完成的回合数
+var activeRound = 0;      // 当前进行中的回合序号
+var isGenerating = false;
+var currentAbort = null;  // 当前流式请求的 AbortController
+var genToken = 0;         // 代际标记：重置后使旧轮次的收尾逻辑失效
+var storyLog = [];        // 每轮完整剧情文本（用于保存）
+var currentAudioUrl = '';
+
+// ---------- 工具 ----------
+function showToast(msg) {
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(function () { toast.classList.remove('show'); }, 2000);
+}
+
+function makeSystemMessage() {
+  return { role: 'system', content: SYSTEM_PROMPT };
+}
+
+// 组装请求消息：只保留最近 17 条防 token 膨胀，并确保第一条始终是 system
+function getRequestMessages() {
+  var recent = storyMessages.slice(-17);
+  if (recent.length && recent[0].role === 'system') return recent;
+  var rest = recent.filter(function (m) { return m.role !== 'system'; });
+  return [makeSystemMessage()].concat(rest.slice(0, 16));
+}
+
+function scrollToBottom() {
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function $(id) { return document.getElementById(id); }
+
+// ---------- 首屏渲染 ----------
+(function renderThemes() {
+  var list = $('themeList');
+  THEMES.forEach(function (t, i) {
+    var card = document.createElement('button');
+    card.className = 'theme-card';
+
+    var emoji = document.createElement('div');
+    emoji.className = 't-emoji';
+    emoji.textContent = t.emoji;
+
+    var info = document.createElement('div');
+    var name = document.createElement('div');
+    name.className = 't-name';
+    name.textContent = t.name;
+    var desc = document.createElement('div');
+    desc.className = 't-desc';
+    desc.textContent = t.desc;
+    info.appendChild(name);
+    info.appendChild(desc);
+
+    card.appendChild(emoji);
+    card.appendChild(info);
+    card.onclick = function () { selectTheme(i); };
+    list.appendChild(card);
+  });
+})();
+
+// ---------- 流程控制 ----------
+function selectTheme(idx) {
+  if (isGenerating) return;
+  currentTheme = THEMES[idx];
+
+  // 首轮：system + 开局指令
+  storyMessages = [
+    makeSystemMessage(),
+    { role: 'user', content: '题材：' + currentTheme.name + '。请开始故事。' }
+  ];
+  finishedRounds = 0;
+  activeRound = 0;
+  storyLog = [];
+
+  $('screenSelect').style.display = 'none';
+  $('backBtn').style.display = 'none';   // 进入冒险后隐藏返回链接，避免误触
+  $('screenGame').style.display = 'block';
+  $('themeName').textContent = currentTheme.emoji + ' ' + currentTheme.name;
+  $('storyArea').innerHTML = '';
+  $('optionArea').innerHTML = '';
+
+  runRound();
+}
+
+function updateRoundBadge(live) {
+  var badge = $('roundBadge');
+  badge.textContent = live ? ('第 ' + activeRound + ' 回合 · 推进中') : ('第 ' + activeRound + ' 回合');
+  badge.classList.toggle('live', !!live);
+}
+
+// 推进一轮回合：流式渲染新卡片
+async function runRound() {
+  if (isGenerating) return;
+  if (!API_URL) {
+    showToast('请先在代码中配置 API_URL');
+    return;
+  }
+
+  isGenerating = true;
+  var myToken = ++genToken;
+  // 为本轮新建中断控制器（修复：此前从未创建导致 currentAbort.signal 报 null）
+  currentAbort = new AbortController();
+  activeRound = finishedRounds + 1;
+  updateRoundBadge(true);
+  setInputEnabled(false);
+
+  // 新段落卡片 + 闪烁光标
+  var area = $('storyArea');
+  var card = document.createElement('div');
+  card.className = 'story-card';
+  var textEl = document.createElement('div');
+  textEl.className = 'story-text';
+  var cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  cursor.textContent = '▌';
+  textEl.appendChild(cursor);
+  card.appendChild(textEl);
+  area.appendChild(card);
+  scrollToBottom();
+
+  $('optionArea').innerHTML = '<div class="gen-hint">⏳ 命运正在展开…</div>';
+
+  var fullText = '';
+
+  // 单行 SSE 数据处理
+  function handleLine(line) {
+    var trimmed = line.trim();
+    if (!trimmed.startsWith('data:')) return;
+    var data = trimmed.slice(5).trim();
+    if (data === '[DONE]') return true;
+    try {
+      var json = JSON.parse(data);
+      var content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+      if (content) {
+        fullText += content;
+        textEl.textContent = fullText;
+        textEl.appendChild(cursor);
+        scrollToBottom();
+      }
+    } catch (e) { /* 忽略无法解析的行 */ }
+    return false;
+  }
+
+  try {
+    var response = await fetch(API_URL, {
+      method: 'POST',
+      headers: API_HEADER,
+      body: JSON.stringify({
+        model: GLM_MODEL,
+        messages: getRequestMessages(),
+        stream: true
+      }),
+      signal: currentAbort.signal
+    });
+    if (!response.ok) throw new Error('API请求失败');
+
+    var reader = response.body.getReader();
+    var decoder = new TextDecoder();
+    var buf = '';
+    var doneFlag = false;
+
+    while (true) {
+      var res = await reader.read();
+      if (res.done) break;
+      buf += decoder.decode(res.value, { stream: true });
+      var lines = buf.split('\n');
+      buf = lines.pop(); // 最后一段可能是半行，留到下一块
+      for (var i = 0; i < lines.length; i++) {
+        if (handleLine(lines[i])) { doneFlag = true; break; }
+      }
+      if (doneFlag) break;
+    }
+    if (buf && !doneFlag) doneFlag = handleLine(buf);
+
+    if (!fullText.trim()) throw new Error('空回复');
+
+    cursor.remove();
+
+    // 本轮完成：写入对话状态
+    storyMessages.push({ role: 'assistant', content: fullText });
+    finishedRounds++;
+    storyLog.push(fullText);
+    updateRoundBadge(false);
+    renderOptions(fullText, card);
+    showToast('第 ' + finishedRounds + ' 回合完成');
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      cursor.remove();
+      return; // 用户主动重置，静默退出
+    }
+    console.error('Error:', err);
+    cursor.remove();
+    if (fullText) textEl.textContent = fullText;
+
+    var hint = document.createElement('div');
+    hint.className = 'error-hint';
+    hint.textContent = '⚠️ 本段剧情加载失败';
+    card.appendChild(hint);
+
+    var optArea = $('optionArea');
+    optArea.innerHTML = '';
+    var retry = document.createElement('button');
+    retry.className = 'opt-btn retry-btn';
+    retry.textContent = '🔄 重试本段';
+    retry.onclick = function () {
+      optArea.innerHTML = '';
+      runRound(); // assistant 未入列，原样重发即可
+    };
+    optArea.appendChild(retry);
+    showToast('请求失败，请重试');
+  } finally {
+    if (myToken === genToken) {
+      isGenerating = false;
+      currentAbort = null;
+      setInputEnabled(true);
+      scrollToBottom();
+    }
+  }
+}
+
+function setInputEnabled(enabled) {
+  $('customInput').disabled = !enabled;
+  $('customSend').disabled = !enabled;
+}
+
+// ---------- 选项渲染与选择 ----------
+function renderOptions(text, card) {
+  // 提取 A/B/C 三个选项
+  var map = {};
+  var m;
+  OPTION_RE.lastIndex = 0;
+  while ((m = OPTION_RE.exec(text)) !== null) {
+    var letter = m[1];
+    if (!map[letter]) map[letter] = m[2].trim();
+  }
+  var opts = ['A', 'B', 'C']
+    .map(function (l) { return { letter: l, text: map[l] }; })
+    .filter(function (o) { return !!o.text; });
+
+  // 已完成段落的朗读小按钮（卡片右下角）
+  addVoiceButton(card, text);
+
+  var area = $('optionArea');
+  area.innerHTML = '';
+
+  if (opts.length === 3) {
+    opts.forEach(function (o) {
+      var btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      var letterEl = document.createElement('span');
+      letterEl.className = 'opt-letter';
+      letterEl.textContent = o.letter;
+      btn.appendChild(letterEl);
+      btn.appendChild(document.createTextNode(o.text));
+      btn.onclick = function () { chooseOption(btn, o.letter, o.text); };
+      area.appendChild(btn);
+    });
+  } else {
+    // AI 偶发不守规矩：单个兜底按钮
+    var fb = document.createElement('button');
+    fb.className = 'opt-btn fallback-btn';
+    fb.textContent = '▶ 继续前进';
+    fb.onclick = function () { chooseFallback(fb); };
+    area.appendChild(fb);
+  }
+  scrollToBottom();
+}
+
+function chooseOption(btn, letter, text) {
+  var area = $('optionArea');
+  Array.prototype.forEach.call(area.children, function (b) {
+    b.disabled = true;
+    b.classList.remove('chosen');
+  });
+  btn.classList.add('chosen'); // 已选高亮标记
+  storyMessages.push({ role: 'user', content: '我选择：' + letter + '. ' + text });
+  setTimeout(runRound, 300);
+}
+
+function chooseFallback(btn) {
+  btn.disabled = true;
+  storyMessages.push({ role: 'user', content: '继续' });
+  setTimeout(runRound, 200);
+}
+
+// ---------- 自创行动 ----------
+function sendCustomAction() {
+  if (isGenerating) return;
+  var input = $('customInput');
+  var val = input.value.trim();
+  if (!val) {
+    showToast('请先输入你的行动');
+    return;
+  }
+  input.value = '';
+  storyMessages.push({ role: 'user', content: val });
+  runRound();
+}
+
+// ---------- 朗读（TTS 写法同 hypnosis.html）----------
+function addVoiceButton(card, text) {
+  var footer = document.createElement('div');
+  footer.className = 'card-footer';
+  var btn = document.createElement('button');
+  btn.className = 'voice-mini';
+  btn.textContent = '🔊 朗读本段';
+  btn.onclick = function () { speakText(btn, text); };
+  footer.appendChild(btn);
+  card.appendChild(footer);
+}
+
+async function speakText(btn, text) {
+  if (!text) return;
+  var oldLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 合成中';
+
+  try {
+    var audioBlob = null;
+    for (var i = 0; i < VOICE_API_URLS.length; i++) {
+      try {
+        var response = await fetch(VOICE_API_URLS[i], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: text,
+            voice: 'zh-CN-XiaomengNeural',
+            speed: 0.9,
+            pitch: 0
+          })
+        });
+        if (response.ok) {
+          audioBlob = await response.blob();
+          break;
+        }
+      } catch (e) { continue; } // 尝试下一个备用地址
+    }
+    if (!audioBlob) throw new Error('TTS请求失败');
+
+    if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+    currentAudioUrl = URL.createObjectURL(audioBlob);
+    var audio = $('ttsAudio');
+    audio.src = currentAudioUrl;
+    audio.play();
+    showToast('🔊 正在朗读本段');
+  } catch (err) {
+    console.error('TTS Error:', err);
+    showToast('语音生成失败');
+  }
+
+  btn.disabled = false;
+  btn.textContent = oldLabel;
+}
+
+// ---------- 保存 ----------
+function saveStory() {
+  if (!finishedRounds) {
+    showToast('还没有可保存的剧情');
+    return;
+  }
+  if (!window.aiHistory) {
+    showToast('历史组件未加载');
+    return;
+  }
+  var summary = currentTheme.name + '｜共' + finishedRounds + '回合';
+  aiHistory.save('AI文字冒险', summary, storyLog.join('\n\n'), {
+    voice: 'zh-CN-XiaomengNeural',
+    speed: 0.9
+  });
+  showToast('💾 已保存「' + summary + '」');
+}
+
+// ---------- 新的冒险 ----------
+function restartAdventure() {
+  var inProgress = isGenerating || finishedRounds > 0;
+  if (inProgress && !confirm('确定要结束当前冒险，重新选择题材吗？')) return;
+
+  if (currentAbort) currentAbort.abort();
+  ++genToken;            // 使旧轮次未完成的收尾逻辑失效
+  isGenerating = false;
+  currentAbort = null;
+
+  $('screenGame').style.display = 'none';
+  $('screenSelect').style.display = 'block';
+  $('backBtn').style.display = '';       // 仅首屏恢复返回链接
+  $('storyArea').innerHTML = '';
+  $('optionArea').innerHTML = '';
+  storyMessages = [];
+  storyLog = [];
+  finishedRounds = 0;
+  currentTheme = null;
+  window.scrollTo(0, 0);
+}
+
+// ---------- 事件绑定 ----------
+$('customSend').onclick = sendCustomAction;
+$('customInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') sendCustomAction();
+});
+
+</script>
+</body>
+</html>

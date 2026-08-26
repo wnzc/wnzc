@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI 解梦</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(160deg, #1e1e2e 0%, #2d2d44 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #e8e8f0;
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* 顶部返回首页：低调样式 */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255, 255, 255, 0.5);
+      text-decoration: none;
+      font-size: 13px;
+      margin-bottom: 16px;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .back-btn:hover {
+      color: #ff9800;
+      border-color: rgba(255, 152, 0, 0.4);
+    }
+
+    .main-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 28px 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .card-header .icon {
+      font-size: 44px;
+      margin-bottom: 8px;
+    }
+
+    .card-header h1 {
+      font-size: 22px;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .card-header .subtitle {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 6px;
+    }
+
+    .dream-input {
+      display: block;
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px;
+      color: #e8e8f0;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.7;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .dream-input:focus {
+      border-color: rgba(255, 152, 0, 0.6);
+    }
+
+    .dream-input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .get-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 15px;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 152, 0, 0.35);
+      transition: all 0.3s ease;
+    }
+
+    .get-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 152, 0, 0.45);
+    }
+
+    .get-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .get-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 18px;
+      min-height: 140px;
+      margin-top: 16px;
+    }
+
+    .result-text {
+      font-size: 14px;
+      line-height: 1.9;
+      color: #ddd;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .result-text .placeholder {
+      display: block;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 14px;
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    .loading-dots {
+      display: inline-block;
+    }
+
+    .loading-dots::after {
+      content: '';
+      animation: dots 1.5s infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    .voice-btn {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid rgba(255, 152, 0, 0.5);
+      border-radius: 50px;
+      background: rgba(255, 152, 0, 0.08);
+      color: #ff9800;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .voice-btn:hover:not(:disabled) {
+      background: rgba(255, 152, 0, 0.18);
+    }
+
+    .voice-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .voice-btn.hidden {
+      display: none;
+    }
+
+    .audio-section {
+      margin-top: 12px;
+      display: none;
+    }
+
+    .audio-section.show {
+      display: block;
+    }
+
+    .audio-section audio {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .disclaimer {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 14px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(0, 0, 0, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+      .main-card {
+        padding: 24px 16px;
+      }
+      .card-header h1 {
+        font-size: 19px;
+      }
+      .dream-input {
+        min-height: 110px;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="../../index.html" class="back-btn">← 返回首页</a>
+
+    <div class="main-card">
+      <div class="card-header">
+        <div class="icon">🌙</div>
+        <h1>AI 解梦</h1>
+        <div class="subtitle">梦见的事物，藏着你没察觉的心事</div>
+      </div>
+
+      <textarea class="dream-input" id="dreamInput" placeholder="描述你的梦……比如：梦见自己在飞，但总是飞不高"></textarea>
+
+      <button class="get-btn" id="getBtn" onclick="interpretDream()">
+        🔮 开始解梦
+      </button>
+
+      <div class="result-card">
+        <div class="result-text" id="resultText">
+          <span class="placeholder">把梦讲给我听，<br>看看你的潜意识在说什么</span>
+        </div>
+      </div>
+
+      <button class="voice-btn hidden" id="voiceBtn" onclick="playInterpretation()">
+        🔊 播放解读
+      </button>
+
+      <div class="audio-section" id="audioSection">
+        <audio id="audioEl" controls></audio>
+      </div>
+
+      <p class="disclaimer">解读仅供娱乐参考</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="../../ai-models.js"></script>
+  <script src="../ai-config.js"></script>
+  <script src="../ai-history.js"></script>
+  <script>
+    const SYSTEM_PROMPT = "你是一位温和幽默、见多识广的解梦师。用户会描述一个梦，请用中文按以下固定格式输出四个部分：\n【梦境回放】用一两句温柔的话复述梦的核心画面与氛围\n【象征解读】逐一分点分析梦中主要意象的常见象征含义，可通俗地引用弗洛伊德、荣格等心理学常识，保持有趣\n【情绪洞察】指出这个梦可能折射的现实状态、压力或期待\n【一句建议】给一句温暖具体的小建议\n要求：全文娱乐向；不断言吉凶祸福、不做迷信恐吓、不做医疗诊断；语气亲切自然；总长300-500字。";
+
+    const VOICE_PARAMS = { voice: 'zh-CN-XiaomengNeural', speed: 0.9 };
+
+    let currentResult = '';
+    let currentDream = '';
+    let currentAudioUrl = '';
+    let completed = false;
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    async function interpretDream() {
+      const dream = document.getElementById('dreamInput').value.trim();
+      if (!dream) {
+        showToast('请先描述你的梦');
+        return;
+      }
+      if (!API_URL) {
+        showToast('请先在代码中配置 API_URL');
+        return;
+      }
+
+      const btn = document.getElementById('getBtn');
+      const voiceBtn = document.getElementById('voiceBtn');
+      const resultText = document.getElementById('resultText');
+      const audioSection = document.getElementById('audioSection');
+
+      btn.disabled = true;
+      btn.textContent = '⏳ 解读中...';
+      voiceBtn.classList.add('hidden');
+      audioSection.classList.remove('show');
+      resultText.innerHTML = '<span class="placeholder"><span class="loading-dots">正在解析你的梦境</span></span>';
+      currentResult = '';
+      currentDream = dream;
+      completed = false;
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: API_HEADER,
+          body: JSON.stringify({
+            model: GLM_MODEL,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: dream }
+            ],
+            stream: true
+          })
+        });
+
+        if (!response.ok) throw new Error('API请求失败');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') {
+                finishGeneration();
+                return;
+              }
+              try {
+                const json = JSON.parse(data);
+                const content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+                if (content) {
+                  currentResult += content;
+                  resultText.textContent = currentResult;
+                }
+              } catch (e) {}
+            }
+          }
+        }
+        // 流正常结束但未收到 [DONE]，同样收尾
+        finishGeneration();
+      } catch (error) {
+        console.error('Error:', error);
+        if (!currentResult) {
+          resultText.innerHTML = '<span class="placeholder">请求失败，请检查网络后重试</span>';
+        }
+        showToast('请求失败');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔮 开始解梦';
+      }
+    }
+
+    function finishGeneration() {
+      if (completed || !currentResult) return;
+      completed = true;
+      document.getElementById('voiceBtn').classList.remove('hidden');
+      showToast('✨ 解读完成');
+      if (window.aiHistory) {
+        aiHistory.save('AI解梦', currentDream, currentResult, { voice: VOICE_PARAMS.voice, speed: VOICE_PARAMS.speed });
+      }
+    }
+
+    async function playInterpretation() {
+      if (!currentResult) {
+        showToast('暂无解读可播放');
+        return;
+      }
+
+      const voiceBtn = document.getElementById('voiceBtn');
+      const audioEl = document.getElementById('audioEl');
+      const audioSection = document.getElementById('audioSection');
+
+      voiceBtn.disabled = true;
+      voiceBtn.textContent = '⏳ 合成语音中...';
+
+      try {
+        let audioBlob = null;
+
+        for (const apiUrl of VOICE_API_URLS) {
+          try {
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: currentResult,
+                voice: VOICE_PARAMS.voice,
+                speed: VOICE_PARAMS.speed,
+                pitch: 0,
+                style: 'general'
+              })
+            });
+
+            const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
+            if (response.ok && contentType.indexOf('audio/mpeg') !== -1) {
+              audioBlob = await response.blob();
+              break;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+
+        if (!audioBlob) throw new Error('TTS请求失败');
+
+        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+        currentAudioUrl = URL.createObjectURL(audioBlob);
+        audioEl.src = currentAudioUrl;
+        audioSection.classList.add('show');
+        audioEl.play();
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 重新播放';
+      } catch (error) {
+        console.error('Error:', error);
+        showToast('语音生成失败');
+        voiceBtn.disabled = false;
+        voiceBtn.textContent = '🔊 播放解读';
+      }
+    }
+  </script>
+</body>
+</html>

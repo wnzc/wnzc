@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>真心话大冒险</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.6);
+            --accent-color: #ff9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 16px 40px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* 模式选择 */
+        .mode-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .mode-chip {
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            color: var(--text-sub);
+            border-radius: 20px;
+            padding: 8px 18px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-chip.active {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.25), rgba(255, 87, 34, 0.2));
+            border-color: rgba(255, 152, 0, 0.55);
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        /* 转盘 */
+        .wheel-zone {
+            position: relative;
+            width: min(78vw, 340px);
+            height: min(78vw, 340px);
+            margin: 0 auto 30px;
+        }
+
+        /* 指针 */
+        .pointer {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 26px solid var(--accent-color);
+            filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+            z-index: 10;
+        }
+
+        .pointer::after {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: -9px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+        }
+
+        .wheel {
+            position: absolute;
+            inset: 14px;
+            border-radius: 50%;
+            /* 不用半透明 border：它会透出渐变边缘的扇区颜色，外圈形成一圈杂色环；
+               改用不透明深色包边（box-shadow spread），效果一致且无渗色 */
+            box-shadow:
+                0 0 0 7px #262638,
+                0 0 0 10px rgba(255, 152, 0, 0.25),
+                0 12px 34px rgba(0, 0, 0, 0.55),
+                inset 0 0 40px rgba(0, 0, 0, 0.35);
+            transition: transform 4s cubic-bezier(0.15, 0.85, 0.25, 1);
+            will-change: transform;
+        }
+
+        .sector-label {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            font-size: 15px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 2px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .wheel-hub {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #ffe0b2, var(--accent-color) 70%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 5;
+        }
+
+        /* 结果卡 */
+        .result-card {
+            display: none;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 152, 0, 0.45);
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+            margin-top: 6px;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.92) translateY(8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .result-badge {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            padding: 5px 18px;
+            border-radius: 18px;
+            margin-bottom: 12px;
+        }
+
+        .badge-truth {
+            background: rgba(51, 170, 255, 0.18);
+            color: #33aaff;
+        }
+
+        .badge-dare {
+            background: rgba(255, 85, 102, 0.18);
+            color: #ff5566;
+        }
+
+        .badge-extreme {
+            background: rgba(160, 92, 255, 0.22);
+            color: #c084ff;
+        }
+
+        .extreme-note {
+            display: none;
+            margin-top: 10px;
+            font-size: 11px;
+            line-height: 1.6;
+            color: rgba(192, 132, 255, 0.65);
+        }
+
+        .extreme-note.show {
+            display: block;
+        }
+
+        .question-text {
+            font-size: 17px;
+            line-height: 1.7;
+            font-weight: 600;
+            word-break: break-all;
+            margin-bottom: 14px;
+        }
+
+        .btn-done {
+            border: 1px solid var(--card-border);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border-radius: 20px;
+            padding: 9px 32px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .btn-done:active {
+            transform: scale(0.95);
+        }
+
+        /* 转按钮 */
+        .btn-spin {
+            display: block;
+            width: 100%;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: #fff;
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 8px;
+            padding: 16px;
+            margin-top: 22px;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(255, 87, 34, 0.35);
+            transition: transform 0.15s;
+        }
+
+        .btn-spin:disabled {
+            opacity: 0.55;
+            letter-spacing: 3px;
+        }
+
+        .foot-tip {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a class="back-link" href="../../index.html">‹ 返回首页</a>
+
+        <div class="header">
+            <h1>🎯 真心话大冒险</h1>
+            <p>转到的，就是命运的选择</p>
+        </div>
+
+        <div class="mode-row">
+            <button class="mode-chip active" data-mode="mix">🎲 混合模式</button>
+            <button class="mode-chip" data-mode="truth">💙 只玩真心话</button>
+            <button class="mode-chip" data-mode="dare">❤️‍🔥 只玩大冒险</button>
+            <button class="mode-chip" data-mode="extreme">💀 只玩社死版</button>
+        </div>
+
+        <div class="wheel-zone">
+            <div class="pointer"></div>
+            <div class="wheel" id="wheel"></div>
+            <div class="wheel-hub">🍺</div>
+        </div>
+
+        <div class="result-card" id="resultCard">
+            <span class="result-badge" id="resultBadge"></span>
+            <div class="question-text" id="questionText"></div>
+            <div class="extreme-note" id="extremeNote">⚠️ 社死题请看清场合与分寸，安全第一；实在做不到可以自罚一杯饮料，换回普通大冒险。</div>
+            <button class="btn-done" id="btnDone">完成 ✓</button>
+        </div>
+
+        <button class="btn-spin" id="btnSpin">转 ！</button>
+        <div class="foot-tip" id="bankTip">题目会自动避开最近抽过的，放心转</div>
+    </div>
+
+    <script>
+        'use strict';
+        const $ = (id) => document.getElementById(id);
+
+        // ==================== 题库（可自行扩充） ====================
+        const TRUTH_BANK = [
+            // —— 感情与心动 ——
+            '手机里最不想被别人看到的应用是哪个？',
+            '说一个至今没人发现的小秘密（能说的那种）。',
+            '最近一次撒谎是为了什么事？',
+            '说一个你喜欢过但没表白的人的特征。',
+            '最近一次哭是因为什么？',
+            '最想删掉的一条朋友圈是什么内容？',
+            '暗恋过几个人？最长的一次多久？',
+            '你为一个人做过的最卑微的事是什么？',
+            '前任给你留下最深的一个习惯是什么？',
+            '最近一次心动是因为对方做了什么？',
+            '你现在有暧昧对象吗？进展到哪一步了？',
+            '你谈过最长的一段感情是多久？为什么结束的？',
+            '你被表白过最离谱的一次是什么情况？',
+            '你拒绝过最不后悔的一次表白是什么样的？',
+            '你写过情书或表白消息吗？最后发出去了吗？',
+            '你偷偷查过谁的主页，一路翻到很久以前？',
+            '你的择偶底线是什么？为了爱可以突破吗？',
+            '你相信一见钟情还是日久生情？亲历过哪个？',
+            '你能接受对象随便看你手机吗？你自己偷看过吗？',
+            '你觉得婚姻是必需品吗？',
+            '你能接受租房结婚吗？',
+            '婚后工资该不该上交？你的立场是？',
+            '你觉得自己单身的原因是什么？（有对象的：当初为啥看上TA）',
+            // —— 心动追问·异性特供 ——
+            '你觉得在场哪位异性最符合你的审美？具体说出哪里像。',
+            '你的初恋是怎么开始的？谁先开的口？',
+            '你被异性拒绝过最狠的一次是什么情况？',
+            '你拒绝过别人之后后悔过吗？后来还有联系吗？',
+            '你收到过异性送的最特别的礼物是什么？现在还留着吗？',
+            '你有没有为了吸引某个人，偷偷改变过自己？改了什么？',
+            '你觉得异性做哪些小事最加分？说一件真实经历。',
+            '你对异性的第一印象最先看哪里？诚实作答。',
+            '你有没有同时对两个人产生过好感？最后怎么处理的？',
+            '你的微信里有没有一直舍不得删、也不敢主动聊的异性？',
+            '你被异性夸过最让你心动的一句话是什么？',
+            '你给朋友当过情感顾问吗？而你自己感情一团糟的那种。',
+            '大胆预测：在场哪两个人最有可能会处成对象？',
+            '你谈过异地恋吗？最难熬的是哪个瞬间？',
+            '遇到喜欢的人你会主动追，还是默默等对方发现？有成功案例吗？',
+            '你能接受另一半有关系很好的异性朋友吗？你的界限在哪里？',
+            '如果必须和一位在场异性搭档参加情侣综艺，你选谁？为什么？',
+            '你干过最「直男」或最「直女」的一件事是什么？',
+            // —— 秘密与隐私 ——
+            '钱包/相册里有什么不想给爸妈看的东西？',
+            '你干过最口是心非的事是什么？',
+            '你上网搜过最难堪的问题是什么？',
+            '你有几个小号？都是拿来干嘛的？',
+            '你深夜发过又秒删的朋友圈写了什么？',
+            '你看过最不好意思承认的一部剧或一本书是什么？',
+            '说一个你到现在还没告诉爸妈的秘密。',
+            // —— 尴尬与社死 ——
+            '你做过最幼稚的事是什么？',
+            '讲一个你至今想起来还会脚趾抠地的社死瞬间。',
+            '你小时候干过最坑爹坑妈的事是什么？',
+            '你在电梯里遇到过最尴尬的事是什么？',
+            '你叫错过别人的名字吗？最严重的一次？',
+            '你在正式场合摔过跤吗？当时怎么圆场的？',
+            '你发错过消息吗？发给了谁？内容敢说吗？',
+            '你上课或开会睡着被点名过吗？当时怎么反应的？',
+            // —— 金钱与消费 ——
+            '你现在存款多少？（诚实报数）',
+            '你游戏里氪金最狠的一次是多少？买了啥？',
+            '你为追星花过最多的钱是多少？追的是谁？',
+            '你网购过最没用的一样东西是什么？',
+            '你借出去最久没还回来的钱是多少？',
+            '你最奢侈的一次消费买了什么？后悔吗？',
+            '你捡过最大的便宜是什么？',
+            '你丢过最重要的一样东西是什么？',
+            '你第一个月的工资或生活费都花在哪了？',
+            '你干过最烧钱的爱好是什么？花了多少？',
+            // —— 家庭与成长 ——
+            '被爸妈骂得最惨的一次是因为什么？',
+            '你跟父母吵过最凶的一次是因为什么？',
+            '你离家出走过吗？去了哪儿？',
+            '你最怕爸妈问你什么问题？',
+            '你做过最勇敢的事是什么？',
+            '你人生中最快乐的一天是哪天？发生了什么？',
+            '如果重新选专业或行业，你还会选现在的吗？',
+            '你人生中最想删掉的五年是哪五年？为什么？',
+            '你收到过最喜欢的一份礼物是什么？',
+            '你送出去过最用心的一份礼物是什么？',
+            '你养过宠物吗？它叫什么？现在还好吗？',
+            '你第一次喝酒是什么场合？醉成什么样？',
+            // —— 社交与人际 ——
+            '在座的人里你第一印象最差的是谁？现在改观了吗？',
+            '你觉得在座谁最靠谱？谁最不靠谱？',
+            '你被拉黑过吗？因为什么事？',
+            '你拉黑过别人吗？现在后悔吗？',
+            '你在评论区跟陌生人吵过架吗？吵赢了吗？',
+            '别人对你说过最伤人的一句话是什么？',
+            '你对别人说过最后悔的一句话是什么？',
+            '你原谅过不该原谅的人吗？',
+            '你最想对谁说对不起却一直没开口？',
+            '你和朋友吵过最凶的一次是因为什么？和好了吗？',
+            '你给谁备注过最难听的昵称？后来呢？',
+            '你说过最大的牛皮是什么？圆上了吗？',
+            // —— 自我认知 ——
+            '你觉得自己身上最迷人的地方是哪里？',
+            '你觉得自己颜值打几分（满分10分）？说实话。',
+            '你觉得自己性格里最大的缺点是什么？',
+            '你最讨厌自己的哪个习惯？',
+            '你有什么天赋是一直没展示给别人的？',
+            '别人夸过你最多的优点是什么？你认同吗？',
+            '你有什么坚持很久但没人知道的好习惯？',
+            '你学什么东西学到最后放弃了？学到哪一步？',
+            '说出一件你一直想做却没有勇气做的事。',
+            '深夜emo的时候最常想的一件事是什么？',
+            // —— 行为与习惯 ——
+            '你上班或上课摸鱼最离谱的一次干了什么？',
+            '你考试作过弊吗？怎么操作的？',
+            '你请过最长的一次病假是真的病了吗？',
+            '你追剧或追小说最疯的一次是什么状态？',
+            '你有什么坚持多年的小迷信？',
+            '你外卖点过最奇葩的东西是什么？',
+            '你手机屏幕使用时间最长的App是啥？日均几小时？',
+            '你如果必须删掉一个社交软件，删哪个？',
+            '你偷偷羡慕过身边哪个朋友的什么？',
+            // —— 脑洞与假设 ——
+            '如果明天不用上班上课，你最想干什么「坏事」？',
+            '如果中了五百万，你会瞒着所有人吗？打算怎么花？',
+            '如果明天是世界末日，今晚你会做什么？',
+            '你最想穿越回哪一年？回去干什么？',
+            '你最想拥有哪种超能力？打算先用它干什么？',
+            '如果可以和在场一个人互换人生一天，选谁？为什么？',
+            '你觉得自己三年后会在过什么样的生活？',
+            // —— 当场互动型 ——
+            '当场给一个人打电话，说什么由大家决定（过分的可以否决）。',
+            '让大家看你最近的五条搜索记录（可自己挑三条展示）。',
+            '用三个词形容在场每一个人，不许重样。',
+            '你觉得在座谁的微信步数今天最多？'
+        ];
+
+        const DARE_BANK = [
+            // —— 经典表演类 ——
+            '模仿一种动物叫声，让大家猜是什么。',
+            '用最快的语速念完一遍「红鲤鱼与绿鲤鱼与驴」，错了重来。',
+            '保持微笑看镜头自拍，发到你的家庭群里。（不敢就换成发给最好的朋友）',
+            '用屁股写出自己的名字。',
+            '原地转三圈后走一条直线。',
+            '即兴来一段四句说唱介绍自己。',
+            '学一个在座之人的口头禅或标志性动作，让大家猜是谁。',
+            '对着窗外大喊三声「我最棒」。',
+            '用唱歌的方式回答下一个问题（唱到本轮结束）。',
+            '把手机交出去，让左边的人在你朋友圈挑一条点赞。',
+            '表演慢动作开门、坐下、喝水，全程不许笑场。',
+            '下一轮之前只能说「是的，大人」，否则重抽。',
+            '用外语（或自创外语）向大家点一份外卖。',
+            '让右边的人给你摆一个pose并保持20秒拍照（照片不给别人看）。',
+            '模仿一位经典影视角色的名场面。',
+            '闭眼单脚站立，坚持不到30秒就再来一轮。',
+            '用最温柔的语气念一段天气预报。',
+            '给大家表演一个「假哭」，越像越好。',
+            '接下来两分钟里说话必须押韵。',
+            '做一个鬼脸保持30秒，期间谁先笑谁接棒。',
+            '现场展示手机最近的五张壁纸或相册封面图。',
+            '用戏剧腔朗读一段说明书上的任意内容。',
+            '跳一段30秒的舞，音乐自己哼。',
+            '让大家轮流问你三个快问快答，全部要秒答。',
+            '扮演导游，向「游客们」介绍这个房间。',
+            '用左手写「我再也不敢了」并展示。',
+            '表演一个emoji，让大家猜是哪一个。',
+            '接受左边的人出一个「无害小惩罚」。',
+            // —— 才艺挑战类 ——
+            '清唱一首歌的高潮部分，跑调也算数。',
+            '用最快速度说十遍「班干部管班干部」，错了重来。',
+            '即兴用「本来…后来…谁能想到…」编一个三十秒故事。',
+            '讲一个冷笑话，没人笑就再讲一个，直到有人笑。',
+            '一分钟内说出十种水果，说不出来罚转三圈。',
+            '报出你最近听的五首歌，并现场哼其中一句。',
+            '教大家一个只有你知道的冷知识。',
+            '用武侠腔宣布「在下要开始表演了」，然后表演你的拿手绝活。',
+            '反着手肘写自己的名字，让大家猜写的是什么。',
+            '闭着眼睛写「真心话大冒险」四个字并展示。',
+            '用嘴叼着笔写一个字让大家认。',
+            // —— 身体控制类 ——
+            '平板支撑30秒，中途塌了就表演一个认输动作。',
+            '用力做十个开合跳，边做边喊口号。',
+            '学机器人走路说话坚持一分钟。',
+            '模仿老年人扶着楼梯下楼的完整过程。',
+            '表演早上闹钟响了按掉继续睡、突然惊醒弹起来的全过程。',
+            '深蹲姿势保持住，同时唱完一句歌词才许起来。',
+            '双手举高大喊「我是全场最靓的仔」，保持十秒不许笑。',
+            '对着天花板深情告白十秒。',
+            // —— 社交整蛊类 ——
+            '给通讯录第八个人发「睡了吗」，等回复展示给大家（没人回自罚一杯饮料）。',
+            '打电话给外卖平台客服问「你们家炒饭好吃吗」，挂断前不许笑。',
+            '和左边的人深情对视30秒，先笑的人接棒下一轮。',
+            '和右边的人十指相扣一起数十个数。',
+            '用最土味的情话对左边的人说一句话。',
+            '学婴儿说话向在场任意一人撒娇讨零食。',
+            '下一轮开始每句话必须以「喵」结尾，持续三轮。',
+            '接下来两轮只能用反问句说话。',
+            // —— 模仿演绎类 ——
+            '模仿新闻联播主播，播报今天聚会上发生的事。',
+            '模仿甲方提需求：「我要一个五彩斑斓的黑」，然后自己回应他。',
+            '表演偶像剧摔倒加被接住的全过程（墙可以当对手戏演员）。',
+            '表演「等外卖」从满心期待到彻底失望的心理变化。',
+            '表演收到很嫌弃的礼物时的惊喜表情，越假越像越好。',
+            '表演「考了满分回家」和「考砸了回家」两种状态的切换。',
+            '模仿老师宣布拖堂时全班同学的集体叹息。',
+            '用气声（耳语）讲一段鬼故事的开头。',
+            '模仿倒放状态的自己说一句话，让大家猜原句。',
+            '用力表演「吃到柠檬」和「吃到糖」两种表情各一次。',
+            // —— 手机社交类 ——
+            '把购物车里最贵的一件东西截图给大家看。',
+            '展示你浏览器最近的三条搜索记录（隐私的可跳过换题）。',
+            '展示你收藏夹里最得意的五个表情包。',
+            '用一句话点评在座每一个人，不能重样。',
+            '模仿一段电视购物广告，推销手边任意物品。',
+            '用手掌当手机，拍一段vlog开场白。',
+            '现场立一个flag并大声说出来（比如一周内早睡），大家监督。',
+            '复述刚才全场笑声最大的那句话，并还原当时的场景。',
+            // —— 心动双人组（异性互动·温和版） ——
+            '和一位在场异性对视十秒，先笑的人接受一个小惩罚。',
+            '请一位异性用一句话夸你，无论夸什么你都要害羞地说「讨厌啦」。',
+            '和一位异性合唱一句你们都会的情歌。',
+            '让一位异性给你起一个可爱外号，本轮游戏里大家必须用外号叫你。',
+            '邀请一位异性和你隔空演绎「偶像剧慢镜头转圈相遇」，全程不许身体接触。',
+            '请一位异性当你的临时舞伴，随机跳一段15秒的舞。',
+            '对一位异性说一句土味情话：对方没笑你就赢，笑了就再来一句。',
+            '和一位异性玩「憋笑挑战」：互相做鬼脸30秒，谁先笑谁下一轮继续抽。',
+            '让在场异性投票选出「最适合演偶像剧」的人，被选中者当场念一段霸道总裁台词。',
+            '和一位异性背对背同时转头，方向相同就一起学小猫叫。'
+        ];
+
+        // ==================== 社死版题库（地狱难度 · 抽象 · 高能） ====================
+        // ⚠️ 公共场合注意分寸与安全；做不到可自罚一杯饮料换回普通大冒险
+        const DARE_EXTREME_BANK = [
+            // —— 当众处刑系 ——
+            '走到最近的陌生人桌前，深情朗诵「锄禾日当午」，鞠躬说「谢谢观赏」后退场。',
+            '手机外放《孤勇者》副歌并跟唱，音量开到最大，唱完鞠躬致谢。',
+            '在朋友圈发「我宣布：从今天起我要重新做人了！」并保持24小时，期间不许解释。',
+            '给最近聊天列表第五位好友发「在吗？借我五十，急」，等对方回复后展示聊天记录（可改口说借一包辣条）。',
+            '对着镜面墙练习wink并小声说「你好美」十次，声音要让自己听见。',
+            // —— 抽象行为艺术系 ——
+            '把自己当展品：摆一个雕塑姿势定格60秒，谁碰你就用机器人音说「请勿触摸文物」。',
+            '全程无台词，纯肢体演绎一台洗衣机「进水→翻滚→脱水→罢工」的一生。',
+            '扮演自动售货机：大家每拍你一下算投币，你必须弹出一样随身物品并说「感谢惠顾」。',
+            '即兴演绎「Wi-Fi满格→剩一格→彻底断网」的心路历程，全程只用表情和肢体。',
+            '让旁边的人随机念一条你购物APP的推送标题，你当场表演「被戳穿内心」的崩溃大哭。',
+            '用戏剧腔向天空控诉：「苍天啊！是谁偷吃了我的外卖！」并现场编出受害者故事的来龙去脉。',
+            // —— 地狱难度系 ——
+            '一分钟内说出30个四字成语，卡壳超3秒或说错就清零重来（最多两次机会）。',
+            '背诵圆周率小数点后20位，给你30秒记忆时间。',
+            '倒着背《静夜思》，一字不错才算过关。',
+            '十秒记住在场所有人的手机尾号最后一位，按座位顺序依次报出来。',
+            '让每人现场出一道两位数乘法题，全部口算秒答，错一题加抽一轮。',
+            '用左手写十个「永」字，大家选出最丑的一张拍照存档。',
+            '三十秒内连续说出20种动物名，重复或卡顿即失败。',
+            '现场学会并流畅念出「黑化肥发灰，灰化肥发黑」，一遍过才算赢。',
+            // —— 陌生人互动系（对方拒绝或面露难色，立刻微笑道歉换题） ——
+            '拦一位路人：「打扰一下，您觉得我和我朋友谁更适合演霸道总裁？」然后和同伴当场各演一段。',
+            '找一组路人情侣或闺蜜当评委：你和同伴各表演一段才艺，请他们郑重宣布谁赢了。',
+            '向一位陌生人认真请教：「请问这条街哪家店的老板最帅？」听完记在小本本上，道谢离开。',
+            '拿手机假装直播，邀请一位路人入镜：「家人们，这就是我常说的那位贵人！」请TA对镜头挥挥手。',
+            '请一位陌生人在便利贴上签名留念，并感慨：「等你火了，这张就值钱了。」',
+            '街头小调查：问一位路人「您好，请问您今天笑了吗？」无论答案是什么都在本子上严肃打钩。',
+            '邀请一位路人玩「你划我猜」：你来比划TA来猜，词由朋友们出（如「广场舞」「外卖冲刺」）。',
+            '问一位路人：「能耽误您30秒帮我做个重大决定吗？我中午到底吃面还是吃饭？」听完必须采纳。',
+            '在广场空地做一套自创「晨间广播体操」，动作要舒展自信，做完鞠躬谢幕。',
+            '对街边橱窗玻璃表演哑剧：被玻璃挡住、用力推、敲一敲、无奈放弃，全程一分钟。',
+            '坐在公共长椅上把书倒过来读，坚持两分钟，谁问就说「这本书越读越新」。',
+            '在人行人道用标准模特步走十米，到头转身对空气飞吻致意。',
+            '站在人流处大声报时：「现在是北京时间X点X分，祝大家度过愉快的一天！」',
+            '拿着纸巾求路人：「能帮我把这个折成千纸鹤吗？我手抖。」',
+            '请一位路人帮你起一个「一听就能火」的网名，接下来一轮游戏你必须自称这个名字。',
+            '走进便利店问店员：「请问你们这儿卖后悔药吗？」无论对方怎么答都说「那来一瓶」，并真买瓶水。',
+            '请路人帮忙拍一张「通缉令风格」照片：表情狰狞，双手举着写自己名字的纸。',
+            '把手机壁纸给陌生人看，问「好看吗」，无论对方说什么都深情回答「这是我自己画的」。',
+            '请一位路人当裁判：你和同伴石头剪刀布五局三胜，输的人当场表演鸭子走路。',
+            '和同伴在街上并排走正步十米，整齐喊「一二一」。',
+            '和同伴假装互不相识，争抢同一辆「隐形出租车」，争执十秒后同时看表说「算了赶时间」，背对背走开。',
+            '组队对一位路人的狗狗齐声夸「你真棒」，并向主人郑重解释：「我们在夸它，没别的意思。」',
+            '和同伴在路边下一盘「隐形象棋」，全程入戏：「将军！」「悔棋无效！」坚持一分钟。',
+            '打电话给运营商客服认真咨询：「请问你们卖信号增强符吗？我这边信号总不好。」',
+            '给随机一家餐厅打电话问：「你们家菜是现炒的吗？我想先闻闻香味再决定点不点。」',
+            '在街上拦人问路：「您好，请问『昨天』怎么走？」对方无论怎么指路都摇头叹息：「看来是回不去了。」',
+            '递给陌生人一张白纸：「这是我画的自画像，您觉得像吗？」',
+            '向路人借充电线，插上后对着手机温柔地说：「孩子终于喝上奶了。」',
+            '找到一位陌生人击掌，说「恭喜！你是今天第8个被我选中的人」，不给任何解释，潇洒离场。',
+            '对着共享单车打招呼：「老伙计，今天也拜托你了。」然后骑走。',
+            '在电梯里向陌生人郑重自我介绍：「您好，我是本次电梯的临时乘务员，本次行程安全无阻。」',
+            '拿着一根香蕉当手机贴在耳边：「喂？妈，我挺好的，香蕉挺甜的，你别操心。」',
+            '请路人闻一下你手里的空气：「新品上市，帮我品品香不香。」',
+
+            // —— 异性互动 & 缘分实验系 ——
+            '和一位在场异性对唱一段经典情歌对唱（如《屋顶》），要求有眼神交流。',
+            '请一位异性用三个词形容你，你必须照单全收并回答：「谢谢，我也这么觉得。」',
+            '和一位异性背对背站好数三秒同时回头，方向一致就一起表演偶像剧慢镜头奔跑。',
+            '接受在场异性的「相亲市场估值」：外貌、谈吐、靠谱程度各打一分（满分10），你只能回「好的，收到」。',
+            '选一位异性，深情注视TA十秒并说「我等这一天很久了」，中途笑场重来。',
+            '和一位异性即兴演「十年后同学会」：先假装不认识，三秒后突然相认抱头痛哭。',
+            '和一位异性互起一对情侣网名，并把群昵称改成那个名字保持十分钟。',
+            '请一位异性当你一分钟的「经纪人」，这一轮里你说什么做什么都得听TA指挥。',
+            '拦一位异性路人做「第一眼缘分实验」：请TA给你打1-10分，无论几分都鞠躬说「符合预期」。',
+            '向一位异性路人请教穿搭：「我要去见很重要的人，这身能打几分？」认真听完必须采纳一条建议。',
+            '问一位路人：「如果我这样走秀（当场走两步），能上巴黎时装周吗？」等TA给出真诚评价。',
+            '夸一位遛狗人的狗有明星相，并递出现场手写的名片：「我可以当它的经纪人。」',
+            '请一位陌生异性在两杯「隐形奶茶」里选一杯更好喝的，选完都要感动地说「知音啊」。',
+            // —— 地狱难度补货 ——
+            '大家每人贡献一个字，你把所有字串成一句通顺的话（准备时间20秒）。',
+            '三十秒记下所有人报的手机号后四位，然后倒序复述。',
+            '用一门你不会的外语（或自创语言）翻译并深情朗诵《静夜思》。',
+            '一口气说出10个 ABAC 式成语（如一心一意），卡壳或重复即失败。',
+
+            // —— 王炸组合 ——
+            '社死三选一：① 给外卖骑手打电话唱生日快乐歌 ② 在群里发「有人捡到我的假发吗」 ③ 到阳台大喊三声「明天会更好」。',
+            '抽到这条的人：接下来三轮游戏里，别人说完话你要先鼓掌三秒再说「太有道理了」，否则本轮重来。'
+        ];
+
+        // ==================== 转盘 ====================
+        const SECTOR_COUNT = 6;
+        const SECTOR_DEG = 360 / SECTOR_COUNT;
+        const rand = (n) => Math.floor(Math.random() * n);
+
+        let mode = 'mix';           // mix | truth | dare
+        let rotation = 0;           // 当前累计角度
+        let spinning = false;
+
+        // 各模式下每个扇区对应的类型与颜色
+        function buildWheel() {
+            const wheel = $('wheel');
+            wheel.style.transition = 'none';
+            wheel.style.transform = `rotate(${rotation % 360}deg)`;
+
+            const stops = [];
+            for (let i = 0; i < SECTOR_COUNT; i++) {
+                const type = getSectorType(i);
+                let color;
+                if (type === 'truth') color = i % 2 ? '#2f7fd1' : '#3a99f5';
+                else if (type === 'extreme') color = i % 2 ? '#6d28d9' : '#8b5cf6';
+                else color = i % 2 ? '#d1345b' : '#f04a68';
+                const from = i * SECTOR_DEG;
+                // 经典双停靠写法（兼容性最好）；边界重叠 0.8° 防止抗锯齿缝隙
+                stops.push(`${color} ${from}deg ${from + SECTOR_DEG + 0.8}deg`);
+            }
+            // 用第一个颜色闭合色环：否则 from 偏移后末尾楔形会被最后一个颜色延伸填充，
+            // 在转盘外缘形成一圈错误颜色的「边」
+            const firstType = getSectorType(0);
+            const firstColor = firstType === 'truth' ? '#3a99f5'
+                : firstType === 'extreme' ? '#8b5cf6' : '#f04a68';
+            stops.push(`${firstColor} 360deg`);
+            wheel.style.background =
+                `conic-gradient(from -${SECTOR_DEG / 2}deg, ${stops.join(', ')})`;
+            void wheel.offsetWidth; // 触发重绘后再恢复动画能力
+            wheel.style.transition = '';
+
+            // 扇区文字
+            wheel.querySelectorAll('.sector-label').forEach(x => x.remove());
+            for (let i = 0; i < SECTOR_COUNT; i++) {
+                const type = getSectorType(i);
+                const angle = i * SECTOR_DEG;
+                const lbl = document.createElement('div');
+                lbl.className = 'sector-label';
+                lbl.textContent = type === 'truth' ? '真心话'
+                    : type === 'extreme' ? '💀社死' : '大冒险';
+                // 定位到扇区中心半径约 66% 处
+                lbl.style.transform =
+                    `translate(-50%, -50%) rotate(${angle}deg) translateY(-105px)`;
+                wheel.appendChild(lbl);
+            }
+        }
+
+        function getSectorType(i) {
+            if (mode === 'truth') return 'truth';
+            if (mode === 'dare') return 'dare';
+            if (mode === 'extreme') return 'extreme';
+            return i % 2 === 0 ? 'truth' : 'dare';
+        }
+
+        function setMode(m, chipEl) {
+            if (spinning) return;
+            mode = m;
+            document.querySelectorAll('.mode-chip').forEach(c => c.classList.remove('active'));
+            chipEl.classList.add('active');
+            $('resultCard').style.display = 'none';
+            buildWheel();
+        }
+        document.querySelectorAll('.mode-chip').forEach(chip => {
+            chip.addEventListener('click', () => setMode(chip.dataset.mode, chip));
+        });
+
+        // 防重复抽取
+        function loadRecent() {
+            const blank = { truth: [], dare: [], extreme: [] };
+            try { return Object.assign(blank, JSON.parse(localStorage.getItem('td_recent_v1')) || {}); }
+            catch (e) { return blank; }
+        }
+        function saveRecent(r) {
+            try { localStorage.setItem('td_recent_v1', JSON.stringify(r)); } catch (e) { }
+        }
+        function drawQuestion(type) {
+            const bank = type === 'truth' ? TRUTH_BANK
+                : type === 'extreme' ? DARE_EXTREME_BANK : DARE_BANK;
+            const recent = loadRecent();
+            if (!recent[type]) recent[type] = [];
+            const seen = new Set(recent[type]);
+            let pool = bank.filter(q => !seen.has(q));
+            if (!pool.length) { pool = bank; recent[type] = []; }
+            const q = pool[rand(pool.length)];
+            recent[type].push(q);
+            while (recent[type].length > 12) recent[type].shift();
+            saveRecent(recent);
+            return q;
+        }
+
+        function spin() {
+            if (spinning) return;
+            spinning = true;
+            $('btnSpin').disabled = true;
+            $('btnSpin').textContent = '转动中…';
+            $('resultCard').style.display = 'none';
+
+            // 随机选中一个目标扇区，计算落点角度
+            // 指针在顶部（0°），扇区中心转到指针处需满足：R ≡ -centerDeg (mod 360)
+            const target = rand(SECTOR_COUNT);
+            const centerDeg = target * SECTOR_DEG;
+            const jitter = (Math.random() - 0.5) * (SECTOR_DEG - 14);
+            const currentMod = ((rotation % 360) + 360) % 360;
+            const need = ((-centerDeg - currentMod) % 360 + 360) % 360;
+            rotation += 360 * (5 + Math.floor(Math.random() * 3)) + need + jitter;
+
+            const wheel = $('wheel');
+            wheel.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.25, 1)';
+            wheel.style.transform = `rotate(${rotation}deg)`;
+
+            if (navigator.vibrate) navigator.vibrate([40, 30, 40]);
+
+            setTimeout(() => {
+                const landedType = getSectorType(target);
+                showResult(landedType);
+                spinning = false;
+                $('btnSpin').disabled = false;
+                $('btnSpin').textContent = '再 来 ！';
+            }, 4100);
+        }
+
+        // 混合模式下抽中大冒险时，15% 概率「哦豁」升级为社死题
+        function maybeUpgrade(type) {
+            if (type === 'dare' && mode === 'mix' && Math.random() < 0.15) return 'extreme';
+            return type;
+        }
+
+        function showResult(landedType) {
+            if (navigator.vibrate) navigator.vibrate([90, 50, 90]);
+            const type = maybeUpgrade(landedType);
+            const meta = {
+                truth: ['💙 真心话', 'badge-truth'],
+                dare: ['❤️‍🔥 大冒险', 'badge-dare'],
+                extreme: ['💀 社死大冒险', 'badge-extreme'],
+            }[type];
+            const badge = $('resultBadge');
+            badge.textContent = meta[0];
+            badge.className = 'result-badge ' + meta[1];
+            $('questionText').textContent = drawQuestion(type);
+            $('extremeNote').classList.toggle('show', type === 'extreme');
+            $('resultCard').style.display = 'block';
+            $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        $('btnDone').addEventListener('click', () => {
+            $('resultCard').style.display = 'none';
+        });
+        $('btnSpin').addEventListener('click', spin);
+
+        // 页脚显示题库规模
+        $('bankTip').textContent =
+            `题库：真心话 ${TRUTH_BANK.length} 条 · 大冒险 ${DARE_BANK.length} 条 · 社死 ${DARE_EXTREME_BANK.length} 条 · 自动避开最近抽过的`;
+
+        buildWheel();
+    </script>
+</body>
+
+</html>

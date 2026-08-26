@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>节假日助手</title>
+    <!--
+        数据来源：国务院办公厅关于2026年部分节假日安排的通知（国办发明电〔2025〕32号）
+        https://www.gov.cn/gongbao/2025/issue_12406/202511/content_7048922.html
+        ▶ 每年11月底国务院公布次年安排后，更新下方 YEAR / HOLIDAYS / NEXT_YEAR 三块即可。
+    -->
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-sub: rgba(255, 255, 255, 0.6);
+            --accent-color: #ff9800;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 16px 40px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        /* 今日状态卡 */
+        .today-card {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 87, 34, 0.08));
+            border: 1px solid rgba(255, 152, 0, 0.25);
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .today-line {
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+        }
+
+        .today-badge {
+            display: inline-block;
+            font-size: 15px;
+            font-weight: 700;
+            padding: 6px 18px;
+            border-radius: 20px;
+        }
+
+        .badge-work {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+
+        .badge-rest {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--accent-color);
+        }
+
+        /* 倒计时卡 */
+        .next-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 22px 18px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .next-name {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 4px;
+        }
+
+        .next-range {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 12px;
+        }
+
+        .next-num {
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .next-unit {
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-top: 6px;
+        }
+
+        /* 年度列表 */
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-sub);
+            margin-bottom: 12px;
+        }
+
+        .holiday-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .holiday-card.is-next {
+            border-color: rgba(255, 152, 0, 0.45);
+        }
+
+        .holiday-card.is-past {
+            opacity: 0.5;
+        }
+
+        .h-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(255, 152, 0, 0.14);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .h-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .h-name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .h-dates {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .h-work {
+            font-size: 11px;
+            color: #48dbfb;
+            margin-top: 3px;
+        }
+
+        .h-days {
+            flex-shrink: 0;
+            text-align: center;
+        }
+
+        .h-days b {
+            font-size: 20px;
+            color: var(--accent-color);
+        }
+
+        .h-days span {
+            display: block;
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        .foot-note {
+            margin-top: 18px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.35);
+            text-align: center;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a class="back-link" href="../../index.html">‹ 返回首页</a>
+
+        <div class="header">
+            <h1>🏖️ 节假日助手</h1>
+            <p>放假调休 · 一目了然</p>
+        </div>
+
+        <div class="today-card">
+            <div class="today-line" id="todayLine"></div>
+            <span class="today-badge badge-work" id="todayBadge">查询中…</span>
+        </div>
+
+        <div class="next-card" id="nextCard">
+            <div class="next-name" id="nextName"></div>
+            <div class="next-range" id="nextRange"></div>
+            <div class="next-num" id="nextNum">—</div>
+            <div class="next-unit" id="nextUnit"></div>
+        </div>
+
+        <div class="section-title" id="listTitle"></div>
+        <div id="holidayList"></div>
+
+        <div class="foot-note" id="footNote"></div>
+    </div>
+
+    <script>
+        'use strict';
+        // ==================== 数据区：每年国务院公告后手动更新 ====================
+        const DATA_YEAR = 2026;
+        // 放假区间（含首尾）；work 为该节日对应的调休补班日（周六/周日但要上班）
+        const HOLIDAYS = [
+            { name: '元旦', icon: '🎉', start: '2026-01-01', end: '2026-01-03', work: ['2026-01-04'] },
+            { name: '春节', icon: '🧨', start: '2026-02-15', end: '2026-02-23', work: ['2026-02-14', '2026-02-28'] },
+            { name: '清明节', icon: '🌿', start: '2026-04-04', end: '2026-04-06', work: [] },
+            { name: '劳动节', icon: '💪', start: '2026-05-01', end: '2026-05-05', work: ['2026-05-09'] },
+            { name: '端午节', icon: '🚣', start: '2026-06-19', end: '2026-06-21', work: [] },
+            { name: '中秋节', icon: '🥮', start: '2026-09-25', end: '2026-09-27', work: [] },
+            { name: '国庆节', icon: '🇨🇳', start: '2026-10-01', end: '2026-10-07', work: ['2026-09-20', '2026-10-10'] },
+        ];
+        // 下一年已公布的首个假期（公布后把新表换进来；未公布的年份保持为空数组）
+        const NEXT_YEAR_HOLIDAYS = [];
+        // =========================================================================
+
+        const $ = (id) => document.getElementById(id);
+        const WEEK_CN = ['日', '一', '二', '三', '四', '五', '六'];
+
+        function parseDate(s) { return new Date(s + 'T00:00:00'); }
+        function midnight(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
+        function dayDiff(from, to) { return Math.round((midnight(to) - midnight(from)) / 86400000); }
+
+        function fmtShort(s) {
+            const d = parseDate(s);
+            return `${d.getMonth() + 1}月${d.getDate()}日`;
+        }
+        function fmtFull(d) {
+            return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 周${WEEK_CN[d.getDay()]}`;
+        }
+        function rangeLen(h) { return dayDiff(parseDate(h.start), parseDate(h.end)) + 1; }
+        function fmtWork(h) {
+            if (!h.work || !h.work.length) return '';
+            return '调休上班：' + h.work.map(w => `${fmtShort(w)}（周${WEEK_CN[parseDate(w).getDay()]}）`).join('、');
+        }
+
+        function getTodayStatus(today) {
+            const key = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const all = [...HOLIDAYS, ...NEXT_YEAR_HOLIDAYS];
+            for (const h of all) {
+                if (key >= h.start && key <= h.end) return { type: 'holiday', name: h.name };
+            }
+            for (const h of all) {
+                if ((h.work || []).includes(key)) return { type: 'makeupWork', name: h.name };
+            }
+            const wd = today.getDay();
+            if (wd === 0 || wd === 6) return { type: 'weekend', name: '' };
+            return { type: 'workday', name: '' };
+        }
+
+        function renderToday() {
+            const today = new Date();
+            $('todayLine').textContent = `今天是 ${fmtFull(today)}`;
+            const st = getTodayStatus(today);
+            const badge = $('todayBadge');
+            if (st.type === 'holiday') {
+                badge.textContent = `😴 ${st.name}假期中`;
+                badge.className = 'today-badge badge-rest';
+            } else if (st.type === 'makeupWork') {
+                badge.textContent = '😤 调休补班日';
+                badge.className = 'today-badge badge-work';
+            } else if (st.type === 'weekend') {
+                badge.textContent = '😎 周末';
+                badge.className = 'today-badge badge-rest';
+            } else {
+                badge.textContent = '💼 工作日';
+                badge.className = 'today-badge badge-work';
+            }
+        }
+
+        function renderNext() {
+            const today = new Date();
+            const all = [...HOLIDAYS, ...NEXT_YEAR_HOLIDAYS];
+
+            // 进行中的假期优先
+            for (const h of all) {
+                if (today >= parseDate(h.start) && today <= parseDate(h.end)) {
+                    $('nextName').textContent = `${h.icon} ${h.name}`;
+                    $('nextRange').textContent = `${fmtShort(h.start)} – ${fmtShort(h.end)} · 共 ${rangeLen(h)} 天`;
+                    $('nextNum').textContent = '进行中';
+                    $('nextUnit').textContent = `第 ${dayDiff(parseDate(h.start), today) + 1} 天 / 共 ${rangeLen(h)} 天，好好享受！`;
+                    return h;
+                }
+            }
+            // 下一个还没开始的假期
+            for (const h of all) {
+                const diff = dayDiff(today, parseDate(h.start));
+                if (diff > 0) {
+                    $('nextName').textContent = `${h.icon} ${h.name}`;
+                    $('nextRange').textContent = `${fmtShort(h.start)} – ${fmtShort(h.end)} · 共 ${rangeLen(h)} 天`;
+                    $('nextNum').textContent = diff;
+                    $('nextUnit').textContent = diff === 1 ? '明天就放假啦！' : '天后放假';
+                    return h;
+                }
+            }
+            $('nextName').textContent = '📅 本年度假期已结束';
+            $('nextRange').textContent = '次年安排通常在每年 11 月公布';
+            $('nextNum').textContent = '—';
+            $('nextUnit').textContent = '届时更新本页数据即可';
+            return null;
+        }
+
+        function renderList(nextHoliday) {
+            $('listTitle').textContent = `${DATA_YEAR} 年假期一览`;
+            const listEl = $('holidayList');
+            const today = new Date();
+            listEl.innerHTML = '';
+
+            for (const h of HOLIDAYS) {
+                const past = midnight(parseDate(h.end)) < midnight(today);
+                const card = document.createElement('div');
+                card.className = 'holiday-card'
+                    + (nextHoliday && h.name === nextHoliday.name ? ' is-next' : '')
+                    + (past ? ' is-past' : '');
+
+                const icon = document.createElement('div');
+                icon.className = 'h-icon';
+                icon.textContent = h.icon;
+
+                const info = document.createElement('div');
+                info.className = 'h-info';
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'h-name';
+                nameDiv.textContent = h.name;
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'h-dates';
+                const sy = parseDate(h.start), ey = parseDate(h.end);
+                dateDiv.textContent = sy.getMonth() === ey.getMonth()
+                    ? `${sy.getMonth() + 1}月${sy.getDate()}日 – ${ey.getDate()}日`
+                    : `${fmtShort(h.start)} – ${fmtShort(h.end)}`;
+                info.appendChild(nameDiv);
+                info.appendChild(dateDiv);
+                const workText = fmtWork(h);
+                if (workText) {
+                    const workDiv = document.createElement('div');
+                    workDiv.className = 'h-work';
+                    workDiv.textContent = '⚙ ' + workText;
+                    info.appendChild(workDiv);
+                }
+
+                const daysBox = document.createElement('div');
+                daysBox.className = 'h-days';
+                const b = document.createElement('b');
+                b.textContent = rangeLen(h);
+                const s = document.createElement('span');
+                s.textContent = '天';
+                daysBox.appendChild(b);
+                daysBox.appendChild(s);
+
+                card.appendChild(icon);
+                card.appendChild(info);
+                card.appendChild(daysBox);
+                listEl.appendChild(card);
+            }
+
+            $('footNote').textContent =
+                `数据依据《国务院办公厅关于${DATA_YEAR}年部分节假日安排的通知》· 无网络请求 · 明年安排公布后更新页面内置数据`;
+        }
+
+        renderToday();
+        const nh = renderNext();
+        renderList(nh);
+    </script>
+</body>
+
+</html>
