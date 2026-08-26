@@ -1,6 +1,6 @@
 import os
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
@@ -55,28 +55,57 @@ async def chat(request: ChatRequest):
     
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(
-                AI_API_URL,
-                json=payload,
-                headers={
-                    "Authorization": f"Bearer {AI_API_KEY}",
-                    "Content-Type": "application/json"
-                },
-                timeout=60.0
-            )
-            
-            if response.headers.get("content-type", "").startswith("text/event-stream"):
-                # 流式响应
-                return Response(
-                    content=response.iter_content(),
-                    media_type="text/event-stream",
+            # 流式请求
+            if request.stream:
+                async with client.stream(
+                    "POST",
+                    AI_API_URL,
+                    json=payload,
                     headers={
-                        "Access-Control-Allow-Origin": "*",
-                        "Cache-Control": "no-cache"
-                    }
-                )
+                        "Authorization": f"Bearer {AI_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    timeout=120.0
+                ) as response:
+                    if response.status_code != 200:
+                        error_text = await response.aread()
+                        raise HTTPException(
+                            status_code=response.status_code,
+                            detail=f"上游服务错误: {error_text.decode()}"
+                        )
+                    
+                    # 返回流式响应
+                    async def generate():
+                        async for line in response.aiter_lines():
+                            if line:
+                                yield line + "\n"
+                    
+                    return StreamingResponse(
+                        generate(),
+                        media_type="text/event-stream",
+                        headers={
+                            "Cache-Control": "no-cache",
+                            "X-Accel-Buffering": "no"
+                        }
+                    )
             else:
-                # 非流式响应
+                # 非流式请求
+                response = await client.post(
+                    AI_API_URL,
+                    json=payload,
+                    headers={
+                        "Authorization": f"Bearer {AI_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    timeout=60.0
+                )
+                
+                if response.status_code != 200:
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail=f"上游服务错误: {response.text}"
+                    )
+                
                 return JSONResponse(
                     content=response.json(),
                     headers={"Access-Control-Allow-Origin": "*"}
