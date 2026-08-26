@@ -29,7 +29,7 @@ class ChatRequest(BaseModel):
     stream: Optional[bool] = False
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
-    thinking: Optional[bool] = None
+    thinking: Optional[dict] = None  # 支持完整的 thinking 对象
 
 @app.get("/")
 async def root():
@@ -51,6 +51,7 @@ async def chat(request: ChatRequest):
     if request.max_tokens is not None:
         payload["max_tokens"] = request.max_tokens
     if request.thinking is not None:
+        # thinking 可以是布尔值或对象，直接传递
         payload["thinking"] = request.thinking
     
     async with httpx.AsyncClient() as client:
