@@ -101,6 +101,11 @@
         .new-piece.new-black, .new-piece.new-white {
             animation: placePiece 0.4s ease-out, glow 0.6s ease-out;
         }
+        @keyframes placePiece {
+            0% { transform: scale(0.2); }
+            70% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
         @keyframes glow {
             0% { box-shadow: 0 0 25px 8px rgba(255, 255, 255, 1); }
             100% { box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); }
@@ -188,16 +193,24 @@
         </div>
     </div>
 
+    <script src="../gobang-ai.js"></script>
     <script>
         const SIZE = 15;
         let board, currentPlayer, gameOver, lastMove = null;
+        let aiTimer = null; // AI落子延时句柄：重新开始时必须取消，否则会在新盘面上落子
 
         function init() {
+            // 丢弃AI已排队但尚未执行的落子
+            if (aiTimer !== null) {
+                clearTimeout(aiTimer);
+                aiTimer = null;
+            }
             board = Array(SIZE).fill(null).map(() => Array(SIZE).fill(''));
             currentPlayer = 'B';
             gameOver = false;
             lastMove = null;
             render();
+            document.getElementById('status').classList.remove('thinking');
         }
 
         function render() {
@@ -228,7 +241,7 @@
             makeMove(row, col);
             if (!gameOver && currentPlayer === 'W') {
                 document.getElementById('status').classList.add('thinking');
-                setTimeout(aiMove, 500);
+                aiTimer = setTimeout(aiMove, 500);
             }
         }
 
@@ -236,83 +249,39 @@
             board[row][col] = currentPlayer;
             lastMove = { row, col };
             const win = checkWin(row, col);
-            if (win) {
+            const draw = !win && checkDraw();
+            if (win || draw) {
                 gameOver = true;
-                highlightWin(win);
-                setTimeout(() => showResult(`${currentPlayer === 'B' ? '你' : 'AI'} 获胜!`, '恭喜获得胜利'), 500);
             } else {
                 currentPlayer = currentPlayer === 'B' ? 'W' : 'B';
             }
+            // 必须先重建棋盘再叠加高亮：render 会清空 innerHTML，反过来会丢失 win-cell
             render();
+            if (win) {
+                highlightWin(win);
+                const playerWon = currentPlayer === 'B';
+                setTimeout(() => showResult(
+                    `${playerWon ? '你' : 'AI'} 获胜!`,
+                    playerWon ? '恭喜获得胜利' : 'AI 棋胜一招，再来一局吧!'
+                ), 500);
+            } else if (draw) {
+                setTimeout(() => showResult('平局!', '棋盘已满，势均力敌'), 500);
+            }
         }
 
         function aiMove() {
+            aiTimer = null;
             if (gameOver) return;
             const move = getBestMove();
             if (move) makeMove(move.row, move.col);
             document.getElementById('status').classList.remove('thinking');
         }
 
+        // 复用公共的 GobangAI，避免两套 AI 行为不一致。
+        // 本页棋盘用 '' / 'B' / 'W'，GobangAI 用 0 / 1 / 2（1=黑，2=白），AI 固定执白。
         function getBestMove() {
-            const empty = [];
-            for (let r = 0; r < SIZE; r++)
-                for (let c = 0; c < SIZE; c++)
-                    if (!board[r][c]) empty.push({ row: r, col: c });
-
-            for (const spot of empty) {
-                board[spot.row][spot.col] = 'W';
-                if (checkWin(spot.row, spot.col)) { board[spot.row][spot.col] = ''; return spot; }
-                board[spot.row][spot.col] = '';
-            }
-            for (const spot of empty) {
-                board[spot.row][spot.col] = 'B';
-                if (checkWin(spot.row, spot.col)) { board[spot.row][spot.col] = ''; return spot; }
-                board[spot.row][spot.col] = '';
-            }
-
-            let best = null, bestScore = -Infinity;
-            for (const spot of empty) {
-                board[spot.row][spot.col] = 'W';
-                const score = evaluate(spot.row, spot.col);
-                board[spot.row][spot.col] = '';
-                if (score > bestScore) { bestScore = score; best = spot; }
-            }
-            return best || empty[Math.floor(Math.random() * empty.length)];
-        }
-
-        function evaluate(row, col) {
-            const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
-            let score = 0;
-            for (const [dr, dc] of dirs) {
-                score += evalLine(row, col, dr, dc, 'W') * 1.1;
-                score += evalLine(row, col, dr, dc, 'B') * 0.9;
-            }
-            const center = Math.floor(SIZE / 2);
-            score += (SIZE - Math.abs(row - center) - Math.abs(col - center)) * 0.1;
-            return score;
-        }
-
-        function evalLine(row, col, dr, dc, player) {
-            let count = 1, open = 0;
-            let r = row + dr, c = col + dc;
-            while (r >= 0 && r < SIZE && c >= 0 && c < SIZE) {
-                if (board[r][c] === player) count++;
-                else { if (board[r][c] === '') open++; break; }
-                r += dr; c += dc;
-            }
-            r = row - dr; c = col - dc;
-            while (r >= 0 && r < SIZE && c >= 0 && c < SIZE) {
-                if (board[r][c] === player) count++;
-                else { if (board[r][c] === '') open++; break; }
-                r -= dr; c -= dc;
-            }
-            if (count >= 5) return 100000;
-            if (count === 4 && open === 2) return 10000;
-            if (count === 4 && open === 1) return 1000;
-            if (count === 3 && open === 2) return 1000;
-            if (count === 3 && open === 1) return 100;
-            if (count === 2 && open === 2) return 100;
-            return count;
+            const numeric = board.map(row => row.map(v => (v === 'B' ? 1 : v === 'W' ? 2 : 0)));
+            return window.GobangAI.chooseMove(numeric, 'hard');
         }
 
         function checkWin(row, col) {
@@ -330,6 +299,13 @@
                 if (count >= 5) return cells;
             }
             return null;
+        }
+
+        function checkDraw() {
+            for (let r = 0; r < SIZE; r++)
+                for (let c = 0; c < SIZE; c++)
+                    if (!board[r][c]) return false;
+            return true;
         }
 
         function highlightWin(cells) {

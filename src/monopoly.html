@@ -1,0 +1,3570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#FFB6C1" />
+<title>糖果大富翁 · Candy Monopoly</title>
+<style>
+:root {
+  --bg: #FFF0F5;
+  --bg-deep: #FFE4EC;
+  --card: #FFFFFF;
+  --ink: #5C3D4A;
+  --ink-soft: #8B6B78;
+  --accent: #FF7B9C;
+  --accent-deep: #E85A7A;
+  --mint: #7EC8C8;
+  --sky: #8EC9E8;
+  --lemon: #FFE066;
+  --lavender: #C9A7EB;
+  --peach: #FFB37A;
+  --mint-soft: #B8E8D0;
+  --shadow: 0 8px 24px rgba(255, 123, 156, 0.18);
+  --shadow-sm: 0 2px 8px rgba(92, 61, 74, 0.08);
+  --radius: 16px;
+  --board-size: min(94vw, calc(100dvh - 220px), 560px);
+  --tile-gap: 2px;
+  --font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --panel-bg: rgba(255, 255, 255, 0.94);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 182, 193, 0.35), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(142, 201, 232, 0.3), transparent 40%),
+    radial-gradient(circle at 70% 15%, rgba(201, 167, 235, 0.25), transparent 35%),
+    var(--bg);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* ===== Splash ===== */
+#splash {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px;
+  background: linear-gradient(160deg, #FFD1DC 0%, #E8F8FF 50%, #FFF0F5 100%);
+  padding: 24px;
+  transition: opacity 0.5s, visibility 0.5s;
+}
+#splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.logo {
+  text-align: center;
+  animation: floatY 3s ease-in-out infinite;
+}
+.logo h1 {
+  font-size: clamp(28px, 8vw, 48px);
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #FF7B9C, #C9A7EB, #8EC9E8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 0 rgba(255,255,255,0.8));
+}
+.logo p {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.logo-emoji {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 8px;
+  animation: bounce 1.2s ease-in-out infinite;
+}
+.logo-emoji .svg-icon,
+.logo-svg {
+  width: 72px;
+  height: 72px;
+  display: inline-block;
+  filter: drop-shadow(0 6px 14px rgba(255, 123, 156, 0.35));
+}
+
+/* Global SVG icons */
+.svg-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.svg-icon.rounded {
+  border-radius: 30%;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+}
+.icon-btn .svg-icon {
+  width: 18px;
+  height: 18px;
+}
+.btn-roll .svg-icon,
+.btn-buy .svg-icon,
+.btn-skip .svg-icon,
+.btn-primary .svg-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  vertical-align: -3px;
+}
+.item-chip .svg-icon {
+  width: 18px;
+  height: 18px;
+}
+.item-big-icon .svg-icon {
+  width: 64px;
+  height: 64px;
+}
+.tile .icon .svg-icon {
+  width: 14px;
+  height: 14px;
+}
+.tile.corner .icon .svg-icon {
+  width: 16px;
+  height: 16px;
+}
+.house-row .svg-icon {
+  width: 10px;
+  height: 10px;
+  margin: 0 1px;
+}
+.token-preview .svg-icon,
+.p-dot-inner .svg-icon {
+  width: 20px;
+  height: 20px;
+}
+.card-art .svg-icon {
+  width: 42px;
+  height: 42px;
+}
+.float-item {
+  display: grid;
+  place-items: center;
+}
+.float-item .svg-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.setup {
+  width: min(360px, 92vw);
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.setup h2 { font-size: 16px; text-align: center; color: var(--ink); }
+.setup-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-top: -4px;
+}
+.player-rows { display: flex; flex-direction: column; gap: 10px; }
+.player-row {
+  display: flex; align-items: center; gap: 10px;
+}
+.player-row .token-preview {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 20px;
+  border: 2px solid #fff;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+.player-row input {
+  flex: 1; min-width: 0;
+  border: 2px solid #F0D6DF;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #FFF9FB;
+  color: var(--ink);
+  outline: none;
+}
+.player-row input:focus { border-color: var(--accent); }
+.player-row input:disabled { opacity: 0.45; }
+
+.ai-toggle {
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  background: #F0E0E8;
+  color: var(--ink-soft);
+  border: 2px solid transparent;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  min-width: 56px;
+}
+.ai-toggle.on {
+  background: linear-gradient(135deg, #C9A7EB, #8EC9E8);
+  color: #fff;
+  border-color: #9A78C4;
+}
+.ai-toggle:disabled { opacity: 0.35; }
+
+.p-card .p-ai {
+  font-size: 10px;
+  color: #7B62A8;
+  font-weight: 800;
+}
+.ai-thinking {
+  display: inline-block;
+  animation: bounce 0.9s ease-in-out infinite;
+}
+
+.count-pills { display: flex; gap: 8px; justify-content: center; }
+.pill {
+  padding: 8px 16px; border-radius: 999px;
+  background: #FFF0F5; color: var(--ink-soft);
+  font-size: 14px; font-weight: 700;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.pill.active {
+  background: var(--accent); color: #fff;
+  border-color: var(--accent-deep);
+  transform: scale(1.05);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #FF7B9C, #FF9FB4);
+  color: #fff;
+  font-size: 16px; font-weight: 800;
+  box-shadow: 0 4px 0 var(--accent-deep);
+  transition: transform 0.1s, box-shadow 0.1s;
+  letter-spacing: 0.5px;
+}
+.btn-primary:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--accent-deep);
+}
+.btn-primary .svg-icon {
+  margin-right: 6px;
+  vertical-align: -4px;
+}
+
+/* ===== Game Layout ===== */
+#game {
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom);
+}
+#game.active { display: flex; }
+
+.top-bar {
+  display: flex; align-items: center;
+  padding: 6px 4px 4px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.top-bar .title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px; font-weight: 800;
+  background: linear-gradient(90deg, #FF7B9C, #C9A7EB);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.top-actions { display: flex; gap: 6px; }
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.88);
+  box-shadow: var(--shadow-sm);
+  font-size: 16px;
+  display: grid; place-items: center;
+  border: 1px solid rgba(255,255,255,0.9);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.icon-btn:active { transform: scale(0.94); }
+
+.board-wrap {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 0;
+  position: relative;
+  padding: 2px 0 4px;
+  gap: 6px;
+}
+
+.turn-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  font-size: 13px; font-weight: 800;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.turn-banner .tdot {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  animation: tokenPulse 1.2s ease-in-out infinite;
+}
+
+.board {
+  width: var(--board-size);
+  height: var(--board-size);
+  position: relative;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #FFF8E7, #FFE8F0 60%, #E8F6FF);
+  box-shadow:
+    0 14px 44px rgba(255, 123, 156, 0.28),
+    0 2px 0 rgba(255,255,255,0.9) inset,
+    inset 0 0 0 3px rgba(255,255,255,0.75);
+  overflow: hidden;
+  padding: calc(var(--board-size) * 0.012);
+  border: 1.5px solid rgba(255,255,255,0.85);
+}
+
+.tiles {
+  position: absolute;
+  inset: calc(var(--board-size) * 0.012);
+  display: grid;
+  grid-template-columns: 1.4fr repeat(9, 1fr) 1.4fr;
+  grid-template-rows: 1.4fr repeat(9, 1fr) 1.4fr;
+  gap: 2px;
+}
+
+.tile {
+  position: relative;
+  background: #FFFDF8;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0 0 0 1px rgba(92,61,74,0.06);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.tile:active { transform: scale(0.96); }
+.tile.corner { border-radius: 8px; font-size: 9px; }
+
+.tile .band {
+  height: 22%;
+  width: 100%;
+  flex-shrink: 0;
+}
+.tile.band-bottom .band {
+  order: 2;
+}
+.tile.vert .band {
+  width: 22%;
+  height: 100%;
+  position: absolute;
+  right: 0; top: 0;
+}
+.tile.vert.band-left .band {
+  right: auto; left: 0;
+}
+.tile .name {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 2px;
+  text-align: center;
+  font-size: clamp(5px, calc(var(--board-size) * 0.016), 9px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
+  word-break: break-all;
+  overflow: hidden;
+}
+.tile .price {
+  font-size: clamp(5px, calc(var(--board-size) * 0.014), 8px);
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.tile .icon {
+  font-size: clamp(10px, calc(var(--board-size) * 0.035), 18px);
+  line-height: 1;
+}
+.tile.owned::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2.5px solid var(--owner, #ccc);
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.tile.house-row {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  gap: 1px;
+  font-size: clamp(6px, calc(var(--board-size) * 0.018), 10px);
+  line-height: 1;
+}
+.tile:not(.vert) .house-row { top: 24%; left: 50%; transform: translateX(-50%); }
+.tile.vert .house-row { right: 24%; top: 50%; transform: translateY(-50%); flex-direction: column; }
+
+/* special tiles */
+.tile.go { background: linear-gradient(135deg, #FFE0EC, #FFD0E0); }
+.tile.jail { background: linear-gradient(135deg, #E8E0F0, #F0E8FF); }
+.tile.parking { background: linear-gradient(135deg, #D0F0E8, #E0FFF5); }
+.tile.gotojail { background: linear-gradient(135deg, #FFD0D0, #FFE8E0); }
+.tile.chance { background: linear-gradient(135deg, #FFF3C4, #FFE8A0); }
+.tile.chest { background: linear-gradient(135deg, #D0E8FF, #E0F0FF); }
+.tile.tax { background: linear-gradient(135deg, #F0E0D0, #FFE8D8); }
+.tile.rail { background: linear-gradient(135deg, #E0E8F0, #F0F4F8); }
+.tile.util { background: linear-gradient(135deg, #E8F0D0, #F0FFE0); }
+
+/* center area */
+.center {
+  position: absolute;
+  inset: 14% 14%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 1;
+}
+.center-logo {
+  font-size: clamp(14px, calc(var(--board-size) * 0.06), 28px);
+  font-weight: 900;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #FF7B9C 20%, #C9A7EB 50%, #8EC9E8 80%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-align: center;
+  line-height: 1.2;
+}
+.center-sub {
+  font-size: clamp(8px, calc(var(--board-size) * 0.025), 12px);
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.dice-area {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+  margin-top: 4px;
+}
+.die {
+  width: clamp(38px, calc(var(--board-size) * 0.12), 56px);
+  height: clamp(38px, calc(var(--board-size) * 0.12), 56px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #E8C8D4, 0 6px 16px rgba(92,61,74,0.12);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 14%;
+  gap: 6%;
+  transition: transform 0.15s;
+}
+.die.rolling {
+  animation: diceShake 0.15s linear infinite;
+}
+.die .pip {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0;
+}
+.die .pip.on { opacity: 1; background: var(--accent-deep); box-shadow: 0 0 0 1px rgba(232,90,122,0.2); }
+
+/* tokens on board */
+.tokens-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.token {
+  position: absolute;
+  width: calc(var(--board-size) * 0.058);
+  height: calc(var(--board-size) * 0.058);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--board-size) * 0.032);
+  border: 2.5px solid #fff;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.22), inset 0 -2px 4px rgba(0,0,0,0.08);
+  transition: left 0.12s ease, top 0.12s ease;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  overflow: hidden;
+}
+.token .svg-icon {
+  width: 65% !important;
+  height: 65% !important;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.4));
+}
+.token.current {
+  animation: tokenPulse 1s ease-in-out infinite;
+  z-index: 7;
+}
+
+/* ===== Bottom Panel ===== */
+.panel {
+  flex-shrink: 0;
+  background: var(--panel-bg);
+  backdrop-filter: blur(18px) saturate(1.2);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -6px 28px rgba(255,123,156,0.16);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 -10px;
+  border-top: 1.5px solid rgba(255,255,255,0.95);
+}
+
+.players-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.players-scroll::-webkit-scrollbar { display: none; }
+
+.p-card {
+  flex: 0 0 auto;
+  min-width: 88px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: #FFF6F9;
+  border: 2px solid transparent;
+  transition: all 0.25s;
+  display: flex; flex-direction: column; gap: 2px;
+  box-shadow: 0 1px 4px rgba(92,61,74,0.05);
+}
+.p-card.turn {
+  border-color: var(--accent);
+  background: #FFE8F0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255,123,156,0.25);
+}
+.p-card.bankrupt { opacity: 0.4; filter: grayscale(0.8); }
+.p-card .p-head { display: flex; align-items: center; gap: 5px; }
+.p-card .p-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.p-card .p-name {
+  font-size: 11px; font-weight: 700;
+  max-width: 60px; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.p-card .p-money {
+  font-size: 13px; font-weight: 800;
+  color: var(--accent-deep);
+  font-variant-numeric: tabular-nums;
+}
+.p-card .p-assets {
+  font-size: 10px; color: var(--ink-soft);
+}
+
+/* item cards bar */
+.items-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  overflow-x: auto;
+  min-height: 40px;
+  padding: 2px 0;
+  scrollbar-width: none;
+}
+.items-bar::-webkit-scrollbar { display: none; }
+.items-empty {
+  font-size: 11px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  padding: 4px 2px;
+}
+.item-chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FFF0F7, #E8F6FF);
+  border: 2px solid #F0D6DF;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  transition: transform 0.12s, box-shadow 0.12s;
+  box-shadow: 0 1px 4px rgba(92,61,74,0.06);
+}
+.item-chip .icon { font-size: 16px; }
+.item-chip:disabled {
+  opacity: 0.4;
+  filter: grayscale(0.3);
+}
+.item-chip:not(:disabled):active {
+  transform: scale(0.96);
+}
+.item-chip.ready:not(:disabled) {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, #FFE0EC, #E0F0FF);
+  animation: itemGlow 1.6s ease-in-out infinite;
+}
+@keyframes itemGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,123,156,0.25); }
+  50% { box-shadow: 0 0 0 4px rgba(255,123,156,0.12); }
+}
+.p-card .p-items {
+  font-size: 10px;
+  color: #7B62A8;
+  font-weight: 700;
+}
+
+/* item detail modal */
+.item-detail {
+  text-align: center;
+  margin: 8px 0 4px;
+  padding: 14px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #FFF0F7, #F0F8FF);
+  border: 1.5px solid #F0D6DF;
+}
+.item-big-icon {
+  font-size: 56px;
+  line-height: 1;
+  animation: bounce 1s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(255,123,156,0.25));
+}
+.item-name {
+  font-size: 20px;
+  font-weight: 900;
+  margin: 8px 0 6px;
+  color: var(--ink);
+}
+.item-desc {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-deep);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+.item-tip {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  line-height: 1.5;
+}
+.item-tip:empty { display: none; }
+
+/* motion / fx */
+.token.hop {
+  animation: tokenHop 0.38s ease;
+}
+@keyframes tokenHop {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  35% { transform: translate(-50%, -65%) scale(1.15); }
+  70% { transform: translate(-50%, -45%) scale(0.95); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.token.glow-buff {
+  box-shadow: 0 0 0 3px #FFE066, 0 0 12px #FFE066;
+}
+
+.board.shake {
+  animation: boardShake 0.4s ease;
+}
+@keyframes boardShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  60% { transform: translate(-3px, 1px); }
+  80% { transform: translate(2px, -1px); }
+}
+
+.panel.pop {
+  animation: panelPop 0.35s ease;
+}
+@keyframes panelPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.01); }
+  100% { transform: scale(1); }
+}
+
+.float-item {
+  position: absolute;
+  z-index: 20;
+  font-size: 28px;
+  pointer-events: none;
+  animation: floatUp 1.1s ease-out forwards;
+  text-shadow: 0 2px 0 #fff;
+}
+
+.die.pop {
+  animation: diePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes diePop {
+  0% { transform: scale(0.85); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+.btn-buy.flash, .item-chip.flash {
+  animation: flashBtn 0.5s ease;
+}
+@keyframes flashBtn {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.25); }
+}
+
+body.sfx-enabled .toast { pointer-events: none; }
+#btn-music.off { opacity: 0.55; filter: grayscale(0.6); }
+
+.action-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.action-row .btn {
+  flex: 1;
+  padding: 12px 10px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 800;
+  transition: transform 0.1s, box-shadow 0.1s, opacity 0.2s;
+}
+.action-row .btn:disabled {
+  opacity: 0.4;
+  transform: none !important;
+}
+.btn-roll {
+  background: linear-gradient(135deg, #FF7B9C, #FF9FB4);
+  color: #fff;
+  box-shadow: 0 3px 0 var(--accent-deep);
+}
+.btn-roll:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 var(--accent-deep); }
+.btn-buy {
+  background: linear-gradient(135deg, #7EC8C8, #9ED8D8);
+  color: #fff;
+  box-shadow: 0 3px 0 #4A9A9A;
+}
+.btn-buy:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 #4A9A9A; }
+.btn-skip {
+  background: linear-gradient(135deg, #C9A7EB, #D8B8F0);
+  color: #fff;
+  box-shadow: 0 3px 0 #9A78C4;
+}
+.btn-skip:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 #9A78C4; }
+
+.status-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  min-height: 18px;
+  flex-wrap: wrap;
+}
+.countdown {
+  font-weight: 800;
+  color: var(--accent-deep);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #FFE8F0;
+  font-size: 12px;
+}
+.countdown:empty { display: none; }
+.countdown.warn {
+  animation: pulseWarn 0.55s ease-in-out infinite;
+  color: #fff;
+  background: var(--accent);
+}
+@keyframes pulseWarn {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(92,61,74,0.35);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.25s, visibility 0.25s;
+  padding: 12px;
+}
+.modal-overlay.show { opacity: 1; visibility: visible; }
+
+.modal {
+  width: min(400px, 100%);
+  max-height: min(78vh, 560px);
+  background: #FFFBFC;
+  border-radius: 24px 24px 18px 18px;
+  padding: 18px 16px;
+  overflow-y: auto;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
+  transform: translateY(40px);
+  transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.modal-overlay.show .modal { transform: translateY(0); }
+
+.modal-handle {
+  width: 36px; height: 4px;
+  background: #E8D0D8;
+  border-radius: 2px;
+  margin: 0 auto 14px;
+}
+
+.modal h3 {
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+.modal .subtitle {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 14px;
+}
+
+.prop-header {
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.prop-header .pname {
+  font-size: 20px; font-weight: 900;
+  margin-bottom: 4px;
+}
+.prop-header .pprice {
+  font-size: 14px; font-weight: 700; opacity: 0.9;
+}
+
+.rent-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+.rent-table td {
+  padding: 7px 10px;
+  border-bottom: 1px dashed #F0D6DF;
+}
+.rent-table td:last-child {
+  text-align: right; font-weight: 800; color: var(--accent-deep);
+}
+
+.modal-actions {
+  display: flex; gap: 8px;
+  margin-top: 8px;
+}
+.modal-actions .btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  font-size: 14px; font-weight: 800;
+}
+.modal-actions .btn:disabled {
+  opacity: 0.4;
+  filter: grayscale(0.3);
+}
+.btn-ghost {
+  background: #F0E0E8;
+  color: var(--ink);
+}
+.btn-confirm {
+  background: linear-gradient(135deg, #FF7B9C, #FF9FB4);
+  color: #fff;
+  box-shadow: 0 3px 0 var(--accent-deep);
+}
+
+/* card modal (chance/chest) */
+.card-art {
+  width: 80px; height: 80px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 40px;
+  animation: cardPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.card-art.chance { background: linear-gradient(135deg, #FFE066, #FFB37A); }
+.card-art.chest { background: linear-gradient(135deg, #8EC9E8, #C9A7EB); }
+.card-text {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  color: var(--ink);
+}
+
+/* log */
+.log-box {
+  max-height: 180px;
+  overflow-y: auto;
+  background: #FFF6F9;
+  border-radius: 12px;
+  padding: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.log-box div { padding: 2px 0; border-bottom: 1px solid rgba(255,123,156,0.08); }
+.log-box div:last-child { border: none; }
+
+/* properties list in manage */
+.prop-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 240px; overflow-y: auto;
+}
+.prop-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: #FFF6F9;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.prop-item .swatch {
+  width: 12px; height: 28px; border-radius: 4px; flex-shrink: 0;
+}
+.prop-item .info { flex: 1; min-width: 0; }
+.prop-item .info .n { font-weight: 700; font-size: 12px; }
+.prop-item .info .s { font-size: 11px; color: var(--ink-soft); }
+.prop-item button {
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #FFE0EC;
+  color: var(--accent-deep);
+}
+.prop-item button.buy-house {
+  background: #D0F0E0;
+  color: #2A8A5A;
+}
+.prop-item button:disabled { opacity: 0.35; }
+
+/* floating money animation */
+.float-money {
+  position: absolute;
+  z-index: 20;
+  font-weight: 900;
+  font-size: 16px;
+  pointer-events: none;
+  animation: floatUp 1s ease-out forwards;
+  text-shadow: 0 1px 0 #fff;
+}
+
+/* toast */
+.toast {
+  position: fixed;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  background: rgba(92,61,74,0.92);
+  color: #fff;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 60;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* win screen */
+#win-overlay {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(255,240,245,0.95);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+}
+#win-overlay.show { display: flex; }
+.win-emoji { font-size: 72px; animation: bounce 1s ease-in-out infinite; }
+.win-title {
+  font-size: 28px; font-weight: 900;
+  background: linear-gradient(135deg, #FF7B9C, #C9A7EB);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.win-sub { font-size: 16px; font-weight: 700; color: var(--ink); }
+
+/* ===== Animations ===== */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes diceShake {
+  0% { transform: rotate(-8deg) scale(1.05); }
+  25% { transform: rotate(8deg) scale(1.08); }
+  50% { transform: rotate(-6deg) scale(1.05); }
+  75% { transform: rotate(6deg) scale(1.08); }
+  100% { transform: rotate(-8deg) scale(1.05); }
+}
+@keyframes tokenPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,123,156,0.6), 0 2px 6px rgba(0,0,0,0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(255,123,156,0), 0 2px 6px rgba(0,0,0,0.2); }
+}
+@keyframes floatUp {
+  0% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -40px) scale(1.3); }
+}
+@keyframes cardPop {
+  0% { transform: scale(0.3) rotate(-20deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+/* ===== Desktop tweak ===== */
+@media (min-width: 768px) {
+  :root {
+    --board-size: min(86vw, calc(100dvh - 180px), 600px);
+  }
+  .panel {
+    margin: 0 auto 8px;
+    max-width: 640px;
+    width: calc(100% - 20px);
+    border-radius: 20px;
+    align-self: center;
+  }
+  .modal-overlay { align-items: center; }
+  .modal { border-radius: 24px; }
+  .board-wrap { padding: 8px 0; }
+}
+
+/* landscape short phones */
+@media (max-height: 500px) and (orientation: landscape) {
+  #game { flex-direction: row; padding: 6px; gap: 8px; }
+  .board-wrap { flex: 1; min-width: 0; }
+  .panel {
+    width: 200px; flex-shrink: 0;
+    margin: 0; border-radius: 16px;
+    max-height: 100%;
+    overflow-y: auto;
+  }
+  .players-scroll { flex-direction: column; }
+  .top-bar {
+    position: absolute; top: 6px; left: 10px; right: 10px;
+    z-index: 10;
+  }
+  .action-row { flex-wrap: wrap; }
+}
+
+/* 开场页返回（不挡居中标题） */
+.splash-back {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid #FFD0DC;
+  border-radius: 12px;
+  color: var(--accent-deep);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+}
+.splash-back:hover { background: #fff; border-color: var(--accent); transform: scale(1.05); }
+.splash-back:active { transform: scale(0.95); }
+</style>
+</head>
+<body>
+
+<!-- Splash / Setup -->
+<div id="splash">
+  <button class="splash-back" id="splashBack" title="返回工具箱" aria-label="返回">←</button>
+  <div class="logo">
+    <span class="logo-emoji logo-svg-wrap" id="logo-icon"></span>
+    <h1>糖果大富翁</h1>
+    <p>Candy Monopoly · 一起变大富翁吧！</p>
+  </div>
+  <div class="setup">
+    <h2>选择玩家人数</h2>
+    <div class="count-pills">
+      <button class="pill active" data-count="2">2人</button>
+      <button class="pill" data-count="3">3人</button>
+      <button class="pill" data-count="4">4人</button>
+    </div>
+    <p class="setup-hint">第一位默认是你，其余可设为电脑 AI 陪玩</p>
+    <div class="player-rows" id="player-rows"></div>
+    <button class="btn-primary" id="btn-start"><span class="btn-ic" id="btn-start-icon"></span>开始游戏</button>
+  </div>
+</div>
+
+<!-- Game -->
+<div id="game">
+  <div class="top-bar">
+    <button class="icon-btn" id="backBtn" title="返回工具箱" aria-label="返回">←</button>
+    <div class="title"><span id="title-icon"></span> 糖果大富翁</div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btn-music" title="音乐开关"></button>
+      <button class="icon-btn" id="btn-assets" title="我的资产"></button>
+      <button class="icon-btn" id="btn-log" title="记录"></button>
+      <button class="icon-btn" id="btn-reset" title="重开"></button>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="turn-banner" id="turn-banner">
+      <span class="tdot" id="turn-dot" style="background:#FF8FAB"></span>
+      <span id="turn-text">粉猫 的回合</span>
+    </div>
+    <div class="board" id="board">
+      <div class="tiles" id="tiles"></div>
+      <div class="center">
+        <div class="center-logo">糖果<br>大富翁</div>
+        <div class="center-sub">Candy Monopoly</div>
+        <div class="dice-area">
+          <div class="die" id="die1"></div>
+          <div class="die" id="die2"></div>
+        </div>
+      </div>
+      <div class="tokens-layer" id="tokens"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="players-scroll" id="players-bar"></div>
+    <div class="items-bar" id="items-bar"></div>
+    <div class="status-line">
+      <span id="status">点击掷骰子开始吧！</span>
+      <span class="countdown" id="countdown"></span>
+    </div>
+    <div class="action-row" id="actions">
+      <button class="btn btn-roll" id="btn-roll"><span class="btn-ic" id="btn-roll-icon"></span>掷骰子</button>
+      <button class="btn btn-buy" id="btn-buy" disabled><span class="btn-ic" id="btn-buy-icon"></span>购买</button>
+      <button class="btn btn-skip" id="btn-skip" disabled>跳过</button>
+    </div>
+  </div>
+</div>
+
+<!-- Property Modal -->
+<div class="modal-overlay" id="modal-prop">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="prop-title">地产详情</h3>
+    <div class="subtitle" id="prop-subtitle"></div>
+    <div id="prop-body"></div>
+    <div class="modal-actions" id="prop-actions"></div>
+  </div>
+</div>
+
+<!-- Card Modal -->
+<div class="modal-overlay" id="modal-card">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3 id="card-title">机会</h3>
+    <div class="card-art chance" id="card-art"></div>
+    <div class="card-text" id="card-text"></div>
+    <div class="modal-actions">
+      <button class="btn btn-confirm" id="btn-card-ok">好的！</button>
+    </div>
+  </div>
+</div>
+
+<!-- Item Detail Modal -->
+<div class="modal-overlay" id="modal-item">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>道具详情</h3>
+    <div class="subtitle" id="item-sub">使用前确认效果</div>
+    <div class="item-detail">
+      <div class="item-big-icon" id="item-icon"></div>
+      <div class="item-name" id="item-name">幸运星</div>
+      <div class="item-desc" id="item-desc"></div>
+      <div class="item-tip" id="item-tip"></div>
+      <div class="item-tip" id="item-note"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btn-item-cancel">取消</button>
+      <button class="btn btn-confirm" id="btn-item-use">确定使用</button>
+    </div>
+  </div>
+</div>
+
+<!-- Assets Modal -->
+<div class="modal-overlay" id="modal-assets">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>我的资产</h3>
+    <div class="subtitle" id="assets-subtitle"></div>
+    <div class="prop-list" id="assets-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btn-assets-close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Modal -->
+<div class="modal-overlay" id="modal-log">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>游戏记录</h3>
+    <div class="log-box" id="log-box"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btn-log-close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="win-overlay">
+  <div class="win-emoji" id="win-icon"></div>
+  <div class="win-title">游戏结束！</div>
+  <div class="win-sub" id="win-text"></div>
+  <button class="btn-primary" id="btn-again" style="max-width:220px">再来一局</button>
+</div>
+
+<script>
+"use strict";
+
+/* ===================== Data ===================== */
+const COLORS = {
+  brown:   "#C4A484",
+  lightblue: "#9FD4E8",
+  pink:    "#F48FB1",
+  orange:  "#FFB74D",
+  red:     "#EF5350",
+  yellow:  "#FFD54F",
+  green:   "#81C784",
+  darkblue: "#5C6BC0",
+  rail:    "#78909C",
+  util:    "#A5D6A7",
+  special: "#FFCDD2",
+};
+
+const TILES = [
+  { id: 0,  type: "go",     name: "起点",       sub: "领 200 糖币", icon: "lollipop" },
+  { id: 1,  type: "prop",   name: "樱桃巷",     color: "brown",     price: 60,  rent: 2,   houseCost: 50 },
+  { id: 2,  type: "chest",  name: "公益金",     icon: "gift" },
+  { id: 3,  type: "prop",   name: "薄荷大道",   color: "brown",     price: 60,  rent: 4,   houseCost: 50 },
+  { id: 4,  type: "tax",    name: "糖税",       amount: 200, icon: "candy" },
+  { id: 5,  type: "rail",   name: "草莓车站",   color: "rail",      price: 200, icon: "train" },
+  { id: 6,  type: "prop",   name: "云朵街",     color: "lightblue", price: 100, rent: 6,  houseCost: 50 },
+  { id: 7,  type: "chance", name: "机会",       icon: "sparkle" },
+  { id: 8,  type: "prop",   name: "汽水街",     color: "lightblue", price: 100, rent: 6,  houseCost: 50 },
+  { id: 9,  type: "prop",   name: "棉花糖道",   color: "lightblue", price: 120, rent: 8,  houseCost: 50 },
+  { id: 10, type: "jail",   name: "监狱",       sub: "路过观光", icon: "jail" },
+  { id: 11, type: "prop",   name: "奶糖广场",   color: "pink",      price: 140, rent: 10, houseCost: 100 },
+  { id: 12, type: "util",   name: "电力公司",   color: "util",      price: 150, icon: "bulb" },
+  { id: 13, type: "prop",   name: "软糖街",     color: "pink",      price: 140, rent: 10, houseCost: 100 },
+  { id: 14, type: "prop",   name: "果冻巷",     color: "pink",      price: 160, rent: 12, houseCost: 100 },
+  { id: 15, type: "rail",   name: "蜜桃车站",   color: "rail",      price: 200, icon: "train" },
+  { id: 16, type: "prop",   name: "布丁街",     color: "orange",    price: 180, rent: 14, houseCost: 100 },
+  { id: 17, type: "chest",  name: "公益金",     icon: "gift" },
+  { id: 18, type: "prop",   name: "焦糖大道",   color: "orange",    price: 180, rent: 14, houseCost: 100 },
+  { id: 19, type: "prop",   name: "巧克力道",   color: "orange",    price: 200, rent: 16, houseCost: 100 },
+  { id: 20, type: "parking",name: "免费停车",   sub: "休息一下", icon: "car" },
+  { id: 21, type: "prop",   name: "玫瑰街",     color: "red",       price: 220, rent: 18, houseCost: 150 },
+  { id: 22, type: "chance", name: "机会",       icon: "sparkle" },
+  { id: 23, type: "prop",   name: "樱花道",     color: "red",       price: 220, rent: 18, houseCost: 150 },
+  { id: 24, type: "prop",   name: "枫叶大道",   color: "red",       price: 240, rent: 20, houseCost: 150 },
+  { id: 25, type: "rail",   name: "柠檬车站",   color: "rail",      price: 200, icon: "train" },
+  { id: 26, type: "prop",   name: "阳光街",     color: "yellow",    price: 260, rent: 22, houseCost: 150 },
+  { id: 27, type: "prop",   name: "沙滩大道",   color: "yellow",    price: 260, rent: 22, houseCost: 150 },
+  { id: 28, type: "util",   name: "自来水厂",   color: "util",      price: 150, icon: "water" },
+  { id: 29, type: "prop",   name: "向日葵道",   color: "yellow",    price: 280, rent: 24, houseCost: 150 },
+  { id: 30, type: "gotojail", name: "去监狱！", icon: "siren" },
+  { id: 31, type: "prop",   name: "薄荷绿街",   color: "green",     price: 300, rent: 26, houseCost: 200 },
+  { id: 32, type: "prop",   name: "苹果街",     color: "green",     price: 300, rent: 26, houseCost: 200 },
+  { id: 33, type: "chest",  name: "公益金",     icon: "gift" },
+  { id: 34, type: "prop",   name: "橄榄道",     color: "green",     price: 320, rent: 28, houseCost: 200 },
+  { id: 35, type: "rail",   name: "彩虹车站",   color: "rail",      price: 200, icon: "train" },
+  { id: 36, type: "chance", name: "机会",       icon: "sparkle" },
+  { id: 37, type: "prop",   name: "星空大道",   color: "darkblue",  price: 350, rent: 35, houseCost: 200 },
+  { id: 38, type: "tax",    name: "豪华税",     amount: 100, icon: "diamond" },
+  { id: 39, type: "prop",   name: "月光大道",   color: "darkblue",  price: 400, rent: 50, houseCost: 200 },
+];
+
+// Color group members
+const GROUPS = {};
+TILES.forEach(t => {
+  if (t.type === "prop" && t.color) {
+    (GROUPS[t.color] = GROUPS[t.color] || []).push(t.id);
+  }
+});
+const RAILS = TILES.filter(t => t.type === "rail").map(t => t.id);
+const UTILS = TILES.filter(t => t.type === "util").map(t => t.id);
+
+const CHANCE_CARDS = [
+  { text: "前进到起点，领取 200 糖币！", action: "goto", target: 0, money: 200 },
+  { text: "前进到月光大道！", action: "goto", target: 39 },
+  { text: "前进到草莓车站！", action: "goto", target: 5 },
+  { text: "银行发红包，获得 200 糖币！", action: "money", amount: 200 },
+  { text: "获得银行股息 50 糖币！", action: "money", amount: 50 },
+  { text: "退回监狱卡，免费出狱一次！", action: "jailcard" },
+  { text: "后退 3 步。", action: "move", steps: -3 },
+  { text: "入狱！不领起点工资。", action: "tojail" },
+  { text: "房屋维修：每栋房付 25，每座酒店付 100。", action: "repairs" },
+  { text: "缴纳交通罚款 15 糖币。", action: "money", amount: -15 },
+  { text: "参加选美大赛，获得 10 糖币！", action: "money", amount: 10 },
+  { text: "学费支出 50 糖币。", action: "money", amount: -50 },
+  { text: "前进到樱桃巷！", action: "goto", target: 1 },
+  { text: "你的咖啡店开业，每位玩家付你 50 糖币！", action: "collect_all", amount: 50 },
+];
+
+const CHEST_CARDS = [
+  { text: "银行失误，获得 200 糖币！", action: "money", amount: 200 },
+  { text: "医疗费支出 50 糖币。", action: "money", amount: -50 },
+  { text: "生日快乐！每位玩家给你 20 糖币！", action: "collect_all", amount: 20 },
+  { text: "退税！获得 20 糖币。", action: "money", amount: 20 },
+  { text: "生日快乐！你已收到 10 糖币红包。", action: "money", amount: 10 },
+  { text: "免费出狱卡！", action: "jailcard" },
+  { text: "去监狱！不领起点工资。", action: "tojail" },
+  { text: "医院账单 100 糖币。", action: "money", amount: -100 },
+  { text: "人寿保险到期，获得 100 糖币。", action: "money", amount: 100 },
+  { text: "支付学费 50 糖币。", action: "money", amount: -50 },
+  { text: "咨询服务费，获得 25 糖币。", action: "money", amount: 25 },
+  { text: "街道维修：每栋房付 40，每座酒店付 115。", action: "repairs" },
+];
+
+const PLAYER_COLORS = [
+  { key: "p1", bg: "#FF8FAB", icon: "cat", name: "粉猫" },
+  { key: "p2", bg: "#8EC9E8", icon: "rabbit", name: "蓝兔" },
+  { key: "p3", bg: "#FFE066", icon: "bear", name: "黄熊" },
+  { key: "p4", bg: "#81C784", icon: "frog", name: "绿蛙" },
+];
+
+const START_MONEY = 1500;
+const MAX_ITEM_CARDS = 5;
+const ITEM_TURN_GIFT_EVERY = 4; // 每玩满 N 回合随机送一张
+
+const ITEM_CARDS = {
+  boots: {
+    id: "boots", name: "疾步靴", icon: "boots",
+    desc: "立即前进 6 格，并像正常移动一样触发租金、卡牌等结算。",
+    tip: "适合想快速靠近目标地块或绕开危险区域时使用。",
+    note: "使用后本回合将自动移动，无法再掷骰子。",
+  },
+  aim: {
+    id: "aim", name: "定位骰", icon: "aim",
+    desc: "装备后，下一次掷骰必定为 10 点。",
+    tip: "10 点通常刚好能进站或越过税格。",
+    note: "仍需点击掷骰子才会生效。",
+  },
+  shield: {
+    id: "shield", name: "免租盾", icon: "shield",
+    desc: "装备后，下一次经过/落在对手地块时免付租金。",
+    tip: "准备路过高价地时提前装备最划算。",
+    note: "只能抵消一次租金。",
+  },
+  star: {
+    id: "star", name: "幸运星", icon: "star",
+    desc: "立即获得 120 糖币。",
+    tip: "急用钱买地时非常实用。",
+    note: "使用后仍可继续本回合掷骰子。",
+  },
+  break: {
+    id: "break", name: "越狱卡", icon: "key",
+    desc: "若在监狱中：立即出狱；若不在监狱：存为免费出狱卡。",
+    tip: "连续两次掷不出对子时建议使用。",
+    note: "存起来的出狱卡可在入狱后免费逃脱。",
+  },
+  house: {
+    id: "house", name: "筑屋锤", icon: "hammer",
+    desc: "在一个已集齐的色组地块上免费建造一栋房（最多酒店）。",
+    tip: "集齐色组后使用，可零成本升租金。",
+    note: "若没有可建的完整色组，道具仍会被消耗。",
+  },
+  thief: {
+    id: "thief", name: "小偷", icon: "thief",
+    desc: "随机偷取一名对手最多 80 糖币。",
+    tip: "对手钱多时收益更高。",
+    note: "目标随机，无法指定。",
+  },
+  double: {
+    id: "double", name: "财源卡", icon: "diamond",
+    desc: "装备后，下一次你收到的租金翻倍。",
+    tip: "在自己高价地附近时装备收益最大。",
+    note: "只能生效一次租金结算。",
+  },
+};
+
+/* ===================== Audio ===================== */
+const GameAudio = {
+  ctx: null,
+  master: null,
+  musicGain: null,
+  sfxGain: null,
+  musicOn: true,
+  sfxOn: true,
+  started: false,
+  _musicTimer: null,
+  _step: 0,
+
+  ensure() {
+    if (this.ctx) return true;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.55;
+      this.master.connect(this.ctx.destination);
+      this.musicGain = this.ctx.createGain();
+      this.musicGain.gain.value = 0.22;
+      this.musicGain.connect(this.master);
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = 0.9;
+      this.sfxGain.connect(this.master);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  unlock() {
+    if (!this.ensure()) return;
+    if (this.ctx.state === "suspended") this.ctx.resume();
+    if (!this.started && this.musicOn) {
+      this.started = true;
+      this.startMusic();
+    }
+  },
+
+  tone(freq, dur = 0.12, type = "sine", gain = 0.5, when = 0) {
+    if (!this.ctx || !this.sfxOn) return;
+    const t0 = this.ctx.currentTime + when;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g);
+    g.connect(this.sfxGain);
+    o.start(t0);
+    o.stop(t0 + dur + 0.02);
+  },
+
+  play(name) {
+    if (!this.ensure() || !this.sfxOn) return;
+    if (this.ctx.state === "suspended") this.ctx.resume();
+    switch (name) {
+      case "step":
+        this.tone(520 + Math.random() * 40, 0.06, "triangle", 0.25);
+        break;
+      case "roll":
+        this.tone(180, 0.08, "square", 0.15);
+        this.tone(220, 0.08, "square", 0.12, 0.07);
+        this.tone(260, 0.1, "square", 0.1, 0.14);
+        break;
+      case "win":
+        this.tone(523, 0.12, "sine", 0.4);
+        this.tone(659, 0.12, "sine", 0.4, 0.1);
+        this.tone(784, 0.18, "sine", 0.45, 0.2);
+        break;
+      case "money":
+        this.tone(880, 0.08, "sine", 0.35);
+        this.tone(1175, 0.12, "sine", 0.3, 0.06);
+        break;
+      case "item":
+        this.tone(660, 0.1, "sine", 0.4);
+        this.tone(990, 0.14, "sine", 0.35, 0.08);
+        break;
+      case "buy":
+        this.tone(440, 0.08, "triangle", 0.35);
+        this.tone(554, 0.1, "triangle", 0.35, 0.06);
+        this.tone(659, 0.14, "triangle", 0.4, 0.12);
+        break;
+      case "jail":
+        this.tone(160, 0.25, "sawtooth", 0.25);
+        this.tone(120, 0.3, "sawtooth", 0.2, 0.1);
+        break;
+      case "card":
+        this.tone(700, 0.07, "sine", 0.3);
+        this.tone(900, 0.1, "sine", 0.25, 0.05);
+        break;
+      case "thud":
+        this.tone(90, 0.2, "sine", 0.45);
+        break;
+      case "toast":
+        this.tone(600, 0.06, "sine", 0.2);
+        break;
+      default:
+        this.tone(600, 0.08, "sine", 0.25);
+    }
+  },
+
+  startMusic() {
+    if (!this.ctx || this._musicTimer) return;
+    // Cute pentatonic loop
+    const scale = [523.25, 587.33, 659.25, 783.99, 880.00, 783.99, 659.25, 587.33];
+    const bass = [130.81, 146.83, 164.81, 146.83];
+    const stepMs = 280;
+    const tick = () => {
+      if (!this.ctx || !this.musicOn) return;
+      const t = this.ctx.currentTime;
+      const i = this._step % scale.length;
+      // lead
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = "triangle";
+      o.frequency.value = scale[i];
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.18, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+      o.connect(g);
+      g.connect(this.musicGain);
+      o.start(t);
+      o.stop(t + 0.26);
+      // soft bass every 2 steps
+      if (this._step % 2 === 0) {
+        const b = this.ctx.createOscillator();
+        const bg = this.ctx.createGain();
+        b.type = "sine";
+        b.frequency.value = bass[(this._step / 2) % bass.length];
+        bg.gain.setValueAtTime(0.0001, t);
+        bg.gain.exponentialRampToValueAtTime(0.1, t + 0.04);
+        bg.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+        b.connect(bg);
+        bg.connect(this.musicGain);
+        b.start(t);
+        b.stop(t + 0.38);
+      }
+      this._step++;
+      this._musicTimer = setTimeout(tick, stepMs);
+    };
+    tick();
+  },
+
+  stopMusic() {
+    if (this._musicTimer) {
+      clearTimeout(this._musicTimer);
+      this._musicTimer = null;
+    }
+  },
+
+  toggleMusic() {
+    this.musicOn = !this.musicOn;
+    if (this.musicOn) {
+      this.unlock();
+      this.startMusic();
+    } else {
+      this.stopMusic();
+    }
+    return this.musicOn;
+  },
+};
+
+function vibrate(pattern) {
+  try {
+    if (navigator.vibrate) navigator.vibrate(pattern);
+  } catch (e) { /* ignore */ }
+}
+
+function shakeBoard() {
+  boardEl.classList.remove("shake");
+  void boardEl.offsetWidth;
+  boardEl.classList.add("shake");
+  setTimeout(() => boardEl.classList.remove("shake"), 420);
+}
+
+function popEl(el, cls = "hop") {
+  if (!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth;
+  el.classList.add(cls);
+  setTimeout(() => el.classList.remove(cls), 400);
+}
+
+function showFloatItem(player, iconName) {
+  const { left, top } = tileCenter(player.pos, player.id);
+  const el = document.createElement("div");
+  el.className = "float-item";
+  el.style.left = left + "px";
+  el.style.top = (top - 20) + "px";
+  el.innerHTML = iconSvg(iconName, 28);
+  boardEl.appendChild(el);
+  setTimeout(() => el.remove(), 1100);
+}
+const ITEM_KEYS = Object.keys(ITEM_CARDS);
+
+function randomItemKey() {
+  return ITEM_KEYS[Math.floor(Math.random() * ITEM_KEYS.length)];
+}
+
+function giveItemCard(player, reason) {
+  if (!player || player.bankrupt) return false;
+  if ((player.items || []).length >= MAX_ITEM_CARDS) {
+    showToast(`道具已满（最多${MAX_ITEM_CARDS}张），无法再获得`);
+    log(`${player.name} 道具已满，本次无法获得`);
+    GameAudio.play("toast");
+    vibrate(40);
+    return false;
+  }
+  const key = randomItemKey();
+  if (!player.items) player.items = [];
+  player.items.push(key);
+  const card = ITEM_CARDS[key];
+  log(`${player.name} 获得道具 ${card.name}${reason ? `（${reason}）` : ""}`);
+  showToast(`获得 ${card.name}`);
+  GameAudio.play("item");
+  vibrate([12, 30, 12]);
+  if (!player.ai) {
+    const tok = document.getElementById("token-" + player.id);
+    popEl(tok, "hop");
+    showFloatItem(player, card.icon);
+  }
+  renderPlayers();
+  renderItemsBar();
+  return true;
+}
+
+function removeItem(player, key) {
+  const i = (player.items || []).indexOf(key);
+  if (i >= 0) player.items.splice(i, 1);
+}
+
+function hasItem(player, key) {
+  return (player.items || []).includes(key);
+}
+
+/* ===================== State ===================== */
+let state = {
+  players: [],
+  current: 0,
+  phase: "idle", // idle | rolling | moving | action | buy | end | jail | gameover
+  dice: [1, 1],
+  doubles: 0,
+  selectedProp: null,
+  logs: [],
+  chanceDeck: [],
+  chestDeck: [],
+};
+
+/* ===================== DOM ===================== */
+const $ = id => document.getElementById(id);
+const boardEl = $("board");
+const tilesEl = $("tiles");
+const tokensEl = $("tokens");
+const playersBar = $("players-bar");
+const statusEl = $("status");
+const toastEl = $("toast");
+
+/* ===================== SVG Icons ===================== */
+const ICONS = {
+  // 棒棒糖 / 起点
+  lollipop: `<circle cx="32" cy="24" r="20" fill="#FF8FAB"/><path d="M24 18a10 10 0 0120 0c0 4-3 6-6 8s-6 4-6 8c0-6-4-10-8-10s-6 3-6 6c0-5-4-8-8-8 2-4 4-4 14-4z" fill="#fff" opacity=".35"/><circle cx="32" cy="24" r="6" fill="#fff" opacity=".55"/><rect x="29.5" y="42" width="5" height="14" rx="2.5" fill="#E8C4A0"/><circle cx="32" cy="56" r="2.5" fill="#FFB37A"/>`,
+  // 骰子（超圆角方块）
+  dice: `<rect x="8" y="8" width="48" height="48" rx="16" fill="#fff" stroke="#FFB6C8" stroke-width="3"/><circle cx="22" cy="22" r="5.5" fill="#FF7B9C"/><circle cx="42" cy="22" r="5.5" fill="#FF7B9C"/><circle cx="22" cy="42" r="5.5" fill="#FF7B9C"/><circle cx="42" cy="42" r="5.5" fill="#FF7B9C"/><circle cx="32" cy="32" r="5.5" fill="#FF7B9C"/>`,
+  // 钱袋
+  money: `<path d="M24 20c0-7 4-12 8-12s8 5 8 12" fill="#9EDCDC"/><rect x="26" y="16" width="12" height="8" rx="4" fill="#B8EAEA"/><path d="M18 28c-2 2-4 6-4 12 0 12 8 18 18 18s18-6 18-18c0-6-2-10-4-12-6 4-22 4-28 0z" fill="#7EC8C8"/><ellipse cx="32" cy="44" rx="10" ry="8" fill="#fff" opacity=".25"/><circle cx="32" cy="44" r="7" fill="#fff"/><path d="M32 39v10M28.5 42h7M28.5 47h7" stroke="#5AAAAA" stroke-width="2.2" stroke-linecap="round"/>`,
+  // 小房子
+  house: `<path d="M10 34L32 14l22 20" fill="none" stroke="#FF7B9C" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 32v18a4 4 0 004 4h20a4 4 0 004-4V32a6 6 0 00-6-6H24a6 6 0 00-6 6z" fill="#FFE0EC"/><rect x="28" y="40" width="8" height="14" rx="3" fill="#FF7B9C"/><circle cx="34" cy="47" r="1.2" fill="#fff"/><circle cx="24" cy="36" r="3.5" fill="#fff" opacity=".7"/><circle cx="40" cy="36" r="3.5" fill="#fff" opacity=".7"/>`,
+  hotel: `<path d="M10 34L32 14l22 20" fill="none" stroke="#C9A7EB" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 32v18a4 4 0 004 4h20a4 4 0 004-4V32a6 6 0 00-6-6H24a6 6 0 00-6 6z" fill="#F0E6FF"/><rect x="22" y="36" width="8" height="7" rx="2.5" fill="#C9A7EB"/><rect x="34" y="36" width="8" height="7" rx="2.5" fill="#C9A7EB"/><rect x="28" y="44" width="8" height="10" rx="3" fill="#9A78C4"/>`,
+  // 卷轴
+  scroll: `<rect x="12" y="10" width="40" height="44" rx="10" fill="#FFF6E8" stroke="#E8C4A0" stroke-width="3"/><rect x="12" y="10" width="40" height="10" rx="5" fill="#FFE8C8"/><rect x="12" y="44" width="40" height="10" rx="5" fill="#FFE8C8"/><path d="M20 28h24M20 36h18" stroke="#D4B896" stroke-width="3.5" stroke-linecap="round"/>`,
+  // 刷新（粗圆箭头）
+  refresh: `<path d="M48 26a18 18 0 10-1.5 16" fill="none" stroke="#8EC9E8" stroke-width="6" stroke-linecap="round"/><circle cx="48" cy="14" r="5" fill="#8EC9E8"/><circle cx="48" cy="26" r="3.5" fill="#fff"/>`,
+  // 音符
+  music: `<circle cx="24" cy="46" r="10" fill="#C9A7EB"/><circle cx="44" cy="42" r="10" fill="#C9A7EB"/><path d="M34 46V18c0-2 2-3 4-2l14 4c2 1 2 3 2 4v22" fill="none" stroke="#9A78C4" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  musicOff: `<circle cx="24" cy="46" r="10" fill="#D8CCE0"/><circle cx="44" cy="42" r="10" fill="#D8CCE0"/><path d="M34 46V18c0-2 2-3 4-2l14 4c2 1 2 3 2 4v22" fill="none" stroke="#B0A0B8" stroke-width="5" stroke-linecap="round"/><path d="M14 14l36 36" stroke="#FF8FAB" stroke-width="6" stroke-linecap="round"/>`,
+  // 机会星光
+  sparkle: `<circle cx="32" cy="32" r="18" fill="#FFE066"/><circle cx="32" cy="32" r="10" fill="#FFF3A0"/><path d="M32 18v4M32 42v4M18 32h4M42 32h4" stroke="#FFB37A" stroke-width="4" stroke-linecap="round"/><circle cx="50" cy="16" r="4" fill="#FFB37A"/><circle cx="14" cy="50" r="3" fill="#FF8FAB"/>`,
+  // 礼盒
+  gift: `<rect x="10" y="30" width="44" height="26" rx="10" fill="#8EC9E8"/><rect x="8" y="22" width="48" height="14" rx="7" fill="#A8D8F0"/><rect x="28" y="22" width="8" height="34" rx="3" fill="#FF8FAB"/><path d="M32 22c-8-12-18-8-16-2 1 4 8 5 16 2zM32 22c8-12 18-8 16-2-1 4-8 5-16 2z" fill="#FF7B9C"/>`,
+  // 糖果
+  candy: `<circle cx="32" cy="32" r="18" fill="#FF8FAB"/><circle cx="32" cy="32" r="10" fill="#FFD1DC"/><path d="M16 26c-8 0-10 10-4 12 4 1 8-3 10-7" fill="#FFB3C8"/><path d="M48 26c8 0 10 10 4 12-4 1-8-3-10-7" fill="#FFB3C8"/>`,
+  // 火车头
+  train: `<rect x="12" y="20" width="40" height="30" rx="12" fill="#90CAF9"/><rect x="18" y="26" width="14" height="12" rx="5" fill="#E3F2FD"/><rect x="36" y="26" width="10" height="12" rx="5" fill="#E3F2FD"/><circle cx="22" cy="54" r="5" fill="#5C6B7A"/><circle cx="42" cy="54" r="5" fill="#5C6B7A"/><circle cx="20" cy="36" r="2" fill="#64B5F6"/><circle cx="41" cy="36" r="2" fill="#64B5F6"/>`,
+  // 监狱（圆角小屋带栏杆）
+  jail: `<rect x="12" y="20" width="40" height="34" rx="12" fill="#EDE7F6" stroke="#9575CD" stroke-width="3"/><path d="M24 22v30M32 22v30M40 22v30" stroke="#9575CD" stroke-width="3.5" stroke-linecap="round"/><circle cx="32" cy="38" r="5" fill="#B39DDB"/>`,
+  // 灯泡
+  bulb: `<circle cx="32" cy="28" r="16" fill="#FFF59D"/><circle cx="32" cy="28" r="10" fill="#FFECB3"/><rect x="24" y="42" width="16" height="10" rx="5" fill="#BCAAA4"/><path d="M32 8v3M12 28h3M49 28h3" stroke="#FFD54F" stroke-width="3.5" stroke-linecap="round"/>`,
+  // 水滴
+  water: `<ellipse cx="32" cy="40" rx="18" ry="16" fill="#81D4FA"/><path d="M32 10c6 10 12 16 12 24 0 4-5 8-12 8s-12-4-12-8c0-8 6-14 12-24z" fill="#4FC3F7"/><ellipse cx="26" cy="38" rx="4" ry="5" fill="#fff" opacity=".5"/>`,
+  // 圆钻
+  diamond: `<path d="M18 20h28l10 12c2 3 0 8-4 10L32 56 12 42c-4-2-6-7-4-10l10-12z" fill="#B39DDB"/><path d="M18 20h28l-6 14H24l-6-14z" fill="#E1D5F0"/><circle cx="26" cy="28" r="2.5" fill="#fff" opacity=".6"/>`,
+  // 圆润小汽车
+  car: `<path d="M14 40c0-4 4-6 10-8l6-10c2-3 5-4 8-3l8 3c3 1 5 3 6 6l4 12v6c0 2-2 4-4 4H18c-2 0-4-2-4-4v-6z" fill="#FF8FAB"/><path d="M28 24l4-6h8l4 6" fill="#B3E5FC" opacity=".7"/><circle cx="22" cy="50" r="5" fill="#5C3D4A"/><circle cx="44" cy="50" r="5" fill="#5C3D4A"/><circle cx="22" cy="50" r="2" fill="#fff" opacity=".4"/><circle cx="44" cy="50" r="2" fill="#fff" opacity=".4"/>`,
+  // 警灯
+  siren: `<rect x="18" y="28" width="28" height="28" rx="10" fill="#EF5350"/><rect x="14" y="50" width="36" height="10" rx="5" fill="#FFCDD2"/><circle cx="32" cy="24" r="10" fill="#FF8A65"/><circle cx="32" cy="24" r="5" fill="#FFE0B2"/><path d="M12 18l6 4M52 18l-6 4M32 6v6" stroke="#FFAB91" stroke-width="4" stroke-linecap="round"/>`,
+  // 机器人（更圆）
+  bot: `<rect x="12" y="18" width="40" height="34" rx="16" fill="#C5B3F0"/><circle cx="24" cy="32" r="6" fill="#fff"/><circle cx="40" cy="32" r="6" fill="#fff"/><circle cx="24" cy="32" r="3" fill="#5C3D4A"/><circle cx="40" cy="32" r="3" fill="#5C3D4A"/><path d="M26 44c2 2 10 2 12 0" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M32 12v6" stroke="#9A78C4" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="10" r="4" fill="#FFE066"/><circle cx="8" cy="36" r="5" fill="#9A78C4"/><circle cx="56" cy="36" r="5" fill="#9A78C4"/>`,
+  person: `<circle cx="32" cy="20" r="12" fill="#FFB37A"/><circle cx="32" cy="18" r="10" fill="#FFC89B"/><path d="M12 54c1-12 9-18 20-18s19 6 20 18" fill="#FFD1DC"/>`,
+  // 道具：圆靴
+  boots: `<path d="M20 12h16c2 0 4 2 4 4v18l14 8c4 2 6 5 6 9v3H20V12z" fill="#FF8FAB"/><rect x="20" y="34" width="40" height="10" rx="5" fill="#FFD1DC"/><circle cx="28" cy="20" r="3" fill="#fff" opacity=".45"/>`,
+  // 靶心
+  aim: `<circle cx="32" cy="32" r="22" fill="#FFCDD2"/><circle cx="32" cy="32" r="15" fill="#fff"/><circle cx="32" cy="32" r="9" fill="#EF5350"/><circle cx="32" cy="32" r="4" fill="#fff"/>`,
+  // 盾
+  shield: `<path d="M32 8c6 0 18 4 20 6v18c0 14-10 22-20 26C22 54 12 46 12 32V14c2-2 14-6 20-6z" fill="#8EC9E8"/><circle cx="32" cy="32" r="10" fill="#fff" opacity=".35"/><path d="M22 34l7 7 13-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  // 圆润星星
+  star: `<path d="M32 8c2 0 6 8 10 10 4 2 12 4 12 8s-8 8-10 12c-2 4-4 12-8 12s-8-8-12-10c-4-2-12-4-12-8s8-8 10-12c2-4 6-12 10-12z" fill="#FFE066"/><circle cx="32" cy="30" r="8" fill="#FFF3A0"/>`,
+  // 钥匙
+  key: `<circle cx="22" cy="30" r="14" fill="#FFB37A"/><circle cx="22" cy="30" r="6" fill="#fff"/><rect x="34" y="26" width="22" height="8" rx="4" fill="#FFB37A"/><rect x="46" y="32" width="6" height="10" rx="3" fill="#FFB37A"/><rect x="38" y="32" width="6" height="8" rx="3" fill="#FFB37A"/>`,
+  // 锤子
+  hammer: `<rect x="28" y="10" width="24" height="22" rx="10" fill="#B0BEC5"/><rect x="32" y="14" width="16" height="14" rx="7" fill="#CFD8DC"/><rect x="14" y="30" width="12" height="26" rx="6" fill="#A1887F"/><circle cx="20" cy="54" r="4" fill="#8D6E63"/>`,
+  // 小偷脸
+  thief: `<circle cx="32" cy="30" r="20" fill="#7986CB"/><path d="M12 30c4-12 12-18 20-18s16 6 20 18H12z" fill="#5C6BC0"/><circle cx="24" cy="30" r="6" fill="#fff"/><circle cx="40" cy="30" r="6" fill="#fff"/><circle cx="24" cy="30" r="3" fill="#1a237e"/><circle cx="40" cy="30" r="3" fill="#1a237e"/><path d="M20 44c4 6 20 6 24 0" fill="none" stroke="#C5CAE9" stroke-width="3" stroke-linecap="round"/>`,
+  // 奖杯
+  trophy: `<path d="M20 12h24c2 0 4 2 4 4v12c0 12-6 18-16 18S16 40 16 28V16c0-2 2-4 4-4z" fill="#FFE066"/><path d="M20 16H12c0 10 4 14 10 14M44 16h8c0 10-4 14-10 14" fill="none" stroke="#FFB37A" stroke-width="5" stroke-linecap="round"/><rect x="28" y="46" width="8" height="6" rx="2" fill="#FFB37A"/><rect x="20" y="52" width="24" height="8" rx="4" fill="#FFB37A"/>`,
+  // 动物：超圆脸
+  cat: `<circle cx="32" cy="36" r="20" fill="#FF8FAB"/><ellipse cx="16" cy="20" rx="7" ry="8" fill="#FF8FAB"/><ellipse cx="48" cy="20" rx="7" ry="8" fill="#FF8FAB"/><ellipse cx="16" cy="20" rx="3.5" ry="4" fill="#FFB3C8"/><ellipse cx="48" cy="20" rx="3.5" ry="4" fill="#FFB3C8"/><ellipse cx="24" cy="34" rx="3.2" ry="3.6" fill="#5C3D4A"/><ellipse cx="40" cy="34" rx="3.2" ry="3.6" fill="#5C3D4A"/><ellipse cx="32" cy="42" rx="3" ry="2" fill="#E85A7A"/><circle cx="20" cy="42" r="4" fill="#FFB3C8"/><circle cx="44" cy="42" r="4" fill="#FFB3C8"/>`,
+  rabbit: `<ellipse cx="32" cy="40" rx="18" ry="17" fill="#8EC9E8"/><ellipse cx="22" cy="16" rx="6" ry="13" fill="#8EC9E8"/><ellipse cx="42" cy="16" rx="6" ry="13" fill="#8EC9E8"/><ellipse cx="22" cy="16" rx="3" ry="8" fill="#FFD1DC"/><ellipse cx="42" cy="16" rx="3" ry="8" fill="#FFD1DC"/><ellipse cx="26" cy="38" rx="3" ry="3.4" fill="#5C3D4A"/><ellipse cx="38" cy="38" rx="3" ry="3.4" fill="#5C3D4A"/><ellipse cx="32" cy="44" rx="3.5" ry="2.5" fill="#FF8FAB"/>`,
+  bear: `<circle cx="32" cy="38" r="18" fill="#FFE066"/><circle cx="14" cy="22" r="8" fill="#FFE066"/><circle cx="50" cy="22" r="8" fill="#FFE066"/><circle cx="14" cy="22" r="4" fill="#FFB37A"/><circle cx="50" cy="22" r="4" fill="#FFB37A"/><ellipse cx="26" cy="36" rx="3" ry="3.4" fill="#5C3D4A"/><ellipse cx="38" cy="36" rx="3" ry="3.4" fill="#5C3D4A"/><ellipse cx="32" cy="44" rx="5.5" ry="4.5" fill="#FFB37A"/><ellipse cx="32" cy="42" rx="2.2" ry="1.6" fill="#5C3D4A"/>`,
+  frog: `<ellipse cx="32" cy="40" rx="20" ry="16" fill="#81C784"/><circle cx="20" cy="22" r="9" fill="#81C784"/><circle cx="44" cy="22" r="9" fill="#81C784"/><circle cx="20" cy="22" r="4.5" fill="#fff"/><circle cx="44" cy="22" r="4.5" fill="#fff"/><circle cx="20" cy="22" r="2.2" fill="#2E7D32"/><circle cx="44" cy="22" r="2.2" fill="#2E7D32"/><path d="M22 44c4 5 16 5 20 0" fill="none" stroke="#2E7D32" stroke-width="3" stroke-linecap="round"/><circle cx="18" cy="40" r="3" fill="#C8E6C9"/><circle cx="46" cy="40" r="3" fill="#C8E6C9"/>`,
+};
+
+function iconSvg(name, size = 20, extraClass = "") {
+  const body = ICONS[name];
+  if (!body) return "";
+  return `<svg class="svg-icon ${extraClass}" width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">${body}</svg>`;
+}
+
+/* ===================== Setup UI ===================== */
+let setupCount = 2;
+let setupAI = [false, true, true, true]; // slot0 human by default
+
+function renderSetup() {
+  const rows = $("player-rows");
+  rows.innerHTML = "";
+  for (let i = 0; i < 4; i++) {
+    const pc = PLAYER_COLORS[i];
+    const enabled = i < setupCount;
+    const ai = setupAI[i];
+    const row = document.createElement("div");
+    row.className = "player-row";
+    row.innerHTML = `
+      <div class="token-preview" style="background:${pc.bg}">${iconSvg(pc.icon, 22)}</div>
+      <input type="text" maxlength="8" placeholder="${ai ? pc.name : pc.name + "(你)"}"
+        value="${enabled ? (ai ? pc.name : "玩家") : ""}" data-idx="${i}" ${enabled ? "" : "disabled"} />
+      <button class="ai-toggle ${ai ? "on" : ""}" data-ai="${i}" ${enabled ? "" : "disabled"}>
+        ${ai ? iconSvg("bot", 14) + " AI" : iconSvg("person", 14) + " 玩家"}
+      </button>
+    `;
+    rows.appendChild(row);
+  }
+  rows.querySelectorAll(".ai-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = +btn.dataset.ai;
+      if (idx >= setupCount) return;
+      setupAI[idx] = !setupAI[idx];
+      const input = rows.querySelector(`input[data-idx="${idx}"]`);
+      if (setupAI[idx]) {
+        if (!input.value || input.value === "玩家") input.value = PLAYER_COLORS[idx].name;
+      } else {
+        if (!input.value || PLAYER_COLORS[idx].name === input.value) input.value = "玩家";
+      }
+      renderSetup();
+    });
+  });
+}
+
+document.querySelectorAll(".pill").forEach(btn => {
+  btn.addEventListener("click", () => {
+    setupCount = +btn.dataset.count;
+    document.querySelectorAll(".pill").forEach(b => b.classList.toggle("active", b === btn));
+    renderSetup();
+  });
+});
+
+$("btn-start").addEventListener("click", startGame);
+
+function startGame() {
+  const inputs = $("player-rows").querySelectorAll("input");
+  const players = [];
+  for (let i = 0; i < setupCount; i++) {
+    const pc = PLAYER_COLORS[i];
+    const isAI = !!setupAI[i];
+    const raw = (inputs[i].value || "").trim();
+    const name = raw || (isAI ? pc.name : "玩家");
+    players.push({
+      id: i,
+      name,
+      emoji: pc.icon, // now stores icon key
+      color: pc.bg,
+      ai: isAI,
+      money: START_MONEY,
+      pos: 0,
+      props: [],
+      jail: false,
+      jailTurns: 0,
+      jailCards: 0,
+      bankrupt: false,
+      items: [],
+      buffs: { rentShield: false, doubleRent: false, fixedDice: null },
+    });
+  }
+  state = {
+    players,
+    current: 0,
+    phase: "idle",
+    dice: [1, 1],
+    doubles: 0,
+    selectedProp: null,
+    logs: [],
+    chanceDeck: shuffle([...CHANCE_CARDS]),
+    chestDeck: shuffle([...CHEST_CARDS]),
+    turnTotal: 0,
+    usingItemMove: false,
+  };
+  state.ownership = {};
+  const humans = players.filter(p => !p.ai).length;
+  const bots = players.filter(p => p.ai).length;
+  log(`游戏开始！玩家 ${humans} 名，电脑 AI ${bots} 名，各获 ${START_MONEY} 糖币`);
+  // static icons
+  $("logo-icon").innerHTML = iconSvg("lollipop", 72);
+  $("title-icon").innerHTML = iconSvg("lollipop", 16);
+  $("btn-start-icon").innerHTML = iconSvg("dice", 18);
+  $("btn-roll-icon").innerHTML = iconSvg("dice", 18);
+  $("btn-buy-icon").innerHTML = iconSvg("money", 18);
+  $("btn-music").innerHTML = iconSvg("music", 18);
+  $("btn-assets").innerHTML = iconSvg("house", 18);
+  $("btn-log").innerHTML = iconSvg("scroll", 18);
+  $("btn-reset").innerHTML = iconSvg("refresh", 18);
+  $("win-icon").innerHTML = iconSvg("trophy", 72);
+  GameAudio.unlock();
+  GameAudio.play("win");
+  vibrate([20, 40, 20]);
+  // 开局每人随机 1 张道具卡
+  players.forEach(p => giveItemCard(p, "开局"));
+  $("splash").classList.add("hidden");
+  $("game").classList.add("active");
+  $("win-overlay").classList.remove("show");
+  buildBoard();
+  renderTokens();
+  renderPlayers();
+  renderItemsBar();
+  updateDice(1, 1);
+  const first = current();
+  setStatus(`${first.ai ? first.name + "（AI）" : first.name} 的回合${first.ai ? "" : "，掷骰子吧！"}`);
+  setPhase("idle");
+}
+
+/* ===================== Board Build ===================== */
+// Grid position mapping for 11x11 monopoly layout
+function gridPos(id) {
+  // returns {col, row} 0-indexed for CSS grid
+  if (id === 0) return { col: 10, row: 10 }; // GO bottom-right
+  if (id < 10) return { col: 10 - id, row: 10 };
+  if (id === 10) return { col: 0, row: 10 }; // Jail bottom-left
+  if (id < 20) return { col: 0, row: 10 - (id - 10) };
+  if (id === 20) return { col: 0, row: 0 }; // Free parking top-left
+  if (id < 30) return { col: id - 20, row: 0 };
+  if (id === 30) return { col: 10, row: 0 }; // Go to jail top-right
+  return { col: 10, row: id - 30 };
+}
+
+function tileOrientation(id) {
+  if (id === 0 || id === 10 || id === 20 || id === 30) return "corner";
+  if (id < 10) return "bottom"; // band on top
+  if (id < 20) return "left";   // band on right, vertical
+  if (id < 30) return "top";    // band on bottom
+  return "right";               // band on left, vertical
+}
+
+function buildBoard() {
+  tilesEl.innerHTML = "";
+  TILES.forEach(t => {
+    const { col, row } = gridPos(t.id);
+    const ori = tileOrientation(t.id);
+    const el = document.createElement("div");
+    el.className = "tile";
+    el.dataset.id = t.id;
+    el.style.gridColumn = col + 1;
+    el.style.gridRow = row + 1;
+
+    if (ori === "corner") {
+      el.classList.add("corner", t.type);
+      el.innerHTML = `<div class="name"><span class="icon">${iconSvg(t.icon, 14)}</span>${t.name}${t.sub ? `<span class="price">${t.sub}</span>` : ""}</div>`;
+    } else {
+      if (ori === "left" || ori === "right") {
+        el.classList.add("vert");
+        if (ori === "right") el.classList.add("band-left");
+      }
+      if (ori === "top") el.classList.add("band-bottom");
+      let bandColor = "";
+      if (t.type === "prop") bandColor = COLORS[t.color];
+      else if (t.type === "rail") bandColor = COLORS.rail;
+      else if (t.type === "util") bandColor = COLORS.util;
+      else el.classList.add(t.type);
+
+      const band = bandColor ? `<div class="band" style="background:${bandColor}"></div>` : "";
+      let center = "";
+      if (t.type === "prop" || t.type === "rail" || t.type === "util") {
+        center = `<div class="name">${t.name}<span class="price">${t.price}</span></div>`;
+      } else {
+        center = `<div class="name"><span class="icon">${iconSvg(t.icon, 12)}</span>${t.name}</div>`;
+      }
+      el.innerHTML = band + center;
+      el.innerHTML += `<div class="house-row"></div>`;
+    }
+    el.addEventListener("click", () => onTileClick(t.id));
+    tilesEl.appendChild(el);
+  });
+  refreshOwnershipVisual();
+}
+
+function onTileClick(id) {
+  const t = TILES[id];
+  if (t.type !== "prop" && t.type !== "rail" && t.type !== "util") return;
+  showPropModal(id);
+}
+
+/* ===================== Tokens ===================== */
+function renderTokens() {
+  tokensEl.innerHTML = "";
+  state.players.forEach(p => {
+    if (p.bankrupt) return;
+    const el = document.createElement("div");
+    el.className = "token" + (p.id === state.current ? " current" : "");
+    el.id = "token-" + p.id;
+    el.style.background = p.color;
+    el.innerHTML = iconSvg(p.emoji, 14);
+    tokensEl.appendChild(el);
+  });
+  positionAllTokens();
+}
+
+function tileCenter(pos, playerId) {
+  const { col, row } = gridPos(pos);
+  const boardRect = boardEl.getBoundingClientRect();
+  const size = boardRect.width;
+  // tiles area inset
+  const inset = size * 0.012;
+  const usable = size - inset * 2;
+  const cellW = usable / 11;
+  // grid columns have different fr weights roughly 1.4 / 1 / 1.4 - approximate
+  // better: measure the actual tile
+  const tileEl = tilesEl.querySelector(`[data-id="${pos}"]`);
+  if (!tileEl) return { left: size / 2, top: size / 2 };
+  const tr = tileEl.getBoundingClientRect();
+  const br = boardEl.getBoundingClientRect();
+  // offset within board, with multi-token spread
+  const offset = tokenOffset(playerId);
+  return {
+    left: tr.left - br.left + tr.width / 2 + offset.x,
+    top: tr.top - br.top + tr.height / 2 + offset.y,
+  };
+}
+
+function tokenOffset(playerId) {
+  const offsets = [
+    { x: -4, y: -4 }, { x: 4, y: -4 }, { x: -4, y: 4 }, { x: 4, y: 4 },
+  ];
+  return offsets[playerId] || { x: 0, y: 0 };
+}
+
+function positionToken(playerId, pos) {
+  const el = document.getElementById("token-" + playerId);
+  if (!el) return;
+  const { left, top } = tileCenter(pos, playerId);
+  el.style.left = left + "px";
+  el.style.top = top + "px";
+}
+
+function positionAllTokens() {
+  state.players.forEach(p => {
+    if (!p.bankrupt) positionToken(p.id, p.pos);
+  });
+}
+
+async function animateMove(player, steps) {
+  const dir = steps > 0 ? 1 : -1;
+  const n = Math.abs(steps);
+  for (let i = 0; i < n; i++) {
+    let next = (player.pos + dir + 40) % 40;
+    // pass GO
+    if (dir > 0 && next === 0) {
+      player.money += 200;
+      log(`${player.name} 经过起点，获得 200 糖币`);
+      showFloatMoney(player, "+200");
+      GameAudio.play("money");
+      vibrate(18);
+      if (Math.random() < 0.25) maybeGiveMapItem(player);
+    }
+    player.pos = next;
+    positionToken(player.id, player.pos);
+    const tok = document.getElementById("token-" + player.id);
+    popEl(tok, "hop");
+    GameAudio.play("step");
+    if (i === n - 1) vibrate(12);
+    // 稍慢移动节奏
+    await sleep(260);
+  }
+  renderPlayers();
+  GameAudio.play("thud");
+}
+
+/* ===================== Dice ===================== */
+const PIP_MAP = {
+  1: [4],
+  2: [0, 8],
+  3: [0, 4, 8],
+  4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8],
+  6: [0, 2, 3, 5, 6, 8],
+};
+
+function renderDie(el, val) {
+  el.innerHTML = "";
+  for (let i = 0; i < 9; i++) {
+    const pip = document.createElement("div");
+    pip.className = "pip" + (PIP_MAP[val] && PIP_MAP[val].includes(i) ? " on" : "");
+    el.appendChild(pip);
+  }
+}
+
+function updateDice(a, b) {
+  renderDie($("die1"), a);
+  renderDie($("die2"), b);
+}
+
+async function rollDice() {
+  const d1 = $("die1"), d2 = $("die2");
+  // 定位骰 buff
+  const p = current();
+  if (p && p.buffs && p.buffs.fixedDice != null) {
+    const sum = p.buffs.fixedDice;
+    p.buffs.fixedDice = null;
+    let a = Math.min(6, Math.max(1, Math.floor(sum / 2)));
+    let b = sum - a;
+    if (b < 1) { a = 1; b = sum - 1; }
+    if (b > 6) { a = sum - 6; b = 6; }
+    d1.classList.add("rolling");
+    d2.classList.add("rolling");
+    await sleep(400);
+    d1.classList.remove("rolling");
+    d2.classList.remove("rolling");
+    updateDice(a, b);
+    d1.style.transform = "scale(1.15)";
+    d2.style.transform = "scale(1.15)";
+    setTimeout(() => { d1.style.transform = ""; d2.style.transform = ""; }, 200);
+    log(`${p.name} 定位骰生效，固定 ${a}+${b}=${sum}`);
+    return [a, b];
+  }
+  d1.classList.add("rolling");
+  d2.classList.add("rolling");
+  // spin
+  for (let i = 0; i < 8; i++) {
+    renderDie(d1, 1 + Math.floor(Math.random() * 6));
+    renderDie(d2, 1 + Math.floor(Math.random() * 6));
+    await sleep(50);
+  }
+  const a = 1 + Math.floor(Math.random() * 6);
+  const b = 1 + Math.floor(Math.random() * 6);
+  d1.classList.remove("rolling");
+  d2.classList.remove("rolling");
+  updateDice(a, b);
+  // bounce
+  d1.style.transform = "scale(1.15)";
+  d2.style.transform = "scale(1.15)";
+  popEl(d1, "pop");
+  popEl(d2, "pop");
+  setTimeout(() => { d1.style.transform = ""; d2.style.transform = ""; }, 200);
+  GameAudio.play(a === b ? "win" : "roll");
+  if (a === b) vibrate([15, 30, 15]);
+  return [a, b];
+}
+
+/* ===================== Game Flow ===================== */
+function current() { return state.players[state.current]; }
+
+const TURN_SECONDS = 20;
+let turnTimer = null;
+let turnLeft = 0;
+let finishingTurn = false;
+
+function clearTurnTimer() {
+  if (turnTimer) {
+    clearInterval(turnTimer);
+    turnTimer = null;
+  }
+  turnLeft = 0;
+  const el = $("countdown");
+  if (el) {
+    el.textContent = "";
+    el.classList.remove("warn");
+  }
+}
+
+function updateCountdownUI() {
+  const el = $("countdown");
+  if (!el) return;
+  if (turnLeft <= 0) {
+    el.textContent = "";
+    el.classList.remove("warn");
+    return;
+  }
+  el.textContent = `⏱ ${turnLeft}s`;
+  el.classList.toggle("warn", turnLeft <= 5);
+}
+
+function startTurnCountdown() {
+  clearTurnTimer();
+  const cur = current();
+  if (!cur || cur.ai || cur.bankrupt || state.phase === "gameover") return;
+  if (state.phase !== "idle" && state.phase !== "buy") return;
+  turnLeft = TURN_SECONDS;
+  updateCountdownUI();
+  turnTimer = setInterval(() => {
+    turnLeft--;
+    updateCountdownUI();
+    if (turnLeft <= 0) {
+      clearTurnTimer();
+      onTurnTimeout();
+    }
+  }, 1000);
+}
+
+function onTurnTimeout() {
+  if (state.phase === "gameover" || finishingTurn) return;
+  const p = current();
+  if (!p || p.ai || p.bankrupt) return;
+  if (state.phase === "buy") {
+    const tileId = state.selectedProp;
+    if (tileId != null) {
+      log(`${p.name} 超时，放弃购买 ${TILES[tileId].name}`);
+      state.selectedProp = null;
+    }
+    showToast("超时，跳过购买");
+    finishTurn();
+    return;
+  }
+  if (state.phase === "idle") {
+    log(`${p.name} 超时，回合自动结束`);
+    showToast("超时，本回合结束");
+    state.doubles = 0;
+    nextPlayer();
+  }
+}
+
+function setPhase(p) {
+  clearTurnTimer();
+  state.phaseSeq = (state.phaseSeq || 0) + 1;
+  const token = state.phaseSeq;
+  state.phase = p;
+  const cur = current();
+  const ai = !!(cur && cur.ai && !cur.bankrupt);
+  const roll = $("btn-roll"), buy = $("btn-buy"), skip = $("btn-skip");
+  roll.disabled = ai || p !== "idle";
+  buy.disabled = ai || p !== "buy";
+  const canPayJail = !ai && p === "idle" && cur && cur.jail && cur.money >= 50;
+  skip.disabled = ai ? true : !(p === "buy" || canPayJail);
+  skip.textContent = canPayJail ? "付50出狱" : "跳过";
+  if (p !== "gameover") renderPlayers();
+
+  if (p === "end") {
+    setTimeout(() => {
+      if (state.phaseSeq === token && state.phase === "end") finishTurn();
+    }, 450);
+    return;
+  }
+  if (p === "idle" || p === "buy") startTurnCountdown();
+  renderItemsBar();
+  scheduleAI();
+}
+
+function finishTurn(force) {
+  if (finishingTurn || state.phase === "gameover") return;
+  if (!force && state.phase !== "end" && state.phase !== "buy") return;
+  finishingTurn = true;
+  state.phaseSeq = (state.phaseSeq || 0) + 1;
+  clearTurnTimer();
+  try {
+    const p = current();
+    if (!p) return;
+    if (!p.jail && state.doubles > 0 && state.doubles < 3) {
+      state.doubles = 0;
+      showToast("对子！再行动一次");
+      log(`${p.name} 掷出对子，获得额外回合`);
+      setStatus(`${p.name} 额外回合，再掷骰子！`);
+      setPhase("idle");
+      return;
+    }
+    state.doubles = 0;
+    log(`—— ${p.name} 回合结束 ——`);
+    nextPlayer();
+  } finally {
+    finishingTurn = false;
+  }
+}
+
+function setStatus(msg) { statusEl.textContent = msg; }
+
+function log(msg) {
+  state.logs.unshift(msg);
+  if (state.logs.length > 80) state.logs.pop();
+}
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toastEl.classList.remove("show"), 2200);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderPlayers() {
+  playersBar.innerHTML = "";
+  state.players.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "p-card" + (i === state.current ? " turn" : "") + (p.bankrupt ? " bankrupt" : "");
+    const thinking = p.ai && i === state.current && state.phase !== "gameover";
+    card.innerHTML = `
+      <div class="p-head">
+        <div class="p-dot" style="background:${p.color}"></div>
+        <div class="p-name">${iconSvg(p.emoji, 12)} ${p.name}</div>
+      </div>
+      <div class="p-money">$${p.money}</div>
+      <div class="p-assets">${p.props.length}块地${p.jail ? " · 监狱" : ""}</div>
+      <div class="p-items">${iconSvg("star", 10)} ${((p.items || []).length)}/${MAX_ITEM_CARDS}</div>
+      ${p.ai ? `<div class="p-ai">${thinking ? '<span class="ai-thinking">' + iconSvg("bot", 11) + ' AI 思考中…</span>' : iconSvg("bot", 11) + " AI"}</div>` : ""}
+    `;
+    card.addEventListener("click", () => {
+      if (!p.bankrupt) showPropModal(null, p.id);
+    });
+    playersBar.appendChild(card);
+  });
+  const cur = state.players[state.current];
+  const dot = $("turn-dot"), txt = $("turn-text");
+  if (cur && !cur.bankrupt) {
+    if (dot) dot.style.background = cur.color;
+    if (txt) {
+      const jailNote = cur.jail ? " · 监狱中" : "";
+      const aiNote = cur.ai ? " · AI" : "";
+      txt.innerHTML = `${iconSvg(cur.emoji, 14)} ${cur.name}${aiNote}${jailNote} 的回合`;
+    }
+  }
+}
+
+function showFloatMoney(player, text) {
+  const { left, top } = tileCenter(player.pos, player.id);
+  const el = document.createElement("div");
+  el.className = "float-money";
+  el.style.left = left + "px";
+  el.style.top = (top - 16) + "px";
+  el.style.color = text.startsWith("+") ? "#2A8A5A" : "#E85A7A";
+  el.textContent = text;
+  boardEl.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function refreshOwnershipVisual() {
+  tilesEl.querySelectorAll(".tile").forEach(el => {
+    el.classList.remove("owned");
+    el.style.removeProperty("--owner");
+    const hr = el.querySelector(".house-row");
+    if (hr) hr.innerHTML = "";
+  });
+  if (!state.ownership) return;
+  Object.keys(state.ownership).forEach(id => {
+    const own = state.ownership[id];
+    const el = tilesEl.querySelector(`[data-id="${id}"]`);
+    if (!el) return;
+    const owner = state.players[own.owner];
+    if (owner && !owner.bankrupt) {
+      el.classList.add("owned");
+      el.style.setProperty("--owner", owner.color);
+    }
+    const hr = el.querySelector(".house-row");
+    if (hr) {
+      if (own.houses >= 5) hr.innerHTML = iconSvg("hotel", 10);
+      else if (own.houses > 0) hr.innerHTML = iconSvg("house", 10).repeat(own.houses);
+    }
+  });
+}
+
+/* ---------- ownership helpers ---------- */
+function getOwner(tileId) {
+  const o = state.ownership[tileId];
+  return o ? state.players[o.owner] : null;
+}
+
+function ownsFullGroup(playerId, color) {
+  const group = GROUPS[color] || [];
+  return group.length > 0 && group.every(id => {
+    const o = state.ownership[id];
+    return o && o.owner === playerId && !o.mortgaged;
+  });
+}
+
+function countRails(playerId) {
+  return RAILS.filter(id => state.ownership[id] && state.ownership[id].owner === playerId).length;
+}
+
+function countUtils(playerId) {
+  return UTILS.filter(id => state.ownership[id] && state.ownership[id].owner === playerId).length;
+}
+
+function calcRent(tileId, diceSum) {
+  const t = TILES[tileId];
+  const own = state.ownership[tileId];
+  if (!own || own.mortgaged) return 0;
+  if (t.type === "prop") {
+    if (own.houses > 0) return t.rent * own.houses * 2;
+    if (ownsFullGroup(own.owner, t.color)) return t.rent * 2;
+    return t.rent;
+  }
+  if (t.type === "rail") {
+    const n = countRails(own.owner);
+    return 25 * Math.pow(2, n - 1);
+  }
+  if (t.type === "util") {
+    const n = countUtils(own.owner);
+    return (n >= 2 ? 10 : 4) * diceSum;
+  }
+  return 0;
+}
+
+function canAfford(player, amount) {
+  return player.money >= amount;
+}
+
+function transfer(from, to, amount) {
+  from.money -= amount;
+  if (to) to.money += amount;
+  showFloatMoney(from, `-${amount}`);
+  if (to) showFloatMoney(to, `+${amount}`);
+  GameAudio.play(to ? "money" : "thud");
+  if (amount >= 100) {
+    vibrate([25, 40, 25]);
+    shakeBoard();
+  }
+  const fo = document.getElementById("token-" + from.id);
+  popEl(fo, "hop");
+  renderPlayers();
+}
+
+function checkBankruptcy(player, creditor) {
+  if (player.money >= 0) return false;
+  // auto-mortgage
+  player.props.slice().forEach(id => {
+    if (player.money < 0) {
+      const o = state.ownership[id];
+      if (o && !o.mortgaged) {
+        o.mortgaged = true;
+        o.houses = 0;
+        const val = Math.floor(TILES[id].price / 2);
+        player.money += val;
+        log(`${player.name} 抵押了 ${TILES[id].name}，获得 ${val}`);
+      }
+    }
+  });
+  if (player.money >= 0) {
+    renderPlayers();
+    refreshOwnershipVisual();
+    return false;
+  }
+  // bankrupt
+  player.bankrupt = true;
+  log(`${player.name} 破产了！`);
+  showToast(`${player.name} 破产了 💸`);
+  player.props.forEach(id => {
+    const o = state.ownership[id];
+    if (o) {
+      if (creditor) {
+        o.owner = creditor.id;
+        o.mortgaged = false;
+        creditor.props.push(id);
+      } else {
+        delete state.ownership[id];
+      }
+    }
+  });
+  if (creditor) creditor.money += Math.max(0, player.money);
+  player.props = [];
+  player.money = 0;
+  renderTokens();
+  renderPlayers();
+  refreshOwnershipVisual();
+
+  const alive = state.players.filter(p => !p.bankrupt);
+  if (alive.length === 1) {
+    endGame(alive[0]);
+  }
+  return true;
+}
+
+function endGame(winner) {
+  state.phase = "gameover";
+  setPhase("gameover");
+  $("win-text").textContent = `${winner.emoji} ${winner.name} 成为糖果大富翁！资产 $${winner.money}`;
+  $("win-overlay").classList.add("show");
+  log(`游戏结束，${winner.name} 获胜！`);
+  GameAudio.play("win");
+  vibrate([30, 40, 30, 40, 60, 40, 80]);
+  shakeBoard();
+}
+
+/* ---------- AI陪玩 ---------- */
+let aiBusy = false;
+let aiTimer = null;
+
+function isAI(p) { return !!(p && p.ai); }
+
+function scheduleAI() {
+  clearTimeout(aiTimer);
+  if (aiBusy || state.phase === "gameover") return;
+  const p = current();
+  if (!isAI(p) || p.bankrupt) return;
+  aiTimer = setTimeout(() => runAIStep(), 450 + Math.random() * 400);
+}
+
+async function runAIStep() {
+  if (aiBusy || state.phase === "gameover") return;
+  const p = current();
+  if (!isAI(p) || p.bankrupt) return;
+  aiBusy = true;
+  try {
+    await aiPlay(p);
+  } catch (e) {
+    console.error(e);
+  } finally {
+    aiBusy = false;
+    scheduleAI();
+  }
+}
+
+async function aiPlay(p) {
+  for (let step = 0; step < 10; step++) {
+    if (state.phase === "gameover" || current() !== p || p.bankrupt) return;
+
+    if (state.phase === "idle") {
+      // AI 使用道具
+      await aiMaybeUseItems(p);
+      if (current() !== p || state.phase !== "idle") continue;
+
+      if (p.jail && p.jailCards === 0 && p.money >= 50) {
+        const pay = p.jailTurns >= 1 || p.money > 220 || Math.random() < 0.65;
+        if (pay) {
+          transfer(p, null, 50);
+          p.jail = false;
+          p.jailTurns = 0;
+          showToast(`${p.name}（AI）付 50 出狱`);
+          log(`${p.name} 支付 50 出狱`);
+          renderPlayers();
+          await sleep(280);
+        }
+      }
+      aiMaybeBuild(p);
+      await sleep(320);
+      if (state.phase === "idle" && current() === p) await onRoll();
+      continue;
+    }
+
+    if (state.phase === "buy") {
+      await sleep(300);
+      const want = aiWantBuy(p);
+      if (want) {
+        await onBuy();
+      } else {
+        const tid = state.selectedProp;
+        if (tid != null) log(`${p.name}（AI）放弃购买 ${TILES[tid].name}`);
+        state.selectedProp = null;
+        finishTurn();
+      }
+      continue;
+    }
+
+    if (state.phase === "end") {
+      // setPhase("end") auto-finishes shortly; wait it out
+      await sleep(520);
+      if (current() !== p) return;
+      if (state.phase === "end") finishTurn();
+      continue;
+    }
+
+    return;
+  }
+}
+
+function aiWantBuy(p) {
+  const tileId = state.selectedProp;
+  if (tileId == null) return false;
+  const t = TILES[tileId];
+  const after = p.money - t.price;
+  if (after < 0) return false;
+  // keep a small cash buffer; stronger buffer for cheaper buys early
+  if (after < 40) return false;
+
+  if (t.type === "prop") {
+    const group = GROUPS[t.color] || [];
+    const ownedInGroup = group.filter(id => state.ownership[id] && state.ownership[id].owner === p.id).length;
+    // completing or nearly completing a set → buy almost always
+    if (ownedInGroup >= group.length - 1 && after >= 0) return true;
+    if (after >= 120) return true;
+    if (after >= 70 && t.price >= 140) return true;
+    return after >= Math.floor(t.price * 0.45);
+  }
+  if (t.type === "rail") {
+    return after >= 80 || countRails(p.id) >= 1;
+  }
+  if (t.type === "util") {
+    return after >= 150 || after >= t.price * 0.5;
+  }
+  return after >= 100;
+}
+
+function aiMaybeBuild(p, freeOnly) {
+  if (!p.props || !p.props.length) return 0;
+  let built = 0;
+  const maxBuild = freeOnly ? 1 : 3;
+  for (let n = 0; n < maxBuild; n++) {
+    let best = null;
+    for (const id of p.props) {
+      const t = TILES[id];
+      if (t.type !== "prop") continue;
+      if (!ownsFullGroup(p.id, t.color)) continue;
+      const own = state.ownership[id];
+      if (!own || own.mortgaged || own.houses >= 5) continue;
+      if (!freeOnly && p.money < t.houseCost + 70) continue;
+      const group = GROUPS[t.color];
+      const minH = Math.min(...group.map(gid => (state.ownership[gid] || { houses: 0 }).houses));
+      if (own.houses > minH) continue;
+      if (!best || t.price > TILES[best.id].price) best = { id, t, own };
+    }
+    if (!best) break;
+    if (!freeOnly) p.money -= best.t.houseCost;
+    best.own.houses++;
+    log(`${p.name} 在 ${best.t.name} ${best.own.houses === 5 ? "建酒店" : "建房"}${freeOnly ? "（免费）" : `（$${best.t.houseCost}）`}`);
+    built++;
+    refreshOwnershipVisual();
+    renderPlayers();
+  }
+  return built;
+}
+
+async function aiMaybeUseItems(p) {
+  if (!p.items || !p.items.length || state.phase !== "idle") return;
+  // 出狱
+  if (p.jail && hasItem(p, "break")) {
+    await useItemCard(p, "break", p.items.indexOf("break"));
+    return;
+  }
+  // 建房
+  if (hasItem(p, "house") && (p.props || []).some(id => {
+    const t = TILES[id];
+    return t.type === "prop" && ownsFullGroup(p.id, t.color);
+  })) {
+    await useItemCard(p, "house", p.items.indexOf("house"));
+    return;
+  }
+  // 缺钱用星星
+  if (p.money < 180 && hasItem(p, "star")) {
+    await useItemCard(p, "star", p.items.indexOf("star"));
+    return;
+  }
+  // 偷钱
+  if (p.money < 200 && hasItem(p, "thief")) {
+    await useItemCard(p, "thief", p.items.indexOf("thief"));
+    return;
+  }
+  // 有地用盾/财源/定位/疾步
+  if ((p.props || []).length > 0 && hasItem(p, "shield") && !p.buffs?.rentShield) {
+    await useItemCard(p, "shield", p.items.indexOf("shield"));
+    return;
+  }
+  if ((p.props || []).length > 0 && hasItem(p, "double") && !p.buffs?.doubleRent) {
+    await useItemCard(p, "double", p.items.indexOf("double"));
+    return;
+  }
+  if (hasItem(p, "aim") && p.buffs?.fixedDice == null && Math.random() < 0.5) {
+    await useItemCard(p, "aim", p.items.indexOf("aim"));
+    return;
+  }
+  if (hasItem(p, "boots") && Math.random() < 0.35 && !p.jail) {
+    await useItemCard(p, "boots", p.items.indexOf("boots"));
+    return;
+  }
+}
+
+/* ---------- turn flow ---------- */
+$("btn-roll").addEventListener("click", onRoll);
+$("btn-buy").addEventListener("click", onBuy);
+$("btn-skip").addEventListener("click", onSkip);
+
+async function onRoll() {
+  if (state.phase !== "idle") return;
+  const player = current();
+  if (player.bankrupt) { nextPlayer(); return; }
+
+  if (player.jail && player.jailCards > 0) {
+    const useCard = player.ai
+      ? true
+      : confirm("使用出狱卡免费出狱？\n确定=用卡，取消=继续掷骰子");
+    if (useCard) {
+      player.jailCards--;
+      player.jail = false;
+      player.jailTurns = 0;
+      showToast(`${player.name} 使用出狱卡！`);
+      log(`${player.name} 使用出狱卡`);
+      renderPlayers();
+    }
+  }
+
+  setPhase("rolling");
+  setStatus(player.ai
+    ? `${player.name}（AI）正在掷骰子…`
+    : `${player.name} 正在掷骰子…`);
+
+  // jail handling
+  if (player.jail) {
+    const dice = await rollDice();
+    state.dice = dice;
+    const [a, b] = dice;
+    log(`${player.name} 在监狱中掷出 ${a}、${b}`);
+    if (a === b) {
+      player.jail = false;
+      player.jailTurns = 0;
+      showToast("骰出对子，出狱啦！🎉");
+      log(`${player.name} 骰出对子出狱`);
+      state.doubles = 0;
+      await moveAndLand(player, a + b, dice);
+    } else {
+      player.jailTurns++;
+      if (player.jailTurns >= 3) {
+        // must pay
+        if (canAfford(player, 50)) {
+          transfer(player, null, 50);
+          player.jail = false;
+          player.jailTurns = 0;
+          showToast("支付 50 出狱");
+          log(`${player.name} 支付 50 出狱`);
+          await moveAndLand(player, a + b, dice);
+        } else {
+          checkBankruptcy(player, null);
+          if (!player.bankrupt) nextPlayer();
+        }
+      } else {
+        setStatus(`${player.name} 仍被关着…（${player.jailTurns}/3）可掷对子或付50`);
+        setPhase("end");
+      }
+    }
+    return;
+  }
+
+  const dice = await rollDice();
+  state.dice = dice;
+  const [a, b] = dice;
+  log(`${player.name} 掷出 ${a}、${b}`);
+  setStatus(`${player.name} 掷出 ${a} + ${b} = ${a + b}`);
+
+  if (a === b) {
+    state.doubles++;
+    if (state.doubles >= 3) {
+      showToast("连续三次对子，入狱！🚨");
+      sendToJail(player);
+      state.doubles = 0;
+      setPhase("end");
+      return;
+    }
+  } else {
+    state.doubles = 0;
+  }
+
+  await moveAndLand(player, a + b, dice);
+}
+
+async function moveAndLand(player, steps, dice) {
+  setPhase("moving");
+  await animateMove(player, steps);
+  await resolveLanding(player, dice);
+}
+
+async function resolveLanding(player, dice) {
+  const pos = player.pos;
+  const t = TILES[pos];
+  const diceSum = dice[0] + dice[1];
+  setStatus(`${player.name} 落到了 ${t.name}`);
+
+  if (t.type === "go") {
+    // already collected when passing; landing on go also gets? classic: yes when landing after pass, but if exact start of move from 0 with 0... skip
+    setPhase("end");
+    return;
+  }
+
+  if (t.type === "gotojail") {
+    sendToJail(player);
+    setPhase("end");
+    return;
+  }
+
+  if (t.type === "jail") {
+    // just visiting
+    setPhase("end");
+    return;
+  }
+
+  if (t.type === "parking") {
+    showToast("免费停车！🚗");
+    maybeGiveMapItem(player);
+    setPhase("end");
+    return;
+  }
+
+  if (t.type === "tax") {
+    transfer(player, null, t.amount);
+    log(`${player.name} 缴纳 ${t.name} ${t.amount}`);
+    if (checkBankruptcy(player, null)) return;
+    setPhase("end");
+    return;
+  }
+
+  if (t.type === "chance") {
+    if (Math.random() < 0.3) maybeGiveMapItem(player);
+    await drawCard("chance", player, dice);
+    return;
+  }
+
+  if (t.type === "chest") {
+    if (Math.random() < 0.3) maybeGiveMapItem(player);
+    await drawCard("chest", player, dice);
+    return;
+  }
+
+  // property / rail / util
+  const own = state.ownership[pos];
+  if (!own) {
+    // unowned — can buy if affordable
+    if (player.money >= t.price) {
+      state.selectedProp = pos;
+      setStatus(`${t.name} 可购买（$${t.price}）`);
+      setPhase("buy");
+      showToast(`可购买 ${t.name} · $${t.price}`);
+    } else {
+      showToast("钱不够，无法购买");
+      log(`${player.name} 钱不够买 ${t.name}`);
+      setPhase("end");
+    }
+    return;
+  }
+
+  const owner = state.players[own.owner];
+  if (owner.id === player.id || owner.bankrupt) {
+    setPhase("end");
+    return;
+  }
+
+  if (own.mortgaged) {
+    showToast("该地已抵押，免租金");
+    log(`${t.name} 已抵押，${player.name} 免付租金`);
+    setPhase("end");
+    return;
+  }
+
+  let rent = calcRent(pos, diceSum);
+  // 免租盾
+  if (player.buffs && player.buffs.rentShield) {
+    player.buffs.rentShield = false;
+    showToast("🛡️ 免租盾生效，免付租金！");
+    log(`${player.name} 使用免租盾，免除 ${t.name} 租金`);
+    renderPlayers();
+    setPhase("end");
+    return;
+  }
+  // 财源卡：收款翻倍
+  if (owner.buffs && owner.buffs.doubleRent) {
+    owner.buffs.doubleRent = false;
+    rent *= 2;
+    showToast(`💎 ${owner.name} 财源卡生效，租金翻倍！`);
+    log(`${owner.name} 财源卡生效，租金翻倍至 $${rent}`);
+  }
+  transfer(player, owner, rent);
+  log(`${player.name} 向 ${owner.name} 支付 ${t.name} 租金 $${rent}`);
+  showToast(`支付租金 $${rent}`);
+  if (checkBankruptcy(player, owner)) return;
+  setPhase("end");
+}
+
+function sendToJail(player) {
+  player.jail = true;
+  player.jailTurns = 0;
+  player.pos = 10;
+  positionToken(player.id, 10);
+  log(`${player.name} 被送进监狱`);
+  showToast(`${player.name} 入狱了 🚨`);
+  GameAudio.play("jail");
+  vibrate([40, 50, 40, 50, 60]);
+  shakeBoard();
+  const tok = document.getElementById("token-" + player.id);
+  popEl(tok, "hop");
+  renderPlayers();
+}
+
+function renderItemsBar() {
+  const bar = $("items-bar");
+  if (!bar) return;
+  const p = current();
+  bar.innerHTML = "";
+  if (!p || p.bankrupt) {
+    bar.innerHTML = `<div class="items-empty">道具栏</div>`;
+    return;
+  }
+  const items = p.items || [];
+  const canUse = state.phase === "idle" && !p.ai && !p.bankrupt;
+  if (!items.length) {
+    bar.innerHTML = `<div class="items-empty">${p.ai ? "AI 暂无道具" : "暂无道具 · 可点地图/幸运获得"}</div>`;
+    return;
+  }
+  items.forEach((key, idx) => {
+    const c = ITEM_CARDS[key];
+    if (!c) return;
+    const btn = document.createElement("button");
+    btn.className = "item-chip" + (canUse ? " ready" : "");
+    btn.disabled = !canUse;
+    btn.title = `${c.name}：${c.desc}`;
+    btn.innerHTML = `${iconSvg(c.icon, 16)}<span>${c.name}</span>`;
+    btn.addEventListener("click", () => {
+      GameAudio.unlock();
+      GameAudio.play("card");
+      openItemModal(p, key, idx);
+    });
+    bar.appendChild(btn);
+  });
+}
+
+function openItemModal(player, key, idx) {
+  const card = ITEM_CARDS[key];
+  if (!card) return;
+  const overlay = $("modal-item");
+  $("item-icon").innerHTML = iconSvg(card.icon, 64);
+  $("item-name").textContent = card.name;
+  $("item-desc").textContent = card.desc;
+  $("item-tip").textContent = card.tip ? `提示：${card.tip}` : "";
+  $("item-note").textContent = card.note || "";
+  $("item-sub").textContent = `持有 ${(player.items || []).filter(k => k === key).length} 张 · 点击确定后消耗`;
+  const useBtn = $("btn-item-use");
+  const cancelBtn = $("btn-item-cancel");
+
+  const cleanup = () => {
+    overlay.classList.remove("show");
+    useBtn.removeEventListener("click", onUse);
+    cancelBtn.removeEventListener("click", onCancel);
+  };
+  const onUse = () => {
+    cleanup();
+    applyItem(player, key, idx);
+  };
+  const onCancel = () => {
+    cleanup();
+    GameAudio.play("toast");
+  };
+  useBtn.addEventListener("click", onUse);
+  cancelBtn.addEventListener("click", onCancel);
+  overlay.classList.add("show");
+}
+
+async function useItemCard(player, key, idx) {
+  // AI uses directly; human goes through modal (except when called after modal)
+  if (!player.ai && state.phase === "idle") {
+    // If not already confirming, open modal (called from bar already opens modal)
+    // Direct call path for tests / internal: still open modal for human
+  }
+  applyItem(player, key, idx);
+}
+
+async function applyItem(player, key, idx) {
+  if (state.phase !== "idle" || player.bankrupt) return;
+  if (current().id !== player.id) return;
+  if (!hasItem(player, key)) return;
+  const card = ITEM_CARDS[key];
+  removeItem(player, key);
+  renderPlayers();
+  renderItemsBar();
+  log(`${player.name} 使用了 ${card.name}`);
+  showToast(`使用 ${card.name}`);
+  GameAudio.play("item");
+  vibrate([15, 25, 20, 25, 15]);
+  shakeBoard();
+  const tok = document.getElementById("token-" + player.id);
+  popEl(tok, "hop");
+  showFloatItem(player, card.icon);
+
+  if (!player.buffs) player.buffs = { rentShield: false, doubleRent: false, fixedDice: null };
+
+  if (key === "star") {
+    player.money += 120;
+    showFloatMoney(player, "+120");
+    GameAudio.play("money");
+    renderPlayers();
+    setStatus(`${player.name} 获得 120 糖币`);
+    setPhase("idle");
+    return;
+  }
+
+  if (key === "shield") {
+    player.buffs.rentShield = true;
+    popEl(tok, "glow-buff");
+    setStatus(`${player.name} 免租盾已装备`);
+    setPhase("idle");
+    return;
+  }
+
+  if (key === "double") {
+    player.buffs.doubleRent = true;
+    popEl(tok, "glow-buff");
+    setStatus(`${player.name} 财源卡已装备`);
+    setPhase("idle");
+    return;
+  }
+
+  if (key === "aim") {
+    player.buffs.fixedDice = 10;
+    popEl(tok, "glow-buff");
+    setStatus(`${player.name} 定位骰已装备，下次必出10`);
+    setPhase("idle");
+    return;
+  }
+
+  if (key === "break") {
+    if (player.jail) {
+      player.jail = false;
+      player.jailTurns = 0;
+      showToast("越狱成功！");
+      setStatus(`${player.name} 已出狱，可掷骰子`);
+      GameAudio.play("win");
+      vibrate([20, 40, 20]);
+      setPhase("idle");
+    } else {
+      player.jailCards = (player.jailCards || 0) + 1;
+      showToast("获得出狱卡存入银行");
+      setStatus(`${player.name} 获得出狱卡`);
+      setPhase("idle");
+    }
+    return;
+  }
+
+  if (key === "thief") {
+    const targets = state.players.filter(p => p.id !== player.id && !p.bankrupt && p.money > 0);
+    if (!targets.length) {
+      showToast("没有可偷的对手");
+      GameAudio.play("toast");
+      setPhase("idle");
+      return;
+    }
+    const victim = targets[Math.floor(Math.random() * targets.length)];
+    const amt = Math.min(80, victim.money);
+    victim.money -= amt;
+    player.money += amt;
+    showFloatMoney(player, `+${amt}`);
+    showFloatMoney(victim, `-${amt}`);
+    log(`${player.name} 从 ${victim.name} 偷走 $${amt}`);
+    GameAudio.play("money");
+    vibrate([10, 20, 10]);
+    renderPlayers();
+    setPhase("idle");
+    return;
+  }
+
+  if (key === "house") {
+    const built = aiMaybeBuild(player, true);
+    if (!built) {
+      showToast("暂时无法建房，道具已消耗");
+      GameAudio.play("toast");
+    } else {
+      GameAudio.play("buy");
+      vibrate(30);
+      refreshOwnershipVisual();
+      shakeBoard();
+    }
+    renderPlayers();
+    setPhase("idle");
+    return;
+  }
+
+  if (key === "boots") {
+    setPhase("rolling");
+    setStatus(`${player.name} 穿上疾步靴前进！`);
+    vibrate([12, 20, 12]);
+    await moveAndLand(player, 6, [3, 3]);
+    return;
+  }
+
+  setPhase("idle");
+}
+
+function maybeGiveMapItem(player) {
+  // called when landing on free parking / chance / chest / pass GO
+  return giveItemCard(player, "地图");
+}
+
+function maybeGiveTurnGift() {
+  // every N total turns, random living player gets a card
+  if (state.turnTotal > 0 && state.turnTotal % ITEM_TURN_GIFT_EVERY === 0) {
+    const alive = state.players.filter(p => !p.bankrupt);
+    if (!alive.length) return;
+    const lucky = alive[Math.floor(Math.random() * alive.length)];
+    giveItemCard(lucky, `满${ITEM_TURN_GIFT_EVERY}回合`);
+  }
+}
+
+function nextPlayer() {
+  if (state.phase === "gameover") return;
+  const alive = state.players.filter(p => !p.bankrupt);
+  if (alive.length <= 1) {
+    if (alive[0]) endGame(alive[0]);
+    return;
+  }
+  let idx = state.current;
+  for (let i = 0; i < state.players.length; i++) {
+    idx = (idx + 1) % state.players.length;
+    if (!state.players[idx].bankrupt) break;
+  }
+  state.current = idx;
+  state.doubles = 0;
+  state.selectedProp = null;
+  state.turnTotal = (state.turnTotal || 0) + 1;
+  renderTokens();
+  renderPlayers();
+  maybeGiveTurnGift();
+  const p = current();
+  setStatus(`${p.name} 的回合${p.jail ? "（在监狱中）" : ""}，掷骰子吧！`);
+  setPhase("idle");
+}
+
+async function onBuy() {
+  if (state.phase !== "buy" || state.selectedProp == null) return;
+  const player = current();
+  const t = TILES[state.selectedProp];
+  if (player.money < t.price) {
+    showToast("钱不够啦");
+    return;
+  }
+  player.money -= t.price;
+  player.props.push(t.id);
+  state.ownership[t.id] = { owner: player.id, houses: 0, mortgaged: false };
+  log(`${player.name} 购买了 ${t.name}（$${t.price}）`);
+  showToast(`买下 ${t.name}！🎉`);
+  showFloatMoney(player, `-${t.price}`);
+  GameAudio.play("buy");
+  vibrate([18, 30, 18]);
+  const panel = document.querySelector(".panel");
+  if (panel) popEl(panel, "pop");
+  const tok = document.getElementById("token-" + player.id);
+  popEl(tok, "hop");
+  renderPlayers();
+  refreshOwnershipVisual();
+  // check color set
+  if (t.type === "prop" && ownsFullGroup(player.id, t.color)) {
+    showToast(`${player.name} 集齐了 ${groupLabel(t.color)} 色组！可以盖房了`);
+    log(`${player.name} 集齐 ${groupLabel(t.color)} 色组`);
+    GameAudio.play("win");
+    shakeBoard();
+  }
+  state.selectedProp = null;
+  setStatus(`${player.name} 买下了 ${t.name}`);
+  setPhase("end");
+}
+
+function groupLabel(color) {
+  const map = {
+    brown: "棕", lightblue: "浅蓝", pink: "粉", orange: "橙",
+    red: "红", yellow: "黄", green: "绿", darkblue: "深蓝",
+  };
+  return map[color] || color;
+}
+
+function onSkip() {
+  const player = current();
+  if (state.phase === "buy") {
+    log(`${player.name} 放弃购买`);
+    state.selectedProp = null;
+    setStatus("跳过购买");
+    finishTurn();
+    return;
+  }
+  if (state.phase === "idle" && player.jail && player.money >= 50) {
+    if (confirm("支付 50 糖币立即出狱？")) {
+      transfer(player, null, 50);
+      player.jail = false;
+      player.jailTurns = 0;
+      showToast("支付 50 出狱");
+      log(`${player.name} 支付 50 出狱`);
+      state.doubles = 0;
+      finishTurn(true);
+    }
+  }
+}
+
+// kept for AI compatibility
+function onEndTurn() {
+  finishTurn();
+}
+
+/* ---------- Cards ---------- */
+function showCardModal(kind, text) {
+  return new Promise(resolve => {
+    const overlay = $("modal-card");
+    const art = $("card-art");
+    $("card-title").textContent = kind === "chance" ? "机会卡" : "公益金";
+    art.className = "card-art " + kind;
+    art.innerHTML = iconSvg(kind === "chance" ? "sparkle" : "gift", 42);
+    $("card-text").textContent = text;
+    overlay.classList.add("show");
+    GameAudio.play("card");
+    vibrate(18);
+    const btn = $("btn-card-ok");
+    const close = () => {
+      btn.removeEventListener("click", handler);
+      clearTimeout(aiT);
+      overlay.classList.remove("show");
+      resolve();
+    };
+    const handler = () => close();
+    btn.addEventListener("click", handler);
+    const p = current();
+    const aiT = setTimeout(() => { if (p && p.ai) close(); }, 1200);
+  });
+}
+
+async function drawCard(kind, player, dice) {
+  const deck = kind === "chance" ? state.chanceDeck : state.chestDeck;
+  if (deck.length === 0) {
+    const refill = kind === "chance" ? CHANCE_CARDS : CHEST_CARDS;
+    deck.push(...shuffle([...refill]));
+  }
+  const card = deck.shift();
+  await showCardModal(kind, card.text);
+  log(`${player.name} 抽到「${card.text}」`);
+
+  switch (card.action) {
+    case "money":
+      if (card.amount >= 0) {
+        player.money += card.amount;
+        showFloatMoney(player, `+${card.amount}`);
+      } else {
+        transfer(player, null, -card.amount);
+        if (checkBankruptcy(player, null)) return;
+      }
+      renderPlayers();
+      break;
+
+    case "collect_all": {
+      let total = 0;
+      state.players.forEach(op => {
+        if (op.id !== player.id && !op.bankrupt) {
+          const pay = Math.min(op.money, card.amount);
+          op.money -= pay;
+          player.money += pay;
+          total += pay;
+        }
+      });
+      showFloatMoney(player, `+${total}`);
+      renderPlayers();
+      showToast(`收到 $${total}`);
+      break;
+    }
+
+    case "goto": {
+      // move forward to target, collect GO if pass
+      const steps = (card.target - player.pos + 40) % 40;
+      if (steps === 0) {
+        player.money += 200;
+        showFloatMoney(player, "+200");
+        renderPlayers();
+      } else {
+        await animateMove(player, steps);
+        await resolveLanding(player, dice);
+        return; // resolveLanding sets phase
+      }
+      break;
+    }
+
+    case "move": {
+      await animateMove(player, card.steps);
+      await resolveLanding(player, dice);
+      return;
+    }
+
+    case "tojail":
+      sendToJail(player);
+      state.doubles = 0;
+      break;
+
+    case "jailcard":
+      player.jailCards++;
+      renderPlayers();
+      showToast("获得出狱卡！");
+      break;
+
+    case "repairs": {
+      let cost = 0;
+      player.props.forEach(id => {
+        const o = state.ownership[id];
+        if (!o) return;
+        const t = TILES[id];
+        if (t.type !== "prop") return;
+        if (o.houses === 5) cost += 100;
+        else cost += o.houses * 25;
+      });
+      if (cost > 0) {
+        transfer(player, null, cost);
+        checkBankruptcy(player, null);
+      } else {
+        showToast("没有房屋，免修缮费");
+      }
+      break;
+    }
+  }
+  if (state.phase !== "gameover") setPhase("end");
+}
+
+/* ---------- Property modal ---------- */
+function showPropModal(tileId, playerId) {
+  const overlay = $("modal-prop");
+  const title = $("prop-title");
+  const subtitle = $("prop-subtitle");
+  const body = $("prop-body");
+  const actions = $("prop-actions");
+  actions.innerHTML = "";
+
+  // if playerId provided, show that player's portfolio
+  if (tileId == null && playerId != null) {
+    const p = state.players[playerId];
+    title.textContent = `${p.emoji} ${p.name} 的资产`;
+    subtitle.textContent = `$${p.money} · ${p.props.length} 块地产`;
+    body.innerHTML = "";
+    if (p.props.length === 0) {
+      body.innerHTML = `<div class="log-box" style="text-align:center">还没有地产，加油！</div>`;
+    } else {
+      const list = document.createElement("div");
+      list.className = "prop-list";
+      p.props.forEach(id => list.appendChild(buildPropItem(id, p)));
+      body.appendChild(list);
+    }
+    const close = document.createElement("button");
+    close.className = "btn btn-ghost";
+    close.textContent = "关闭";
+    close.onclick = () => overlay.classList.remove("show");
+    actions.appendChild(close);
+    overlay.classList.add("show");
+    return;
+  }
+
+  const t = TILES[tileId];
+  title.textContent = t.name;
+  const own = state.ownership[tileId];
+  const owner = own ? state.players[own.owner] : null;
+  subtitle.textContent = owner
+    ? `所有者：${owner.emoji}${owner.name}${own.mortgaged ? "（已抵押）" : ""}${own.houses ? ` · 房屋×${own.houses === 5 ? "酒店" : own.houses}` : ""}`
+    : "无主之地";
+
+  if (t.type === "prop") {
+    const c = COLORS[t.color];
+    const setR = t.rent;
+    body.innerHTML = `
+      <div class="prop-header" style="background:${c}">
+        <div class="pname">${t.name}</div>
+        <div class="pprice">售价 $${t.price} · 建房 $${t.houseCost}</div>
+      </div>
+      <table class="rent-table">
+        <tr><td>基础地租</td><td>$${setR}</td></tr>
+        <tr><td>集齐色组</td><td>$${setR * 2}</td></tr>
+        <tr><td>1 栋房</td><td>$${setR * 2}</td></tr>
+        <tr><td>2 栋房</td><td>$${setR * 4}</td></tr>
+        <tr><td>3 栋房</td><td>$${setR * 6}</td></tr>
+        <tr><td>4 栋房</td><td>$${setR * 8}</td></tr>
+        <tr><td>酒店</td><td>$${setR * 10}</td></tr>
+        <tr><td>抵押价值</td><td>$${Math.floor(t.price / 2)}</td></tr>
+      </table>
+    `;
+  } else if (t.type === "rail") {
+    body.innerHTML = `
+      <div class="prop-header" style="background:${COLORS.rail}">
+        <div class="pname">${iconSvg("train", 16)} ${t.name}</div>
+        <div class="pprice">售价 $${t.price}</div>
+      </div>
+      <table class="rent-table">
+        <tr><td>1 座车站</td><td>$25</td></tr>
+        <tr><td>2 座车站</td><td>$50</td></tr>
+        <tr><td>3 座车站</td><td>$100</td></tr>
+        <tr><td>4 座车站</td><td>$200</td></tr>
+        <tr><td>抵押价值</td><td>$${Math.floor(t.price / 2)}</td></tr>
+      </table>
+    `;
+  } else if (t.type === "util") {
+    body.innerHTML = `
+      <div class="prop-header" style="background:${COLORS.util}">
+        <div class="pname">${iconSvg(t.icon || "bulb", 16)} ${t.name}</div>
+        <div class="pprice">售价 $${t.price}</div>
+      </div>
+      <table class="rent-table">
+        <tr><td>拥有 1 家</td><td>骰子点数 × 4</td></tr>
+        <tr><td>拥有 2 家</td><td>骰子点数 × 10</td></tr>
+        <tr><td>抵押价值</td><td>$${Math.floor(t.price / 2)}</td></tr>
+      </table>
+    `;
+  }
+
+  // actions: buy house / mortgage if own
+  if (own && current().id === own.owner && !current().bankrupt) {
+    if (t.type === "prop") {
+      const canHouse = ownsFullGroup(own.owner, t.color) && !own.mortgaged
+        && own.houses < 5
+        && current().money >= t.houseCost
+        // even build rule simplified
+      ;
+      const buyH = document.createElement("button");
+      buyH.className = "btn btn-confirm";
+      buyH.textContent = own.houses >= 5 ? "已是酒店" : `建房 $${t.houseCost}`;
+      buyH.disabled = !canHouse;
+      buyH.onclick = () => {
+        if (!canHouse) return;
+        current().money -= t.houseCost;
+        own.houses++;
+        log(`${current().name} 在 ${t.name} 建了${own.houses === 5 ? "酒店" : "房屋"}（$${t.houseCost}）`);
+        showToast(own.houses === 5 ? "盖了酒店！" : "盖了房子！");
+        renderPlayers();
+        refreshOwnershipVisual();
+        overlay.classList.remove("show");
+        // upgrade ends the turn immediately
+        finishTurn(true);
+      };
+      actions.appendChild(buyH);
+    }
+    const mg = document.createElement("button");
+    mg.className = "btn btn-ghost";
+    mg.textContent = own.mortgaged ? "已抵押" : `抵押 $${Math.floor(t.price / 2)}`;
+    mg.disabled = own.mortgaged || own.houses > 0;
+    mg.onclick = () => {
+      if (own.mortgaged || own.houses > 0) return;
+      own.mortgaged = true;
+      current().money += Math.floor(t.price / 2);
+      log(`${current().name} 抵押了 ${t.name}`);
+      showToast("抵押成功");
+      renderPlayers();
+      refreshOwnershipVisual();
+      overlay.classList.remove("show");
+    };
+    actions.appendChild(mg);
+  }
+
+  const close = document.createElement("button");
+  close.className = "btn btn-ghost";
+  close.textContent = "关闭";
+  close.onclick = () => overlay.classList.remove("show");
+  actions.appendChild(close);
+
+  overlay.classList.add("show");
+}
+
+function buildPropItem(id, p) {
+  const t = TILES[id];
+  const own = state.ownership[id];
+  const item = document.createElement("div");
+  item.className = "prop-item";
+  const status = own.mortgaged ? "已抵押"
+    : own.houses === 5 ? "酒店"
+    : own.houses > 0 ? `房屋×${own.houses}`
+    : ownsFullGroup(p.id, t.color) ? "色组齐全" : "空地";
+  item.innerHTML = `
+    <div class="swatch" style="background:${COLORS[t.color] || COLORS.rail}"></div>
+    <div class="info">
+      <div class="n">${t.name}</div>
+      <div class="s">${status} · 租金 $${calcRent(id, 7)}</div>
+    </div>
+  `;
+  if (!own.mortgaged && t.type === "prop" && ownsFullGroup(p.id, t.color) && own.houses < 5 && p.id === current().id) {
+    const btn = document.createElement("button");
+    btn.className = "buy-house";
+    btn.textContent = `建房$${t.houseCost}`;
+    btn.disabled = p.money < t.houseCost;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      p.money -= t.houseCost;
+      own.houses++;
+      log(`${p.name} 在 ${t.name} 建房（$${t.houseCost}）`);
+      showToast(own.houses === 5 ? "酒店建成！" : "盖房成功！");
+      renderPlayers();
+      refreshOwnershipVisual();
+      $("modal-prop").classList.remove("show");
+      // upgrade ends the turn immediately
+      finishTurn(true);
+    };
+    item.appendChild(btn);
+  } else if (!own.mortgaged && own.houses === 0 && t.type !== "rail" && t.type !== "util" && p.id === current().id) {
+    const btn = document.createElement("button");
+    btn.textContent = "抵押";
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      own.mortgaged = true;
+      p.money += Math.floor(t.price / 2);
+      log(`${p.name} 抵押了 ${t.name}`);
+      renderPlayers();
+      refreshOwnershipVisual();
+      showPropModal(null, p.id);
+    };
+    item.appendChild(btn);
+  } else if (!own.mortgaged && (t.type === "rail" || t.type === "util") && p.id === current().id) {
+    const btn = document.createElement("button");
+    btn.textContent = "抵押";
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      own.mortgaged = true;
+      p.money += Math.floor(t.price / 2);
+      log(`${p.name} 抵押了 ${t.name}`);
+      renderPlayers();
+      refreshOwnershipVisual();
+      showPropModal(null, p.id);
+    };
+    item.appendChild(btn);
+  }
+  return item;
+}
+
+/* ---------- Top bar buttons ---------- */
+$("btn-music").addEventListener("click", () => {
+  const on = GameAudio.toggleMusic();
+  $("btn-music").classList.toggle("off", !on);
+  $("btn-music").innerHTML = iconSvg(on ? "music" : "musicOff", 18);
+  showToast(on ? "音乐已开启" : "音乐已关闭");
+});
+$("btn-assets").addEventListener("click", () => {
+  showPropModal(null, state.current);
+});
+$("btn-log").addEventListener("click", () => {
+  const box = $("log-box");
+  box.innerHTML = state.logs.map(l => `<div>${l}</div>`).join("");
+  $("modal-log").classList.add("show");
+});
+$("btn-reset").addEventListener("click", () => {
+  if (confirm("确定重新开始吗？")) {
+    GameAudio.stopMusic();
+    $("game").classList.remove("active");
+    $("splash").classList.remove("hidden");
+    $("win-overlay").classList.remove("show");
+    document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("show"));
+  }
+});
+$("btn-assets-close").addEventListener("click", () => $("modal-assets").classList.remove("show"));
+$("btn-log-close").addEventListener("click", () => $("modal-log").classList.remove("show"));
+$("btn-again").addEventListener("click", () => {
+  $("game").classList.remove("active");
+  $("splash").classList.remove("hidden");
+  $("win-overlay").classList.remove("show");
+});
+
+// unlock audio on first gesture
+["pointerdown", "touchstart", "keydown"].forEach(evt => {
+  document.addEventListener(evt, () => GameAudio.unlock(), { once: true, passive: true });
+});
+
+// roll button sound
+$("btn-roll").addEventListener("pointerdown", () => GameAudio.play("toast"), { passive: true });
+
+// init static icons on page load
+function initStaticIcons() {
+  const logo = $("logo-icon");
+  if (logo) logo.innerHTML = iconSvg("lollipop", 72);
+  const title = $("title-icon");
+  if (title) title.innerHTML = iconSvg("lollipop", 16);
+  const startI = $("btn-start-icon");
+  if (startI) startI.innerHTML = iconSvg("dice", 18);
+  const rollI = $("btn-roll-icon");
+  if (rollI) rollI.innerHTML = iconSvg("dice", 18);
+  const buyI = $("btn-buy-icon");
+  if (buyI) buyI.innerHTML = iconSvg("money", 18);
+  const mus = $("btn-music");
+  if (mus) mus.innerHTML = iconSvg("music", 18);
+  const as = $("btn-assets");
+  if (as) as.innerHTML = iconSvg("house", 18);
+  const lg = $("btn-log");
+  if (lg) lg.innerHTML = iconSvg("scroll", 18);
+  const rs = $("btn-reset");
+  if (rs) rs.innerHTML = iconSvg("refresh", 18);
+  const win = $("win-icon");
+  if (win) win.innerHTML = iconSvg("trophy", 72);
+}
+initStaticIcons();
+
+renderSetup();
+
+// close modals on overlay click
+document.querySelectorAll(".modal-overlay").forEach(ov => {
+  ov.addEventListener("click", (e) => {
+    if (e.target === ov && ov.id !== "modal-card" && ov.id !== "modal-item") ov.classList.remove("show");
+  });
+});
+
+// click dice to roll
+$("die1").addEventListener("click", () => { if (state.phase === "idle") onRoll(); });
+$("die2").addEventListener("click", () => { if (state.phase === "idle") onRoll(); });
+
+// window resize → reposition tokens
+window.addEventListener("resize", () => {
+  if (state.players) positionAllTokens();
+});
+
+// 返回工具箱
+function backToToolbox() {
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    window.location.href = "../index.html";
+  }
+}
+document.getElementById("backBtn").addEventListener("click", backToToolbox);
+document.getElementById("splashBack").addEventListener("click", backToToolbox);
+</script>
+</body>
+</html>
