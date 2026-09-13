@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>猜词大师</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(160deg, #1e1e2e 0%, #2d2d44 55%, #1a1830 100%);
+    min-height: 100vh;
+    color: #e8e8f0;
+    padding: 16px 14px 48px;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 15% 20%, rgba(255,152,0,0.08), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 85% 75%, rgba(78,205,196,0.07), transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ---------- 通用 ---------- */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 12px;
+    padding: 7px 13px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+  .back-btn:active { background: rgba(255,255,255,0.16); }
+
+  button {
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+  }
+  button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .fade-up {
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ---------- 首屏 ---------- */
+  .start-card {
+    margin-top: 4vh;
+    text-align: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+    padding: 36px 22px 28px;
+    backdrop-filter: blur(12px);
+  }
+  .start-icon {
+    font-size: 56px;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 0 18px rgba(255,152,0,0.45));
+  }
+  .start-card h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    background: linear-gradient(90deg, #ffd93d, #ff9800, #4ecdc4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .start-card .subtitle {
+    margin-top: 10px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    color: rgba(255,255,255,0.55);
+  }
+
+  .section-label {
+    margin: 22px 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 1px;
+  }
+
+  .cat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .cat-chip {
+    padding: 11px 6px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    font-size: 13px;
+    color: rgba(255,255,255,0.85);
+    transition: all 0.2s ease;
+  }
+  .cat-chip .ico {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  .cat-chip.active {
+    background: rgba(255,152,0,0.18);
+    border-color: #ff9800;
+    color: #ffe0b2;
+    box-shadow: 0 0 16px rgba(255,152,0,0.2);
+  }
+  .cat-chip:active { transform: scale(0.96); }
+
+  .start-btn {
+    margin-top: 22px;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #ff9800, #ff6d00);
+    border-radius: 16px;
+    font-size: 16.5px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    box-shadow: 0 6px 22px rgba(255,111,0,0.32);
+    transition: transform 0.2s ease;
+  }
+  .start-btn:active { transform: scale(0.97); }
+  .start-btn:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+
+  .cat-select-wrap {
+    margin-top: 12px;
+    text-align: left;
+  }
+  .cat-select-wrap label {
+    display: block;
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+  #catSelect {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.5) 50%),
+                      linear-gradient(135deg, rgba(255,255,255,0.5) 50%, transparent 50%);
+    background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 12px) calc(50% - 3px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+  }
+  #catSelect:focus {
+    border-color: #ff9800;
+    box-shadow: 0 0 0 2px rgba(255,152,0,0.2);
+  }
+  #catSelect option {
+    background: #252538;
+    color: #fff;
+  }
+
+  .start-rule {
+    margin-top: 14px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.38);
+    line-height: 1.7;
+  }
+
+  .rules-box {
+    margin-top: 16px;
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .rules-box h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffb74d;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .rules-box ol {
+    margin: 0 0 0 18px;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.85;
+    color: rgba(255,255,255,0.62);
+  }
+  .rules-box li { margin-bottom: 2px; }
+  .rules-box .tip {
+    margin-top: 8px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.6;
+  }
+
+  .game-rules-tip {
+    margin-top: 8px;
+    font-size: 11px;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.42);
+    text-align: center;
+  }
+
+  .history-toggle {
+    margin-top: 14px;
+    width: 100%;
+    padding: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .game-hist-btn {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.75);
+    white-space: nowrap;
+  }
+  .game-hist-btn:active { background: rgba(255,255,255,0.16); }
+
+  /* ---------- 记录弹层 ---------- */
+  .modal-mask {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.62);
+    z-index: 80;
+    padding: 24px 14px;
+    overflow-y: auto;
+  }
+  .modal-mask.open { display: block; }
+  .modal-card {
+    max-width: 440px;
+    margin: 6vh auto;
+    background: linear-gradient(160deg, #252538, #1e1e2e);
+    border: 1px solid rgba(255,152,0,0.35);
+    border-radius: 16px;
+    padding: 16px 14px 14px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    animation: fadeUp 0.25s ease both;
+  }
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .modal-head h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 16px;
+    color: rgba(255,255,255,0.7);
+  }
+  #histList {
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+  .hist-item {
+    padding: 10px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 12.5px;
+    line-height: 1.6;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 0.15s ease;
+  }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-item:active,
+  .hist-item:hover {
+    background: rgba(255,152,0,0.08);
+  }
+  .hist-item .go {
+    margin-left: 6px;
+    opacity: 0.45;
+    font-size: 12px;
+  }
+  .hist-detail-meta {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 13px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.75);
+  }
+  .hist-detail-meta strong { color: #ffd93d; }
+  .hist-log {
+    max-height: 40vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .log-row {
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.55;
+  }
+  .log-row.q {
+    background: rgba(255,152,0,0.1);
+    border: 1px solid rgba(255,152,0,0.2);
+    color: #ffe2b8;
+  }
+  .log-row.a {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.8);
+  }
+  .log-row .role {
+    display: block;
+    font-size: 10.5px;
+    opacity: 0.55;
+    margin-bottom: 2px;
+  }
+  .empty-hist {
+    padding: 16px;
+    text-align: center;
+    color: rgba(255,255,255,0.35);
+    font-size: 12.5px;
+  }
+
+  /* ---------- 对局历史列表 ---------- */
+  .hist-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+  }
+  .hist-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .hist-badge.win {
+    background: rgba(78,205,196,0.2);
+    color: #4ecdc4;
+  }
+  .hist-badge.lose {
+    background: rgba(255,107,107,0.2);
+    color: #ff8a80;
+  }
+  .hist-time { color: rgba(255,255,255,0.35); font-size: 11px; }
+  .hist-meta { color: rgba(255,255,255,0.65); }
+  .hist-meta strong { color: #ffd93d; font-weight: 600; }
+  .hist-clear {
+    margin-top: 8px;
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid rgba(255,107,107,0.4);
+    color: #ff8a80;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+
+  /* ---------- 游戏区 ---------- */
+  #screenGame { display: none; }
+
+  .info-card {
+    position: sticky;
+    top: 8px;
+    z-index: 20;
+    background: rgba(30,30,46,0.94);
+    backdrop-filter: blur(14px);
+    border: 1.5px solid rgba(255,152,0,0.55);
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .info-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .info-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: 10px;
+    background: rgba(255,152,0,0.14);
+    border: 1px solid rgba(255,152,0,0.45);
+    color: #ffb74d;
+  }
+  .info-chip.teal {
+    background: rgba(78,205,196,0.12);
+    border-color: rgba(78,205,196,0.4);
+    color: #4ecdc4;
+  }
+  .info-chip.dim {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.55);
+  }
+
+  .word-slots {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .slot {
+    width: 34px;
+    height: 42px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.28);
+    border: 1px dashed rgba(255,152,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffd93d;
+  }
+  .slot.revealed {
+    border-style: solid;
+    border-color: #ffd93d;
+    background: rgba(255,217,61,0.12);
+    box-shadow: 0 0 12px rgba(255,217,61,0.25);
+  }
+
+  .hint-box {
+    margin-top: 10px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    background: rgba(78,205,196,0.08);
+    border: 1px solid rgba(78,205,196,0.2);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: #b2dfdb;
+  }
+  .hint-box:empty { display: none; }
+
+  /* ---------- 对话流 ---------- */
+  #chatArea {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .msg { max-width: 88%; }
+  .msg.user { align-self: flex-end; }
+  .msg.ai   { align-self: flex-start; }
+  .msg.sys  { align-self: center; max-width: 95%; text-align: center; }
+
+  .bubble {
+    padding: 9px 13px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .bubble-user {
+    background: rgba(255,152,0,0.16);
+    border: 1px solid rgba(255,152,0,0.38);
+    border-radius: 14px 14px 4px 14px;
+    color: #ffe2b8;
+    font-size: 14px;
+  }
+  .bubble-user .tag {
+    display: block;
+    font-size: 10.5px;
+    opacity: 0.7;
+    margin-bottom: 2px;
+    letter-spacing: 1px;
+  }
+
+  .answer-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    padding: 8px 16px;
+    border-radius: 14px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    animation: popIn 0.28s ease both;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.6); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .answer-yes {
+    background: linear-gradient(135deg, #26a69a, #00897b);
+    color: #e0f2f1;
+  }
+  .answer-no {
+    background: linear-gradient(135deg, #ef5350, #c62828);
+    color: #ffebee;
+  }
+  .answer-maybe {
+    background: linear-gradient(135deg, #ffa726, #f57c00);
+    color: #fff3e0;
+  }
+  .answer-win {
+    background: linear-gradient(135deg, #ffd93d, #ff9800);
+    color: #1e1e2e;
+    font-size: 18px;
+  }
+  .answer-note {
+    margin-top: 4px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .sys-msg {
+    display: inline-block;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px;
+  }
+
+  .error-hint {
+    margin-top: 6px;
+    font-size: 12.5px;
+    color: #ff8a80;
+  }
+  .retry-btn {
+    margin-top: 6px;
+    width: 100%;
+    background: transparent;
+    border: 1.5px solid #ff9800;
+    color: #ffc078;
+    font-size: 13.5px;
+    padding: 9px 12px;
+    border-radius: 12px;
+  }
+
+  /* ---------- 结果卡 ---------- */
+  .result-card {
+    margin-top: 6px;
+    padding: 18px 16px;
+    border-radius: 16px;
+    text-align: center;
+    background: linear-gradient(145deg, rgba(255,152,0,0.15), rgba(78,205,196,0.1));
+    border: 1px solid rgba(255,152,0,0.35);
+    animation: fadeUp 0.35s ease both;
+  }
+  .result-card.lose {
+    background: linear-gradient(145deg, rgba(255,107,107,0.12), rgba(255,152,0,0.08));
+    border-color: rgba(255,107,107,0.35);
+  }
+  .result-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .result-word {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    color: #ffd93d;
+    margin: 6px 0 10px;
+    text-shadow: 0 0 20px rgba(255,217,61,0.4);
+  }
+  .result-stats {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+  .result-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .result-btn {
+    flex: 1;
+    padding: 11px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #ff9800, #ff6d00);
+  }
+  .result-btn.ghost {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.85);
+  }
+
+  /* ---------- 底部输入 ---------- */
+  .input-area {
+    position: sticky;
+    bottom: 0;
+    z-index: 25;
+    background: rgba(30,30,46,0.95);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 10px;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
+  }
+  .mode-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .mode-tab {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+  }
+  .mode-tab.active {
+    background: rgba(255,152,0,0.18);
+    border-color: #ff9800;
+    color: #ffe0b2;
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+  #playerInput {
+    flex: 1;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(0,0,0,0.28);
+    color: #fff;
+    font-size: 14.5px;
+    outline: none;
+  }
+  #playerInput:focus {
+    border-color: #ff9800;
+    box-shadow: 0 0 0 2px rgba(255,152,0,0.2);
+  }
+  #playerInput::placeholder { color: rgba(255,255,255,0.3); }
+
+  .action-btn {
+    padding: 0 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ff9800, #ff6d00);
+    white-space: nowrap;
+    min-width: 72px;
+  }
+  .action-btn.guess-mode {
+    background: linear-gradient(135deg, #ffd93d, #ff9800);
+    color: #1e1e2e;
+  }
+  .action-btn:disabled {
+    opacity: 0.45;
+  }
+
+  .side-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .side-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed;
+    left: 50%;
+    top: 18%;
+    transform: translateX(-50%) translateY(-8px);
+    background: rgba(0,0,0,0.82);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 13.5px;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    max-width: 86%;
+    text-align: center;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* 胜利彩带点缀 */
+  .confetti {
+    position: fixed;
+    top: -10px;
+    width: 8px;
+    height: 12px;
+    z-index: 90;
+    pointer-events: none;
+    animation: confettiFall 2.2s linear forwards;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+
+  .loading-dots::after {
+    content: '';
+    animation: dots 1.2s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-btn" href="index.html" id="backBtn">← 游戏合集</a>
+
+  <!-- ========== 首屏 ========== -->
+  <section id="screenStart">
+    <div class="start-card fade-up">
+      <div class="start-icon">🔮</div>
+      <h1>猜词大师</h1>
+      <p class="subtitle">
+        AI 已随机想好一个词<br>
+        可以问是非题，也可以直接猜，AI 自动识别
+      </p>
+
+      <button class="start-btn" id="startBtn">开始游戏</button>
+
+      <div class="cat-select-wrap">
+        <label for="catSelect">题目范围</label>
+        <select id="catSelect">
+          <option value="random" selected>全部随机</option>
+        </select>
+      </div>
+
+      <div class="rules-box">
+        <h3>游戏规则</h3>
+        <ol>
+          <li>AI 随机想好一个词，开局只告诉你<strong>类别</strong>和<strong>字数</strong>，不会给其它提示。</li>
+          <li>输入框可<strong>直接猜词</strong>（如「诸葛亮」），也可<strong>问是非题</strong>（如「是古代人物吗？」），AI 会自动识别。</li>
+          <li>是非题只会得到：是 / 否 / 基本是 / 基本否 / 说不准，不会剧透答案。</li>
+          <li>猜对即获胜；也可随时点「放弃揭晓」。</li>
+          <li>每局结束后自动保存记录，可在首页或对局中点「对局记录」查看回放。</li>
+        </ol>
+        <p class="tip">范围可能涵盖：人名、兵器、影视剧、动物、食物、地名、品牌、日常物品等。</p>
+      </div>
+
+      <button class="history-toggle" id="historyToggle">📜 对局记录（<span class="hist-count">0</span>）</button>
+    </div>
+  </section>
+
+  <!-- ========== 游戏区 ========== -->
+  <section id="screenGame">
+    <div class="info-card fade-up">
+      <div class="info-row">
+        <div class="info-chips">
+          <span class="info-chip" id="catChip">—</span>
+          <span class="info-chip teal" id="lenChip">—</span>
+          <span class="info-chip dim" id="askChip">提问 0</span>
+        </div>
+        <button class="game-hist-btn" id="gameHistBtn">📜 记录 <span class="hist-count">0</span></button>
+      </div>
+      <div class="word-slots" id="wordSlots"></div>
+    </div>
+
+    <div id="chatArea"></div>
+
+    <div class="input-area" id="inputArea">
+      <div class="input-row">
+        <input id="playerInput" type="text" placeholder="提问或直接猜词，AI 自动识别…" autocomplete="off">
+        <button class="action-btn" id="sendBtn">发送</button>
+      </div>
+      <p class="game-rules-tip">
+        例：直接猜答案· 或问一些问题<br>
+        AI 只回是/否或判断对错，不会给详细提示
+      </p>
+      <div class="side-actions">
+        <button class="side-btn" id="giveupBtn">🏳️ 放弃揭晓</button>
+        <button class="side-btn" id="restartBtn">🔄 换一局</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+<div class="modal-mask" id="histModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="histModalTitle">对局记录</h2>
+      <button class="modal-close" id="histModalClose">✕</button>
+    </div>
+    <div id="histModalBody"></div>
+  </div>
+</div>
+
+<script src="../../ai-models.js"></script>
+<script src="../ai-config.js"></script>
+<script>
+// ============================================================
+//  猜词大师：AI 出题 + 是/否问答 + 猜词
+//  AI 接口/模型统一走 ai-models.js + ai-config.js
+// ============================================================
+
+var CAT_POOL = [
+  '历史人物', '神话人物', '兵器', '影视剧', '动漫角色',
+  '动物', '食物', '地名', '品牌', '日常物品', '职业', '运动', '科学名词'
+];
+
+var CAT_TO_BANK = {
+  '历史人物': 'history',
+  '神话人物': 'myth',
+  '兵器': 'weapon',
+  '影视剧': 'movie',
+  '动漫角色': 'anime',
+  '动物': 'animal',
+  '食物': 'food',
+  '地名': 'place',
+  '品牌': 'brand',
+  '日常物品': 'object'
+};
+
+var selectedCat = 'random';
+
+var HISTORY_KEY = 'guessword_history_v1';
+
+var secretWord = '';
+var secretLen = 0;
+var secretIntro = '';
+var currentCategory = '';
+var askCount = 0;
+var guessCount = 0;
+var revealedSlots = {};
+var conversation = [];
+var gameLog = [];
+var isBusy = false;
+var gameOver = false;
+var abortCtrl = null;
+var genToken = 0;
+var resultSaved = false;
+var lastHintLevel = 0;
+
+// ---------- DOM ----------
+function $(id) { return document.getElementById(id); }
+
+function showToast(msg) {
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(function () { t.classList.remove('show'); }, 2200);
+}
+
+function scrollToBottom() {
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ---------- 类别 ----------
+function pickCatName() {
+  return CAT_POOL[Math.floor(Math.random() * CAT_POOL.length)];
+}
+
+function catName(id) {
+  return id || pickCatName();
+}
+
+// ---------- 本地历史 ----------
+function getHistory() {
+  try {
+    var raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function pushHistory(item) {
+  var list = getHistory();
+  list.unshift(item);
+  if (list.length > 40) list.length = 40;
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch (e) {}
+  updateHistCount();
+}
+
+function updateHistCount() {
+  var n = getHistory().length;
+  var nodes = document.querySelectorAll('.hist-count');
+  for (var i = 0; i < nodes.length; i++) nodes[i].textContent = n;
+}
+
+function openHistModal() {
+  $('histModal').classList.add('open');
+  renderHistoryList();
+}
+
+function closeHistModal() {
+  $('histModal').classList.remove('open');
+}
+
+function renderHistoryList() {
+  $('histModalTitle').textContent = '对局记录';
+  var body = $('histModalBody');
+  var list = getHistory();
+  if (!list.length) {
+    body.innerHTML = '<div class="empty-hist">暂无对局记录，先玩一局吧</div>';
+    return;
+  }
+  var html = '<div id="histList">';
+  list.forEach(function (r, idx) {
+    var badge = r.win
+      ? '<span class="hist-badge win">猜对</span>'
+      : '<span class="hist-badge lose">放弃</span>';
+    html += '<div class="hist-item" data-idx="' + idx + '">'
+      + '<div class="hist-top">' + badge
+      + '<span class="hist-time">' + escapeHtml(r.time) + '</span></div>'
+      + '<div class="hist-meta">'
+      + escapeHtml(r.category) + ' · <strong>' + escapeHtml(r.word) + '</strong>'
+      + ' · 提问 ' + r.asks + ' · 猜词 ' + r.guesses
+      + ' <span class="go">查看详情 →</span>'
+      + '</div></div>';
+  });
+  html += '</div><button class="hist-clear" id="histClearBtn">清空记录</button>';
+  body.innerHTML = html;
+
+  var items = body.querySelectorAll('.hist-item');
+  for (var i = 0; i < items.length; i++) {
+    (function (el) {
+      el.onclick = function () {
+        var idx = parseInt(el.getAttribute('data-idx'), 10);
+        renderHistoryDetail(list[idx]);
+      };
+    })(items[i]);
+  }
+  var clearBtn = $('histClearBtn');
+  if (clearBtn) clearBtn.onclick = function () {
+    if (!confirm('确定清空全部对局记录？')) return;
+    try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+    updateHistCount();
+    renderHistoryList();
+  };
+}
+
+function renderHistoryDetail(record) {
+  if (!record) return;
+  $('histModalTitle').textContent = '对局详情';
+  var body = $('histModalBody');
+  var badge = record.win ? '猜对' : '放弃';
+  var logs = record.log || [];
+  var logHtml = '';
+  if (!logs.length) {
+    logHtml = '<div class="empty-hist">本局未保存问答过程</div>';
+  } else {
+    logs.forEach(function (row) {
+      var isQ = row.t !== 'answer';
+      logHtml += '<div class="log-row ' + (isQ ? 'q' : 'a') + '">'
+        + '<span class="role">' + (isQ ? (row.t === 'giveup' ? '你 · 放弃' : '你') : 'AI') + '</span>'
+        + escapeHtml(row.text)
+        + '</div>';
+    });
+  }
+  body.innerHTML =
+    '<div class="hist-detail-meta">'
+    + '结果：<strong>' + badge + '</strong><br>'
+    + '时间：' + escapeHtml(record.time) + '<br>'
+    + '类别：' + escapeHtml(record.category) + ' · 字数：' + (record.word ? record.word.length : '—') + '<br>'
+    + '答案：<strong>' + escapeHtml(record.word || '') + '</strong><br>'
+    + '提问 ' + record.asks + ' 次 · 猜词 ' + record.guesses + ' 次'
+    + '</div>'
+    + '<div class="hist-log">' + logHtml + '</div>'
+    + '<button class="hist-clear" id="histBackBtn">← 返回列表</button>';
+  var back = $('histBackBtn');
+  if (back) back.onclick = renderHistoryList;
+}
+
+// ---------- 词槽展示 ----------
+function renderSlots() {
+  var box = $('wordSlots');
+  box.innerHTML = '';
+  for (var i = 0; i < secretLen; i++) {
+    var d = document.createElement('div');
+    d.className = 'slot' + (revealedSlots[i] ? ' revealed' : '');
+    d.textContent = revealedSlots[i] ? revealedSlots[i] : '?';
+    box.appendChild(d);
+  }
+}
+
+function updateStatsUI() {
+  $('catChip').textContent = currentCategory || '—';
+  $('lenChip').textContent = secretLen ? (secretLen + ' 字') : '—';
+  $('askChip').textContent = '提问 ' + askCount;
+}
+
+function setHint(text) {
+  var el = $('hintBox');
+  if (el) el.textContent = text || '';
+}
+
+// ---------- 气泡 ----------
+function addUserBubble(text, tag) {
+  var wrap = document.createElement('div');
+  wrap.className = 'msg user fade-up';
+  var b = document.createElement('div');
+  b.className = 'bubble bubble-user';
+  if (tag) {
+    var t = document.createElement('span');
+    t.className = 'tag';
+    t.textContent = tag;
+    b.appendChild(t);
+  }
+  b.appendChild(document.createTextNode(text));
+  wrap.appendChild(b);
+  $('chatArea').appendChild(wrap);
+  scrollToBottom();
+}
+
+function addAnswerBubble(kind, text) {
+  var wrap = document.createElement('div');
+  wrap.className = 'msg ai fade-up';
+  var box = document.createElement('div');
+  box.style.display = 'inline-block';
+
+  var badge = document.createElement('div');
+  badge.className = 'answer-badge answer-' + kind;
+  badge.textContent = text;
+  box.appendChild(badge);
+  wrap.appendChild(box);
+  $('chatArea').appendChild(wrap);
+  scrollToBottom();
+}
+
+function addSysBubble(text) {
+  var wrap = document.createElement('div');
+  wrap.className = 'msg sys';
+  var d = document.createElement('div');
+  d.className = 'sys-msg';
+  d.textContent = text;
+  wrap.appendChild(d);
+  $('chatArea').appendChild(wrap);
+  scrollToBottom();
+}
+
+function addResultCard(win) {
+  var card = document.createElement('div');
+  card.className = 'result-card' + (win ? '' : ' lose');
+  var stats = '类别：' + currentCategory
+    + ' · 提问 ' + askCount + ' 次'
+    + ' · 猜词 ' + guessCount + ' 次';
+  card.innerHTML =
+    '<div class="result-title">' + (win ? '🎉 猜对了！' : '🏳️ 已揭晓答案') + '</div>' +
+    '<div class="result-word">' + escapeHtml(secretWord) + '</div>' +
+    '<div class="result-stats">' + escapeHtml(stats) + '</div>' +
+    '<div class="result-actions">' +
+      '<button class="result-btn" id="againBtn">再来一局</button>' +
+      '<button class="result-btn ghost" id="toHomeBtn">返回首页</button>' +
+    '</div>';
+  $('chatArea').appendChild(card);
+  $('againBtn').onclick = function () { backToStart(true); };
+  $('toHomeBtn').onclick = function () { backToStart(false); };
+  scrollToBottom();
+
+  if (win) launchConfetti();
+  saveGameRecord(win);
+}
+
+function launchConfetti() {
+  var colors = ['#ff9800', '#ffd93d', '#4ecdc4', '#ff6b6b', '#54a0ff'];
+  for (var i = 0; i < 28; i++) {
+    (function (i) {
+      setTimeout(function () {
+        var el = document.createElement('div');
+        el.className = 'confetti';
+        el.style.left = (Math.random() * 100) + 'vw';
+        el.style.background = colors[i % colors.length];
+        el.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
+        el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+        document.body.appendChild(el);
+        setTimeout(function () { el.remove(); }, 3000);
+      }, i * 40);
+    })(i);
+  }
+}
+
+function saveGameRecord(win) {
+  if (resultSaved) return;
+  resultSaved = true;
+  pushHistory({
+    time: new Date().toLocaleString('zh-CN', { hour12: false }),
+    category: currentCategory,
+    word: secretWord,
+    win: !!win,
+    asks: askCount,
+    guesses: guessCount,
+    log: gameLog.slice()
+  });
+}
+
+function setInputEnabled(on) {
+  $('playerInput').disabled = !on;
+  $('sendBtn').disabled = !on;
+  $('giveupBtn').disabled = !on || gameOver;
+  $('restartBtn').disabled = false;
+}
+
+// 粗略判断更像猜词还是提问（仅用于气泡标签/统计，最终以 AI 回复为准）
+function looksLikeGuess(text) {
+  var s = String(text || '').trim();
+  if (!s) return false;
+  if (/[?？]$/.test(s)) return false;
+  if (/吗$|么$|呢$/.test(s)) return false;
+  if (/是不是|有没有|是否|能不能|会不会|属于不|算不算|有没有可能/.test(s)) return false;
+  if (/^(是|否|有|没有|能|不能|会|不会)/.test(s) && s.length <= 10) return false;
+  // 短名词/专名更像直接猜
+  if (s.length <= 12 && !/[，。！？；：、的了在和与跟]/.test(s)) return true;
+  return false;
+}
+
+// ---------- 提示：只展示类别与字数，不做额外剧透 ----------
+function maybeUnlockHints() {
+  // 不提供字形/简介等详细提示
+}
+
+// ---------- AI 请求 ----------
+function buildSystemPrompt() {
+  return [
+    '你是「猜词大师」游戏的出题人与裁判，严格遵守以下规则：',
+    '【出题格式】只输出一行 JSON，不要 markdown 代码块，不要多余文字：',
+    '{"word":"诸葛亮","category":"历史人物","intro":"一位著名的三国人物"}',
+    'word 为秘密答案，category 为具体类别标签（2~6字），intro 为一句不剧透的模糊介绍。',
+    '【自动识别】玩家没有模式切换。你要自行判断输入属于哪一类：',
+    'A. 是非问题（含「吗/是否/是不是/有没有」或明显在问特征）：只回答 是 / 否 / 基本是 / 基本否 / 说不准 之一，绝不透露答案字形、拼音或直接剧透。',
+    'B. 直接猜词（短名词、人名、作品名等，像是在报答案）：若与答案一致（允许同物异名、简称/全称），输出【猜对了】并附一句简短点评；若不正确，输出【不对】并附一句不超过12字、不剧透的方向性反馈。',
+    'C. 玩家说「放弃」时，输出【答案】+正确词语。',
+    '答案一旦选定，整局不得更改。问题若无法用是/否判断，回「说不准」。模糊时优先按是非问题处理。'
+  ].join('\n');
+}
+
+function parseSecretJSON(text) {
+  var t = String(text || '').trim();
+  // 去掉可能的代码块包裹
+  t = t.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  var start = t.indexOf('{');
+  var end = t.lastIndexOf('}');
+  if (start < 0 || end <= start) return null;
+  try {
+    var obj = JSON.parse(t.slice(start, end + 1));
+    if (obj && obj.word && String(obj.word).trim()) {
+      return {
+        word: String(obj.word).trim(),
+        category: String(obj.category || '未知').trim() || '未知',
+        intro: String(obj.intro || '').trim()
+      };
+    }
+  } catch (e) {}
+  return null;
+}
+
+async function callAI(messages, opts) {
+  opts = opts || {};
+  var stream = !!opts.stream;
+  var myToken = ++genToken;
+  abortCtrl = new AbortController();
+
+  var response = await fetch(API_URL, {
+    method: 'POST',
+    headers: API_HEADER,
+    body: JSON.stringify({
+      model: GLM_MODEL,
+      messages: messages,
+      stream: stream
+    }),
+    signal: abortCtrl.signal
+  });
+  if (!response.ok) throw new Error('API请求失败');
+
+  if (!stream) {
+    var data = await response.json();
+    abortCtrl = null;
+    if (myToken !== genToken) return '';
+    var content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+    return content || '';
+  }
+
+  // SSE 流式
+  var reader = response.body.getReader();
+  var decoder = new TextDecoder();
+  var buf = '';
+  var full = '';
+  var doneFlag = false;
+  if (opts.onDelta) {
+    // 预留给需要实时渲染的场景
+  }
+
+  while (true) {
+    var res = await reader.read();
+    if (res.done) break;
+    buf += decoder.decode(res.value, { stream: true });
+    var lines = buf.split('\n');
+    buf = lines.pop();
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line.startsWith('data:')) continue;
+      var payload = line.slice(5).trim();
+      if (payload === '[DONE]') { doneFlag = true; break; }
+      try {
+        var json = JSON.parse(payload);
+        var delta = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+        if (delta) {
+          full += delta;
+          if (opts.onDelta) opts.onDelta(full);
+        }
+      } catch (e) {}
+    }
+    if (doneFlag) break;
+  }
+  if (buf && !doneFlag) {
+    var line2 = buf.trim();
+    if (line2.startsWith('data:')) {
+      var p2 = line2.slice(5).trim();
+      if (p2 !== '[DONE]') {
+        try {
+          var j2 = JSON.parse(p2);
+          var d2 = j2.choices && j2.choices[0] && j2.choices[0].delta && j2.choices[0].delta.content;
+          if (d2) full += d2;
+        } catch (e) {}
+      }
+    }
+  }
+  abortCtrl = null;
+  return full;
+}
+
+// ---------- 本地备用词库（API 失败时） ----------
+var LOCAL_BANK = {
+  history: ['诸葛亮', '李白', '武则天', '岳飞', '秦始皇', '李清照'],
+  myth: ['孙悟空', '哪吒', '嫦娥', '二郎神', '女娲', '白素贞'],
+  weapon: ['青龙偃月刀', '方天画戟', '丈八蛇矛', '干将莫邪', '鱼肠剑', '火尖枪'],
+  movie: ['霸王别姬', '流浪地球', '让子弹飞', '无间道', '大话西游', '英雄本色'],
+  anime: ['孙悟空', '路飞', '柯南', '灰原哀', '夜礼服假面', '齐木楠雄'],
+  animal: ['大熊猫', '金丝猫', '猫头鹰', '海豚', '孔雀', '变色龙'],
+  food: ['北京烤鸭', '麻婆豆腐', '螺蛳粉', '糖葫芦', '小笼包', '担担面'],
+  place: ['布达拉宫', '张家界', '茶卡盐湖', '呼伦贝尔', '丽江古城', '西双版纳'],
+  brand: ['华为', '小米', '可口可乐', '耐克', '苹果', '星巴克'],
+  object: ['电热水壶', '折叠伞', '蓝牙耳机', '瑞士军刀', '香薰蜡烛', '保温杯'],
+  random: ['青龙偃月刀', '诸葛亮', '霸王别姬', '大熊猫', '螺蛳粉', '孙悟空', '布达拉宫']
+};
+
+function pickLocalWord(catNameOrId) {
+  var ids = Object.keys(LOCAL_BANK).filter(function (k) { return k !== 'random'; });
+  var bankId = CAT_TO_BANK[catNameOrId] || catNameOrId;
+  var id = bankId && LOCAL_BANK[bankId] ? bankId : ids[Math.floor(Math.random() * ids.length)];
+  var list = LOCAL_BANK[id] || LOCAL_BANK.random;
+  var w = list[Math.floor(Math.random() * list.length)];
+  var nameMap = {
+    history: '历史人物', myth: '神话人物', weapon: '兵器',
+    movie: '影视剧', anime: '动漫角色', animal: '动物', food: '食物',
+    place: '地名', brand: '品牌', object: '日常物品'
+  };
+  return {
+    word: w,
+    category: nameMap[id] || '未知',
+    intro: '这是一个本地备用题目'
+  };
+}
+
+function localAnswer(question) {
+  // 极简启发式：无法真正语义判断，只做粗暴匹配
+  var q = question;
+  if (q.indexOf(secretWord) >= 0) return 'yes';
+  // 若问题里包含答案中的某个字，给个弱肯定（帮助本地模式可玩）
+  var hit = false;
+  for (var i = 0; i < secretWord.length; i++) {
+    if (secretWord.length >= 2 && q.indexOf(secretWord.charAt(i)) >= 0) { hit = true; break; }
+  }
+  // 否定词优先
+  var noHints = ['不是', '否', '没有', '非', '难道是'];
+  var yesHints = ['是', '有', '属于', '来自', '能不能'];
+  var hasNo = q.indexOf('不是') >= 0;
+  var hasYes = yesHints.some(function (h) { return q.indexOf(h) >= 0; });
+  if (hasNo) return hit ? 'no' : 'no';
+  if (hasYes && hit) return 'yes';
+  if (/^\d+$/.test(q)) return 'no';
+  return Math.random() > 0.55 ? 'no' : 'yes';
+}
+
+// ---------- 开局 ----------
+// 保留 system（含秘密词）+ 最近问答，避免 token 膨胀
+function trimMessages(msgs) {
+  if (!msgs || !msgs.length) return [];
+  var sys = msgs[0] && msgs[0].role === 'system' ? msgs[0] : null;
+  var rest = sys ? msgs.slice(1) : msgs.slice(0);
+  var keep = rest.slice(-16);
+  return sys ? [sys].concat(keep) : keep;
+}
+
+function startGame() {
+  if (isBusy) return;
+
+  isBusy = true;
+  gameOver = false;
+  resultSaved = false;
+  askCount = 0;
+  guessCount = 0;
+  revealedSlots = {};
+  conversation = [];
+  gameLog = [];
+  lastHintLevel = 0;
+  secretWord = '';
+  secretLen = 0;
+  secretIntro = '';
+  currentCategory = (selectedCat && selectedCat !== 'random') ? selectedCat : '随机出题';
+
+  $('screenStart').style.display = 'none';
+  $('backBtn').style.display = 'none';
+  $('screenGame').style.display = 'block';
+  $('chatArea').innerHTML = '';
+  $('wordSlots').innerHTML = '';
+  setInputEnabled(false);
+  updateStatsUI();
+  window.scrollTo(0, 0);
+
+  addSysBubble('正在为你想一个词…');
+  generateSecret();
+}
+
+async function generateSecret() {
+  var sys = { role: 'system', content: buildSystemPrompt() };
+  var userMsg;
+  if (selectedCat && selectedCat !== 'random') {
+    userMsg = '开始新的一局。类别范围必须是：' + selectedCat + '。请出一道题。';
+  } else {
+    userMsg = '开始新的一局。请从这些范围里随机挑一个出题：' + CAT_POOL.join('、') + '。';
+  }
+  var messages = [sys, { role: 'user', content: userMsg }];
+  conversation = messages;
+
+  var hasApi = typeof API_URL === 'string' && API_URL;
+  if (!hasApi) {
+    finishGenerate(pickLocalWord(selectedCat), true);
+    return;
+  }
+
+  try {
+    var raw = await callAI(messages, { stream: false });
+    var parsed = parseSecretJSON(raw);
+    if (!parsed) {
+      raw = await callAI(messages.concat([
+        { role: 'assistant', content: raw },
+        { role: 'user', content: '请只输出一行 JSON，格式：{"word":"...","category":"...","intro":"..."}' }
+      ]), { stream: false });
+      parsed = parseSecretJSON(raw);
+    }
+    if (!parsed) throw new Error('无法解析词语');
+    finishGenerate(parsed, false);
+  } catch (err) {
+    console.error(err);
+    finishGenerate(pickLocalWord(selectedCat), true);
+  }
+}
+
+function finishGenerate(info, isLocal) {
+  secretWord = info.word;
+  secretLen = secretWord.length;
+  secretIntro = info.intro || '';
+  currentCategory = info.category;
+  revealedSlots = {};
+  var sys = buildSystemPrompt() + '\n【本局秘密词已确定】答案就是：' + secretWord + '。整局必须以此为准回答是/否或判断猜词。';
+  conversation = [
+    { role: 'system', content: sys },
+    { role: 'assistant', content: JSON.stringify(info) }
+  ];
+  if (isLocal) conversation._local = true;
+
+  // 清除「正在想词」系统消息
+  var sysMsgs = $('chatArea').querySelectorAll('.msg.sys');
+  if (sysMsgs.length) sysMsgs[sysMsgs.length - 1].remove();
+
+  updateStatsUI();
+  renderSlots();
+  addSysBubble('词已想好（' + (isLocal ? '本地备用题' : 'AI 出题') + '）—— 开猜吧！');
+  setHint('');
+
+  isBusy = false;
+  setInputEnabled(true);
+  $('playerInput').focus();
+}
+
+// ---------- 提交操作 ----------
+function normalizeAnswer(text) {
+  var t = String(text || '').trim();
+  if (t.indexOf('【猜对了】') >= 0 || t.indexOf('猜对了') >= 0) return { kind: 'win', label: '猜对了' };
+  if (t.indexOf('【不对】') >= 0 || t.indexOf('不对') >= 0) return { kind: 'no', label: '不对' };
+  if (t.indexOf('【答案】') >= 0) {
+    var m = t.match(/【答案】\s*(.+)/);
+    return { kind: 'reveal', label: '答案', extra: m ? m[1].trim() : '' };
+  }
+  var low = t.replace(/[。！!～~\s]/g, '');
+  if (/^(基本不|不|否|没有)/.test(low)) return { kind: 'no', label: '否' };
+  if (/^(是|基本是|算是|大概)/.test(low)) return { kind: 'yes', label: '是' };
+  if (/^(说不准|不确定|可能)/.test(low)) return { kind: 'maybe', label: '说不准' };
+  // 默认按是/否归类
+  if (low.indexOf('是') === 0) return { kind: 'yes', label: '是' };
+  if (low.indexOf('否') === 0) return { kind: 'no', label: '否' };
+  return { kind: 'maybe', label: t.slice(0, 6) || '…' };
+}
+
+function classifyAnswer(raw, isGuess) {
+  var t = String(raw || '');
+  // 优先看约定标签
+  if (t.indexOf('【猜对了】') >= 0) return { kind: 'win', label: '猜对了', asGuess: true };
+  if (t.indexOf('【答案】') >= 0) return { kind: 'reveal', label: '答案', asGuess: false };
+  if (t.indexOf('【不对】') >= 0) return { kind: 'no', label: '不对', asGuess: true };
+  if (isGuess) {
+    if (/猜对|正确|答对|恭喜/.test(t)) return { kind: 'win', label: '猜对了', asGuess: true };
+    return { kind: 'no', label: '不对', asGuess: true };
+  }
+  return normalizeAnswer(t);
+}
+
+async function sendAction() {
+  if (isBusy || gameOver) return;
+  var input = $('playerInput');
+  var val = input.value.trim();
+  if (!val) {
+    showToast('请输入问题或你的猜测');
+    return;
+  }
+  input.value = '';
+  isBusy = true;
+  setInputEnabled(false);
+
+  // 原样发给 AI，由它判断是提问还是猜词
+  addUserBubble(val, '');
+  conversation.push({ role: 'user', content: val });
+  gameLog.push({ t: looksLikeGuess(val) ? 'guess' : 'ask', text: val });
+
+  // 本地模式：无网络时用启发式
+  if (conversation._local) {
+    handleLocalRound(val, looksLikeGuess(val));
+    return;
+  }
+
+  try {
+    var raw = await callAI(trimMessages(conversation), { stream: false });
+    if (!raw || !raw.trim()) throw new Error('空回复');
+    conversation.push({ role: 'assistant', content: raw });
+    handleRoundResult(raw, val, looksLikeGuess(val), false);
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      isBusy = false;
+      return;
+    }
+    console.error(err);
+    isBusy = false;
+    setInputEnabled(true);
+    showToast('网络开小差了，请再试一次');
+    conversation.pop();
+  }
+}
+
+function handleLocalRound(question, isGuess) {
+  var reply;
+  if (question.indexOf('放弃') >= 0) {
+    reply = '【答案】' + secretWord;
+  } else if (isGuess) {
+    var g = question.replace(/\s/g, '').replace(/[《》「」"'“”·、]/g, '');
+    var s = secretWord.replace(/\s/g, '');
+    var ok = g === s;
+    reply = ok ? '【猜对了】就是这个词！' : '【不对】再想想';
+  } else {
+    var a = localAnswer(question);
+    reply = a === 'yes' ? '是。' : '否。';
+  }
+  conversation.push({ role: 'assistant', content: reply });
+  handleRoundResult(reply, question, isGuess, true);
+}
+
+function handleRoundResult(raw, userText, isGuess, isLocal) {
+  var ans = classifyAnswer(raw, isGuess);
+  // 以 AI 标签/回复为准：猜对/不对 → 猜词统计；是/否 → 提问统计
+  var asGuess = ans.asGuess != null ? !!ans.asGuess : !!isGuess;
+
+  if (ans.kind === 'win') {
+    addAnswerBubble('win', '猜对了');
+    gameLog.push({ t: 'answer', text: '【猜对了】' + (String(raw).replace(/【猜对了】/g, '').trim() || '') });
+    gameOver = true;
+    for (var i = 0; i < secretLen; i++) revealedSlots[i] = secretWord.charAt(i);
+    renderSlots();
+    setInputEnabled(false);
+    addResultCard(true);
+    isBusy = false;
+    return;
+  }
+
+  if (ans.kind === 'reveal') {
+    addAnswerBubble('maybe', '答案');
+    gameLog.push({ t: 'answer', text: '【答案】' + secretWord });
+    gameOver = true;
+    for (var j = 0; j < secretLen; j++) revealedSlots[j] = secretWord.charAt(j);
+    renderSlots();
+    setInputEnabled(false);
+    addResultCard(false);
+    isBusy = false;
+    return;
+  }
+
+  if (asGuess) {
+    guessCount++;
+    addAnswerBubble('no', '不对');
+    gameLog.push({ t: 'answer', text: '【不对】' + (String(raw).replace(/【不对】/g, '').trim() || '') });
+  } else {
+    askCount++;
+    addAnswerBubble(ans.kind, ans.label);
+    gameLog.push({ t: 'answer', text: ans.label });
+    maybeUnlockHints();
+  }
+
+  updateStatsUI();
+  isBusy = false;
+  setInputEnabled(true);
+  $('playerInput').focus();
+}
+
+function giveUp() {
+  if (isBusy || gameOver) return;
+  if (!confirm('确定放弃并揭晓答案吗？')) return;
+  isBusy = true;
+  setInputEnabled(false);
+  addUserBubble('放弃 😵', '放弃');
+  conversation.push({ role: 'user', content: '【放弃】' });
+  gameLog.push({ t: 'giveup', text: '放弃' });
+
+  // 直接本地揭晓，无需再问 AI
+  addAnswerBubble('maybe', '答案');
+  gameOver = true;
+  for (var i = 0; i < secretLen; i++) revealedSlots[i] = secretWord.charAt(i);
+  renderSlots();
+  addResultCard(false);
+  isBusy = false;
+}
+
+function backToStart(autoStart) {
+  if (abortCtrl) {
+    try { abortCtrl.abort(); } catch (e) {}
+    abortCtrl = null;
+  }
+  genToken++;
+  isBusy = false;
+  gameOver = false;
+  conversation = [];
+
+  $('screenGame').style.display = 'none';
+  $('screenStart').style.display = 'block';
+  $('backBtn').style.display = '';
+  updateHistCount();
+  window.scrollTo(0, 0);
+
+  if (autoStart) {
+    // 直接用当前类别再开一局
+    setTimeout(startGame, 80);
+  }
+}
+
+// ---------- 事件绑定（防御性，任一按钮不存在也不阻断） ----------
+function bindEvents() {
+  var startBtn = $('startBtn');
+  if (startBtn) startBtn.onclick = function () { startGame(); };
+
+  var sendBtn = $('sendBtn');
+  if (sendBtn) sendBtn.onclick = function () { sendAction(); };
+
+  var giveupBtn = $('giveupBtn');
+  if (giveupBtn) giveupBtn.onclick = function () { giveUp(); };
+
+  var restartBtn = $('restartBtn');
+  if (restartBtn) restartBtn.onclick = function () {
+    if (isBusy) return;
+    if (!confirm('确定结束本局，重新开始吗？')) return;
+    backToStart(true);
+  };
+
+  var playerInput = $('playerInput');
+  if (playerInput) playerInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') sendAction();
+  });
+
+  var catSelect = $('catSelect');
+  if (catSelect) {
+    // 填充分类选项（默认已有「全部随机」）
+    CAT_POOL.forEach(function (name) {
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      catSelect.appendChild(opt);
+    });
+    catSelect.onchange = function () {
+      selectedCat = catSelect.value || 'random';
+    };
+    selectedCat = catSelect.value || 'random';
+  }
+
+  var historyToggle = $('historyToggle');
+  if (historyToggle) historyToggle.onclick = function () { openHistModal(); };
+
+  var gameHistBtn = $('gameHistBtn');
+  if (gameHistBtn) gameHistBtn.onclick = function () { openHistModal(); };
+
+  var histModalClose = $('histModalClose');
+  if (histModalClose) histModalClose.onclick = function () { closeHistModal(); };
+
+  var histModal = $('histModal');
+  if (histModal) histModal.onclick = function (e) {
+    if (e.target === histModal) closeHistModal();
+  };
+}
+
+bindEvents();
+updateHistCount();
+</script>
+</body>
+</html>

@@ -403,7 +403,9 @@
       </div>
 
       <div class="rules-card">
-        <b>怎么玩：</b>你出一个成语，首字要接上一句的末字（同音不同字也算合格），
+        <b>怎么玩：</b>你出一个成语，首字要接上一句的末字。
+        <b>同音不同调也算</b>：拼音相同即可（如「一心一意」末字「意」yi，
+        可用「衣、一、以、义、异…」等 yi 开头的成语接）。
         系统本地即时校验，AI 负责判词、接招、给释义。违规不扣分，但会清空连击；
         AI 接错会被要求重接，实在接不上时它会认输。
       </div>
@@ -444,16 +446,19 @@
 
 // ---------- 常量区 ----------
 var SYSTEM_PROMPT = [
-  '你是成语接龙陪练，性格轻松幽默。',
-  '核心规则（唯一标准）：每个新成语的【第一个字】，必须与上一个成语的【最后一个字】同字或同音。严禁拿上一个成语的第一个字或其他位置的字来接。',
-  '例：上一手是「一心一意」（末字"意"）→ 可接：意气风发／义无反顾／异想天开（意/义/异 同音均可）；不可接：一丝不苟（"一"是首字，不是末字）。',
-  '流程：',
-  '1. 让你开局时：直接出一个常见四字成语开局，格式：【开局】成语 · 一句话释义',
-  '2. 玩家提交的成语已由系统在本地完成"接得上"校验，你只需判断它是否为真实存在的四字成语：',
-  '   若不是真实成语，输出：【❌违规】原因说明 + 「试试这个：【XXXX】」（XXXX 必须以要求的首字或其同音字开头，且真实存在；该成语仍需玩家自己发一遍才算他的）。',
-  '   若是真实成语，输出：【✅好棋】简短夸奖一句 → 【接招】【你的成语】· 一句话释义 → 结尾附上「该你了，接『X』！」（X 为你成语的最后一字）。',
-  '3. 你的接招成语必须真实存在、本局从未出现过，且首字必须严格接住玩家成语的末字（同音即可）。若实在接不上（极罕见），诚实输出：【认输】这局你赢了！并建议重新开一局。',
-  '4. 除上述格式外不要输出任何多余内容。释义保持一句话以内。'
+  '你是成语接龙陪练。出错会被本地系统驳回重接，务必一次做对。',
+  '【硬性格式】只输出一行，必须含下列标记之一，不要前后闲聊：',
+  '【开局】四字成语 · 一句话释义 · 该你了，接『拼音』！',
+  '【✅好棋】一句夸奖 · 【接招】四字成语 · 一句话释义 · 该你了，接『拼音』！',
+  '【❌违规】原因 · 试试这个：【四字成语】',
+  '【认输】这局你赢了！',
+  '【出牌铁律】',
+  '1. 成语必须是 4 个汉字、真实存在、本局未出现过。',
+  '2. 接招时：你的成语【第一个字】的无声调拼音，必须与玩家成语【最后一个字】的无声调拼音相同（同字或同音不同调均可）。',
+  '3. 「该你了，接『X』」里的 X 必须是【无声调拼音小写】，例如 yi、ma、feng，绝不能写汉字。',
+  '4. 只能接牌或认输；严禁用玩家成语的首字去接，必须接末字。',
+  '5. 不确定是否真实成语时，换一个更常见的，禁止编造。',
+  '例：玩家出「一心一意」→ 末字「意」yi → 可接一见如故/衣锦还乡/意气风发/义无反顾/异想天开；结尾写「该你了，接『yi』！」'
 ].join('\n');
 
 // AI 输出中的关键标记与成语提取
@@ -505,7 +510,7 @@ function pinyinsOf(ch) {
   return dict[ch] ? dict[ch].split(',') : [];
 }
 
-// 两字能否相接：同字，或共享任一无声调拼音（同音不同字也算合格）。
+// 两字能否相接：同字，或共享任一无声调拼音（同音不同调也算合格）。
 // 字典外的生僻字退化为"只认同字"，绝不误放行。
 function charsMatch(a, b) {
   if (!a || !b) return false;
@@ -516,6 +521,37 @@ function charsMatch(a, b) {
     if (pb.indexOf(pa[i]) !== -1) return true;
   }
   return false;
+}
+
+function pinyinOfChar(ch) {
+  var list = pinyinsOf(ch);
+  return list[0] || '';
+}
+
+function usedWordsBrief() {
+  var keys = Object.keys(usedWords);
+  if (!keys.length) return '（暂无）';
+  var recent = keys.slice(-10);
+  return recent.join('、') + (keys.length > 10 ? '…' : '');
+}
+
+// 把「该你了，接『X』」强制改成无声调拼音，避免 AI 写成汉字
+function forcePinyinTurnHint(text, idiom) {
+  if (!idiom || idiom.length < 4) return text;
+  var py = pinyinOfChar(idiom.charAt(3));
+  if (!py) return text;
+  var fixed = String(text).replace(
+    /该你了\s*[，,]?\s*接\s*[『「\[【]([^』」\]】]+)[』」\]】]\s*[！!]?/g,
+    '该你了，接『' + py + '』！'
+  );
+  if (fixed.indexOf('该你了') === -1) {
+    fixed = fixed.replace(/\s*$/, '') + ' 该你了，接『' + py + '』！';
+  }
+  return fixed;
+}
+
+function isFourChinese(s) {
+  return /^[\u4e00-\u9fa5]{4}$/.test(String(s || ''));
 }
 
 function markUsed(word) { usedWords[word] = true; }
@@ -570,10 +606,27 @@ function updatePlaceholder() {
   if (gameOver) {
     input.placeholder = 'AI 已认输，点上方 🔄 再来一局';
   } else if (expectedChar) {
-    input.placeholder = '输入一个以『' + expectedChar + '』开头的成语';
+    var py = (pinyinsOf(expectedChar)[0] || '');
+    input.placeholder = py
+      ? '输入以『' + expectedChar + '』或同音（' + py + '）开头的成语'
+      : '输入以『' + expectedChar + '』开头的成语';
   } else {
     input.placeholder = '输入任意一个四字成语开局';
   }
+}
+
+// AI 回完立刻聚焦输入框，便于手机弹出输入法
+function focusIdiomInput() {
+  if (gameOver) return;
+  var input = $('idiomInput');
+  if (!input || input.disabled) return;
+  try { input.focus({ preventScroll: false }); } catch (e) { input.focus(); }
+  // 部分安卓/输入法对刚启用的输入框不弹层，再补一次
+  setTimeout(function () {
+    if (!gameOver && !input.disabled) {
+      try { input.focus({ preventScroll: false }); } catch (e) { input.focus(); }
+    }
+  }, 80);
 }
 
 // ---------- 气泡渲染 ----------
@@ -751,6 +804,7 @@ async function runRound() {
       updateStatusBar(false);
       updatePlaceholder();
       scrollToBottom();
+      focusIdiomInput();
     }
   }
 }
@@ -765,11 +819,17 @@ function appendFaultNote(view, msg) {
 
 // 复核 AI 的接招成语是否合规，返回失败原因；null 表示通过
 function judgeAiTake(take) {
+  if (!isFourChinese(take)) return '「' + take + '」不是四个汉字';
   if (usedWords[take]) return '「' + take + '」本局已经出现过';
   if (!lastPlayerWord) return null;   // 无参照（理论不发生）
   var required = lastPlayerWord.charAt(3);
   if (!charsMatch(required, take.charAt(0))) {
-    return '「' + take + '」首字是「' + take.charAt(0) + '」，没接住末字「' + required + '」';
+    var pyReq = pinyinOfChar(required);
+    var pyGot = pinyinOfChar(take.charAt(0));
+    return '「' + take + '」首字「' + take.charAt(0) + '」'
+      + (pyGot ? '(' + pyGot + ')' : '')
+      + ' 没接住末字「' + required + '」'
+      + (pyReq ? '(' + pyReq + ')' : '');
   }
   return null;
 }
@@ -788,7 +848,10 @@ function aiLose(view, reason) {
 // 只有交换真正结束（done）才清空 lastPlayerWord，重试复核仍需参照它。
 function applyVerdict(text, view) {
   var action = applyVerdictInner(text, view);
-  if (action === 'done') lastPlayerWord = '';
+  if (action === 'done') {
+    lastPlayerWord = '';
+    formatRetries = 0;
+  }
   return action;
 }
 
@@ -798,10 +861,20 @@ function applyVerdictInner(text, view) {
   // ---------- AI 开局 ----------
   if (text.indexOf('【开局】') !== -1) {
     m = text.match(OPEN_RE);
-    if (!m) return askRetryFormat(view);
+    if (!m) return askRetryFormat(view, '请按【开局】四字成语 · 释义 · 该你了，接『拼音』！输出');
     var open = m[1];
+    if (!isFourChinese(open)) return askRetryFormat(view);
     expectedChar = open.charAt(3);
     markUsed(open);
+    // 强制把接龙提示改成拼音，并回写到气泡
+    text = forcePinyinTurnHint(text, open);
+    if (view && view.textEl) view.textEl.innerHTML = formatAiText(escapeHtml(text));
+    if (view && view.bubble) {
+      // 同步更新聊天记录里的原文，便于保存战绩
+      if (chatMessages.length && chatMessages[chatMessages.length - 1].role === 'assistant') {
+        chatMessages[chatMessages.length - 1].content = text;
+      }
+    }
     chatLog.push('AI：' + fullLineOf(text));
     return 'done';
   }
@@ -809,22 +882,26 @@ function applyVerdictInner(text, view) {
   // ---------- ✅好棋：复核 AI 自己的接招 ----------
   if (text.indexOf('【✅好棋】') !== -1) {
     m = text.match(TAKE_RE);
-    if (!m || !lastPlayerWord) return askRetryFormat(view);
+    if (!m || !lastPlayerWord) return askRetryFormat(view, '请按【✅好棋】…【接招】四字成语 · 释义 · 该你了，接『拼音』！输出');
     var take = m[1];
     var fault = judgeAiTake(take);
     if (fault) {
-      if (aiFaultRetries < 1) {
+      if (aiFaultRetries < 2) {
         aiFaultRetries++;
-        appendFaultNote(view, '⚠️ AI 这步接错了：' + fault + '，已要求重接…');
+        var need = lastPlayerWord.charAt(3);
+        var needPy = pinyinOfChar(need);
+        appendFaultNote(view, '⚠️ AI 这步接错了：' + fault + '，正在纠正重接…');
         chatMessages.push({
           role: 'user',
-          content: '你刚才的「' + take + '」不合规：' + fault +
-            '。请重新输出一行：【接招】【正确成语】· 一句话释义，' +
-            '成语必须真实存在、本局未出现过，且首字为「' + lastPlayerWord.charAt(3) + '」或其同音字。'
+          content: '纠错：「' + take + '」不合规（' + fault + '）。' +
+            '铁律：新成语必须是真实四字词，首字拼音必须是「' + needPy + '」（末字「' + need + '」的无声调拼音，同音不同调即可）。' +
+            '本局已用过：' + usedWordsBrief() + '，不得重复。' +
+            '请只输出一行：【✅好棋】一句夸奖 · 【接招】【正确成语】· 一句话释义 · 该你了，接『' + needPy + '』！' +
+            '（接不上就输出【认输】这局你赢了！）'
         });
         return 'retry';
       }
-      aiLose(view, fault);   // 第二次仍错 → 判负
+      aiLose(view, fault);   // 仍错 → 判负
       return 'done';
     }
     combo++;
@@ -832,6 +909,11 @@ function applyVerdictInner(text, view) {
     aiFaultRetries = 0;
     expectedChar = take.charAt(3);
     markUsed(take);
+    text = forcePinyinTurnHint(text, take);
+    if (view && view.textEl) view.textEl.innerHTML = formatAiText(escapeHtml(text));
+    if (chatMessages.length && chatMessages[chatMessages.length - 1].role === 'assistant') {
+      chatMessages[chatMessages.length - 1].content = text;
+    }
     chatLog.push(lastPlayerWord ? ('我方：' + lastPlayerWord) : '');
     chatLog.push('AI：' + fullLineOf(text));
     showToast('✅ 合规！连击 ×' + combo);
@@ -865,12 +947,19 @@ function applyVerdictInner(text, view) {
   return askRetryFormat(view);
 }
 
-// 未按格式回复：自动重试一次，仍失败则提示玩家手动重发
-function askRetryFormat(view) {
-  if (formatRetries < 1) {
+// 未按格式回复：自动重试最多 2 次，仍失败则提示玩家手动重发
+function askRetryFormat(view, extraHint) {
+  if (formatRetries < 2) {
     formatRetries++;
     appendFaultNote(view, '⚠️ AI 没按格式回复，正在让它重来…');
-    chatMessages.push({ role: 'user', content: '你没有按约定格式回复。请严格只输出：【接招】【四字成语】· 一句话释义（或【认输】）。' });
+    var needPy = expectedChar ? pinyinOfChar(expectedChar) : '';
+    chatMessages.push({
+      role: 'user',
+      content: (extraHint || '你没有按约定格式回复。') +
+        (needPy ? ' 首字拼音必须是「' + needPy + '」。' : '') +
+        ' 本局已用过：' + usedWordsBrief() + '。' +
+        '请严格只输出一行：【接招】【四字成语】· 一句话释义 · 该你了，接『拼音』！（或【认输】）'
+    });
     return 'retry';
   }
   formatRetries = 0;
@@ -922,18 +1011,24 @@ function submitIdiom() {
   addUserBubble(word);
   markUsed(word);
   var nextReq = word.charAt(3);   // 玩家末字 = AI 下手必须接的字
+  var nextPy = pinyinOfChar(nextReq);
   if (expectedChar) {
     chatMessages.push({
       role: 'user',
       content: '我接：' + word +
-        '。判定参考：要求首字为「' + expectedChar + '」或其同音字，系统已校验接得上；你只需判断它是否为真实成语。' +
-        '请接招：【接招】【你的成语】· 一句话释义，你的成语首字必须是「' + nextReq + '」或其同音字；接不上就输出【认输】。'
+        '。系统已校验接得上。你只需判断它是否为真实成语，然后接招。' +
+        '铁律：你的成语必须是真实四字词，首字拼音必须是「' + nextPy + '」（同音不同调即可），不得用本局已出现过的词。' +
+        '已用过：' + usedWordsBrief() + '。' +
+        '请只输出一行：【✅好棋】一句夸奖 · 【接招】【你的成语】· 一句话释义 · 该你了，接『' +
+        pinyinOfChar(nextReq) + '』！（接不上就【认输】）'
     });
   } else {
     chatMessages.push({
       role: 'user',
       content: '我先开局，我出的成语是：' + word + '。' +
-        '请接招：【接招】【你的成语】· 一句话释义，你的成语首字必须是「' + nextReq + '」或其同音字；接不上就输出【认输】。'
+        '铁律：你的成语必须是真实四字词，首字拼音必须是「' + nextPy + '」（同音不同调即可）。' +
+        '请只输出一行：【✅好棋】一句夸奖 · 【接招】【你的成语】· 一句话释义 · 该你了，接『' +
+        pinyinOfChar(word.charAt(3)) + '』！（接不上就【认输】）'
     });
   }
   runRound();
