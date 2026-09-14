@@ -352,7 +352,9 @@
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: dream }
             ],
-            stream: true
+            stream: true,
+            // 解梦需多层联想与结构化分析，开启思考
+            thinking: { type: 'enabled' }
           })
         });
 

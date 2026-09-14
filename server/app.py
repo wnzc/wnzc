@@ -104,14 +104,14 @@ def normalize_thinking(thinking, model: str) -> dict:
     前端约定（兼容两种写法）:
       - {"type": "enabled" | "disabled"}
       - true / false
+      - 不传 → 默认关闭思考（多数文案/故事页省 token、降延迟）
 
     Agnes:     chat_template_kwargs.enable_thinking
     DeepSeek:  thinking.type
     """
     if thinking is None:
-        return {}
-
-    if isinstance(thinking, bool):
+        enabled = False
+    elif isinstance(thinking, bool):
         enabled = thinking
     elif isinstance(thinking, dict):
         t = thinking.get("type")
@@ -122,17 +122,15 @@ def normalize_thinking(thinking, model: str) -> dict:
         elif "enable_thinking" in thinking:
             enabled = bool(thinking["enable_thinking"])
         else:
-            # 未知结构，原样透传
             return {"thinking": thinking}
     else:
-        return {}
+        enabled = False
 
     m = (model or "").lower()
     if "agnes" in m:
         return {"chat_template_kwargs": {"enable_thinking": enabled}}
     if "deepseek" in m:
         return {"thinking": {"type": "enabled" if enabled else "disabled"}}
-    # 其他模型不注入 thinking 相关字段，避免上游 400
     return {}
 
 

@@ -740,7 +740,9 @@ async function runRound() {
       body: JSON.stringify({
         model: GLM_MODEL,
         messages: getRequestMessages(),
-        stream: true
+        stream: true,
+        // 成语接龙需严格遵守接龙/规则，开启思考
+        thinking: { type: 'enabled' }
       }),
       signal: currentAbort.signal
     });

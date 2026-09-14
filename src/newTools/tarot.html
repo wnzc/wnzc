@@ -681,8 +681,8 @@
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: buildUserMessage() }
             ],
-            stream: true,
-            thinking: { type: 'disabled' }
+            stream: true
+            // 娱乐向文案，不传 thinking（服务端默认关闭）
           })
         });
 

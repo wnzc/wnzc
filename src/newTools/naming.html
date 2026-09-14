@@ -462,7 +462,9 @@
               { role: 'system', content: SYSTEM_PROMPT },
               { role: 'user', content: params.user }
             ],
-            stream: true
+            stream: true,
+            // 起名需兼顾寓意/音律/约束条件，开启思考
+            thinking: { type: 'enabled' }
           })
         });
 

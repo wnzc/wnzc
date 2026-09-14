@@ -1242,7 +1242,9 @@ async function callAI(messages, opts) {
     body: JSON.stringify({
       model: GLM_MODEL,
       messages: messages,
-      stream: stream
+      stream: stream,
+      // 猜词需守住秘密词并严谨回答是/否，开启思考
+      thinking: { type: 'enabled' }
     }),
     signal: abortCtrl.signal
   });

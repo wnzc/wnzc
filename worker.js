@@ -130,19 +130,18 @@ async function guardProtected(request, env) {
 }
 
 // 把前端统一的 thinking 参数映射为各服务商实际字段。
-// Agnes: chat_template_kwargs.enable_thinking；DeepSeek: thinking.type
+// 不传 → 默认关闭思考。Agnes: chat_template_kwargs；DeepSeek: thinking.type
 function normalizeThinking(thinking, model) {
-  if (thinking === undefined || thinking === null) return {};
-  let enabled;
+  let enabled = false;
   if (typeof thinking === 'boolean') {
     enabled = thinking;
-  } else if (typeof thinking === 'object') {
+  } else if (thinking && typeof thinking === 'object') {
     if (thinking.type === 'enabled') enabled = true;
     else if (thinking.type === 'disabled') enabled = false;
     else if ('enable_thinking' in thinking) enabled = !!thinking.enable_thinking;
     else return { thinking };
-  } else {
-    return {};
+  } else if (thinking !== undefined && thinking !== null) {
+    enabled = false;
   }
   const m = String(model || '').toLowerCase();
   if (m.includes('agnes')) return { chat_template_kwargs: { enable_thinking: enabled } };
