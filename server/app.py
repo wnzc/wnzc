@@ -97,6 +97,45 @@ def guard_protected(request: Request) -> None:
     check_rate_limit(request)
     verify_signature(request)
 
+
+def normalize_thinking(thinking, model: str) -> dict:
+    """把前端统一的 thinking 参数映射为各服务商实际字段。
+
+    前端约定（兼容两种写法）:
+      - {"type": "enabled" | "disabled"}
+      - true / false
+
+    Agnes:     chat_template_kwargs.enable_thinking
+    DeepSeek:  thinking.type
+    """
+    if thinking is None:
+        return {}
+
+    if isinstance(thinking, bool):
+        enabled = thinking
+    elif isinstance(thinking, dict):
+        t = thinking.get("type")
+        if t == "enabled":
+            enabled = True
+        elif t == "disabled":
+            enabled = False
+        elif "enable_thinking" in thinking:
+            enabled = bool(thinking["enable_thinking"])
+        else:
+            # 未知结构，原样透传
+            return {"thinking": thinking}
+    else:
+        return {}
+
+    m = (model or "").lower()
+    if "agnes" in m:
+        return {"chat_template_kwargs": {"enable_thinking": enabled}}
+    if "deepseek" in m:
+        return {"thinking": {"type": "enabled" if enabled else "disabled"}}
+    # 其他模型不注入 thinking 相关字段，避免上游 400
+    return {}
+
+
 class ChatRequest(BaseModel):
     messages: List[dict]
     stream: Optional[bool] = False
@@ -124,9 +163,8 @@ async def chat(raw_request: Request, request: ChatRequest):
         payload["temperature"] = request.temperature
     if request.max_tokens is not None:
         payload["max_tokens"] = request.max_tokens
-    if request.thinking is not None:
-        # thinking 可以是布尔值或对象，直接传递
-        payload["thinking"] = request.thinking
+    # Agnes 用 chat_template_kwargs，DeepSeek 用 thinking.type
+    payload.update(normalize_thinking(request.thinking, AI_MODEL))
 
     headers = {
         "Authorization": f"Bearer {AI_API_KEY}",

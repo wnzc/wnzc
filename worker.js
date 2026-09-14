@@ -129,6 +129,27 @@ async function guardProtected(request, env) {
   return null;
 }
 
+// 把前端统一的 thinking 参数映射为各服务商实际字段。
+// Agnes: chat_template_kwargs.enable_thinking；DeepSeek: thinking.type
+function normalizeThinking(thinking, model) {
+  if (thinking === undefined || thinking === null) return {};
+  let enabled;
+  if (typeof thinking === 'boolean') {
+    enabled = thinking;
+  } else if (typeof thinking === 'object') {
+    if (thinking.type === 'enabled') enabled = true;
+    else if (thinking.type === 'disabled') enabled = false;
+    else if ('enable_thinking' in thinking) enabled = !!thinking.enable_thinking;
+    else return { thinking };
+  } else {
+    return {};
+  }
+  const m = String(model || '').toLowerCase();
+  if (m.includes('agnes')) return { chat_template_kwargs: { enable_thinking: enabled } };
+  if (m.includes('deepseek')) return { thinking: { type: enabled ? 'enabled' : 'disabled' } };
+  return {};
+}
+
 function requireEnv(env, names, request) {
   for (const name of names) {
     if (!env[name]) {
@@ -158,7 +179,7 @@ async function handleChat(request, env, { forceNonStream = false } = {}) {
   };
   if (body.temperature !== undefined) payload.temperature = body.temperature;
   if (body.max_tokens !== undefined) payload.max_tokens = Math.min(Number(body.max_tokens) || 0, 65536) || undefined;
-  if (body.thinking !== undefined) payload.thinking = body.thinking;
+  Object.assign(payload, normalizeThinking(body.thinking, env.AI_MODEL));
 
   const upstream = await fetch(env.AI_API_URL, {
     method: 'POST',
