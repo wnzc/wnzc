@@ -550,9 +550,8 @@ async function performRound(parts) {
       body: JSON.stringify({
         model: GLM_MODEL,
         messages: getRequestMessages(),
-        stream: true,
-        // 海龟汤需逐步推理是/否/无关，开启思考
-        thinking: { type: 'enabled' }
+        stream: true
+        // 不传 thinking（服务端默认关闭）
       }),
       signal: currentAbort.signal
     });

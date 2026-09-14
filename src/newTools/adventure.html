@@ -602,9 +602,8 @@ async function runRound() {
       body: JSON.stringify({
         model: GLM_MODEL,
         messages: getRequestMessages(),
-        stream: true,
-        // 文字冒险需维护多轮状态与选项逻辑，开启思考
-        thinking: { type: 'enabled' }
+        stream: true
+        // 不传 thinking（服务端默认关闭）
       }),
       signal: currentAbort.signal
     });

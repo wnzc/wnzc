@@ -1236,15 +1236,18 @@ async function callAI(messages, opts) {
   var myToken = ++genToken;
   abortCtrl = new AbortController();
 
+  var body = {
+    model: GLM_MODEL,
+    messages: messages,
+    stream: stream
+  };
+  // 仅出题（首局）开思考；后续问答不传，服务端默认关闭
+  if (opts.thinking) body.thinking = { type: 'enabled' };
+
   var response = await fetch(API_URL, {
     method: 'POST',
     headers: API_HEADER,
-    body: JSON.stringify({
-      model: GLM_MODEL,
-      messages: messages,
-      stream: stream
-      // 猜词不传 thinking（服务端默认关闭）
-    }),
+    body: JSON.stringify(body),
     signal: abortCtrl.signal
   });
   if (!response.ok) throw new Error('API请求失败');
@@ -1417,13 +1420,13 @@ async function generateSecret() {
   }
 
   try {
-    var raw = await callAI(messages, { stream: false });
+    var raw = await callAI(messages, { stream: false, thinking: true });
     var parsed = parseSecretJSON(raw);
     if (!parsed) {
       raw = await callAI(messages.concat([
         { role: 'assistant', content: raw },
         { role: 'user', content: '请只输出一行 JSON，格式：{"word":"...","category":"...","intro":"..."}' }
-      ]), { stream: false });
+      ]), { stream: false, thinking: true });
       parsed = parseSecretJSON(raw);
     }
     if (!parsed) throw new Error('无法解析词语');
