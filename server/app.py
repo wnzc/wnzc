@@ -1,4 +1,10 @@
+import hashlib
+import hmac
 import os
+import threading
+import time
+from collections import defaultdict
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,9 +26,76 @@ app.add_middleware(
 # 从环境变量读取密钥
 AI_API_URL = os.getenv("AI_API_URL", "https://api.agnes-ai.cn/v1/chat/completions")
 AI_API_KEY = os.getenv("AI_API_KEY", "")
-AI_MODEL = os.getenv("AI_MODEL", "agnes-2.5-flash")
+AI_MODEL = os.getenv("AI_MODEL", "agnes-3.0-flash")
 UUHB_API_KEY = os.getenv("UUHB_API_KEY", "")
 LOTTERY_TOKEN = os.getenv("LOTTERY_TOKEN", "")
+
+# ---------- 防盗刷：IP 限流 + 时间戳签名 ----------
+# SIGN_SECRET 为空则跳过签名（便于灰度部署）；前端 ai-config.js 中的 AI_SIGN.secret 必须一致。
+DEFAULT_SIGN_SECRET = "wnzc-soft-sign-2026"
+SIGN_SECRET = os.getenv("SIGN_SECRET", DEFAULT_SIGN_SECRET)
+SIGN_WINDOW_MS = int(os.getenv("SIGN_WINDOW_MS", "300000"))  # 5 分钟
+RATE_LIMIT_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "20"))
+RATE_WINDOW_SEC = 60
+
+_rate_lock = threading.Lock()
+_rate_hits: dict[str, list[float]] = defaultdict(list)
+
+
+def client_ip(request: Request) -> str:
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def check_rate_limit(request: Request, limit: int = RATE_LIMIT_PER_MIN) -> None:
+    ip = client_ip(request)
+    now = time.time()
+    with _rate_lock:
+        hits = [t for t in _rate_hits[ip] if now - t < RATE_WINDOW_SEC]
+        if len(hits) >= limit:
+            retry_after = max(1, int(RATE_WINDOW_SEC - (now - hits[0])) + 1)
+            _rate_hits[ip] = hits
+            raise HTTPException(
+                status_code=429,
+                detail="请求过于频繁，请稍后再试",
+                headers={"Retry-After": str(retry_after)},
+            )
+        hits.append(now)
+        _rate_hits[ip] = hits
+        if len(_rate_hits) > 5000:
+            cutoff = now - RATE_WINDOW_SEC
+            for key in list(_rate_hits.keys()):
+                kept = [t for t in _rate_hits[key] if t >= cutoff]
+                if kept:
+                    _rate_hits[key] = kept
+                else:
+                    del _rate_hits[key]
+
+
+def verify_signature(request: Request) -> None:
+    if not SIGN_SECRET:
+        return
+    ts = request.headers.get("x-ts")
+    sig = request.headers.get("x-sig")
+    if not ts or not sig:
+        raise HTTPException(status_code=401, detail="缺少签名头 X-TS / X-SIG")
+    try:
+        ts_ms = int(ts)
+    except ValueError:
+        raise HTTPException(status_code=401, detail="签名时间戳无效")
+    if abs(time.time() * 1000 - ts_ms) > SIGN_WINDOW_MS:
+        raise HTTPException(status_code=401, detail="签名已过期")
+    expected = hmac.new(SIGN_SECRET.encode("utf-8"), ts.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, sig.lower()):
+        raise HTTPException(status_code=401, detail="签名校验失败")
+
+
+def guard_protected(request: Request) -> None:
+    """受保护路由统一入口：先限流，再验签。"""
+    check_rate_limit(request)
+    verify_signature(request)
 
 class ChatRequest(BaseModel):
     messages: List[dict]
@@ -36,7 +109,8 @@ async def root():
     return {"status": "ok", "service": "wnzc-api-proxy"}
 
 @app.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(raw_request: Request, request: ChatRequest):
+    guard_protected(raw_request)
     if not AI_API_KEY:
         raise HTTPException(status_code=500, detail="AI_API_KEY not configured")
 
@@ -123,6 +197,7 @@ async def chat(request: ChatRequest):
 
 @app.get("/uuhb/{service}")
 async def uuhb_proxy(service: str, request: Request):
+    guard_protected(request)
     if not UUHB_API_KEY:
         raise HTTPException(status_code=500, detail="UUHB_API_KEY not configured")
     

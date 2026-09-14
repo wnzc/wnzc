@@ -37,7 +37,75 @@ const ACTIVE_CONFIG = AI_MODELS[AI_MODELS.ACTIVE_MODEL];
 const API_URL = ACTIVE_CONFIG.apiUrl;
 const API_HEADER = {
     'Content-Type': 'application/json'
-    // Authorization 由 Worker 服务端注入，前端无需处理
+    // Authorization 由服务端注入；X-TS / X-SIG 由下方 fetch 包装自动附加
 };
 const GLM_MODEL = ACTIVE_CONFIG.model;
 const VOICE_API_URLS = AI_CONFIG.tts.voiceApiUrls;
+
+// ============================================================
+//  防盗刷：对代理域名请求自动附加时间戳签名（X-TS / X-SIG）
+//  ⚠️ 这是软校验——secret 会出现在前端源码里，只能挡住裸刷脚本。
+//  真正的额度保护仍依赖服务端限流 + AI 服务商预算上限。
+//  必须与 server/app.py 的 SIGN_SECRET（或 Cloudflare Secret）保持一致。
+// ============================================================
+const AI_SIGN = {
+    secret: 'wnzc-soft-sign-2026'
+};
+
+(function installAiSignFetch() {
+    if (typeof window === 'undefined' || window.fetch.__aiSigned) return;
+
+    function shouldSignUrl(url) {
+        try {
+            const u = new URL(url, location.href);
+            const hostOk = /(^|\.)onrender\.com$|(^|\.)workers\.dev$/.test(u.hostname);
+            const pathOk = u.pathname === '/chat' || u.pathname === '/morning' || u.pathname.includes('/uuhb/');
+            return hostOk && pathOk;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async function hmacSha256Hex(secret, message) {
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+            'raw',
+            enc.encode(secret),
+            { name: 'HMAC', hash: 'SHA-256' },
+            false,
+            ['sign']
+        );
+        const buf = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+        return Array.from(new Uint8Array(buf))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+    }
+
+    const nativeFetch = window.fetch.bind(window);
+
+    async function signedFetch(input, init) {
+        try {
+            const url = typeof input === 'string' ? input : (input && input.url) || '';
+            const method = String(
+                (init && init.method) || (input && input.method) || 'GET'
+            ).toUpperCase();
+            if (shouldSignUrl(url) && method !== 'OPTIONS' && method !== 'HEAD' && crypto && crypto.subtle) {
+                const nextInit = Object.assign({}, init);
+                const headers = new Headers(
+                    (init && init.headers) || (input && input.headers) || undefined
+                );
+                const ts = Date.now().toString();
+                headers.set('X-TS', ts);
+                headers.set('X-SIG', await hmacSha256Hex(AI_SIGN.secret, ts));
+                nextInit.headers = headers;
+                return nativeFetch(input, nextInit);
+            }
+        } catch (e) {
+            // 签名失败不阻断请求，交给服务端限流/验签兜底
+        }
+        return nativeFetch(input, init);
+    }
+
+    signedFetch.__aiSigned = true;
+    window.fetch = signedFetch;
+})();

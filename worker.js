@@ -7,7 +7,7 @@
 //  需要在 Cloudflare 控制台（或 wrangler secret put）配置：
 //    AI_API_URL   AI 服务商接口地址，如 https://open.bigmodel.cn/api/paas/v4/chat/completions
 //    AI_API_KEY   AI 服务商 API Key（必须是重发后的新 key，旧的已随 git 历史泄露）
-//    AI_MODEL     模型名，如 glm-4.7-flash
+//    AI_MODEL     模型名，如 agnes-3.0-flash
 //    UUHB_API_KEY 运势/答案之书等 uuhb.cn 系列的 ak_xxxx
 //    LOTTERY_TOKEN 彩票接口 token（可选，不配则 /lottery 返回 503）
 //
@@ -23,7 +23,7 @@
 
 const CORS_BASE = {
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-TS, X-SIG',
 };
 
 // 允许的前端来源：线上站点 + 本地调试（localhost / 127.0.0.1 任意端口）。
@@ -46,11 +46,87 @@ function corsHeaders(request) {
   return { ...CORS_BASE, 'Access-Control-Allow-Origin': allow };
 }
 
-function json(data, status, request) {
+function json(data, status, request, extraHeaders) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders(request), 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(request), 'Content-Type': 'application/json', ...(extraHeaders || {}) },
   });
+}
+
+// ---------- 防盗刷：IP 限流 + 时间戳签名 ----------
+// 与 src/ai-config.js 的 AI_SIGN.secret / server/app.py 对齐。
+// 注：isolate 级内存 Map 是尽力而为（冷启动会清零），挡不住分布式刷，但能拦住裸脚本。
+const DEFAULT_SIGN_SECRET = 'wnzc-soft-sign-2026';
+const SIGN_WINDOW_MS = 300000;
+const RATE_LIMIT_PER_MIN = 20;
+const RATE_WINDOW_MS = 60000;
+const rateHits = new Map();
+
+function clientIp(request) {
+  const xff = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For');
+  if (xff) return xff.split(',')[0].trim();
+  return 'unknown';
+}
+
+function checkRateLimit(request) {
+  const ip = clientIp(request);
+  const now = Date.now();
+  let hits = rateHits.get(ip) || [];
+  hits = hits.filter((t) => now - t < RATE_WINDOW_MS);
+  if (hits.length >= RATE_LIMIT_PER_MIN) {
+    const retryAfter = Math.max(1, Math.ceil((RATE_WINDOW_MS - (now - hits[0])) / 1000));
+    rateHits.set(ip, hits);
+    return { ok: false, retryAfter };
+  }
+  hits.push(now);
+  rateHits.set(ip, hits);
+  if (rateHits.size > 5000) {
+    for (const [key, list] of rateHits) {
+      const kept = list.filter((t) => now - t < RATE_WINDOW_MS);
+      if (kept.length) rateHits.set(key, kept);
+      else rateHits.delete(key);
+    }
+  }
+  return { ok: true };
+}
+
+async function hmacSha256Hex(secret, message) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const buf = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifySignature(request, env) {
+  const secret = env.SIGN_SECRET || DEFAULT_SIGN_SECRET;
+  if (!secret) return { ok: true };
+  const ts = request.headers.get('X-TS');
+  const sig = request.headers.get('X-SIG');
+  if (!ts || !sig) return { ok: false, error: '缺少签名头 X-TS / X-SIG' };
+  const tsMs = Number(ts);
+  if (!Number.isFinite(tsMs)) return { ok: false, error: '签名时间戳无效' };
+  if (Math.abs(Date.now() - tsMs) > SIGN_WINDOW_MS) return { ok: false, error: '签名已过期' };
+  const expected = await hmacSha256Hex(secret, ts);
+  if (expected !== String(sig).toLowerCase()) return { ok: false, error: '签名校验失败' };
+  return { ok: true };
+}
+
+async function guardProtected(request, env) {
+  const rate = checkRateLimit(request);
+  if (!rate.ok) {
+    return json({ error: '请求过于频繁，请稍后再试' }, 429, request, { 'Retry-After': String(rate.retryAfter) });
+  }
+  const signed = await verifySignature(request, env);
+  if (!signed.ok) {
+    return json({ error: signed.error || '签名校验失败' }, 401, request);
+  }
+  return null;
 }
 
 function requireEnv(env, names, request) {
@@ -176,6 +252,8 @@ export default {
         if (!isAllowedOrigin(request)) {
           return json({ error: 'Origin not allowed' }, 403, request);
         }
+        const blockedChat = await guardProtected(request, env);
+        if (blockedChat) return blockedChat;
         return await handleChat(request, env);
       }
 
@@ -183,6 +261,8 @@ export default {
         if (!isAllowedOrigin(request)) {
           return json({ error: 'Origin not allowed' }, 403, request);
         }
+        const blockedMorning = await guardProtected(request, env);
+        if (blockedMorning) return blockedMorning;
         return await handleChat(request, env, { forceNonStream: true });
       }
 
@@ -190,6 +270,8 @@ export default {
         if (!isAllowedOrigin(request)) {
           return json({ error: 'Origin not allowed' }, 403, request);
         }
+        const blockedUuhb = await guardProtected(request, env);
+        if (blockedUuhb) return blockedUuhb;
         return await handleUuhb(request, env, url.pathname.split('/')[2]);
       }
 
