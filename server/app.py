@@ -141,6 +141,17 @@ class ChatRequest(BaseModel):
     max_tokens: Optional[int] = None
     thinking: Optional[dict] = None  # 支持完整的 thinking 对象
 
+def _dbg(obj, limit: int = 2000) -> str:
+    """调试日志用：JSON 序列化并截断，避免刷屏。"""
+    try:
+        s = obj if isinstance(obj, str) else __import__("json").dumps(obj, ensure_ascii=False)
+    except Exception:
+        s = repr(obj)
+    if len(s) > limit:
+        return s[:limit] + f"...(truncated, total {len(s)})"
+    return s
+
+
 @app.get("/")
 async def root():
     return {"status": "ok", "service": "wnzc-api-proxy"}
@@ -164,6 +175,17 @@ async def chat(raw_request: Request, request: ChatRequest):
     # Agnes 用 chat_template_kwargs，DeepSeek 用 thinking.type
     payload.update(normalize_thinking(request.thinking, AI_MODEL))
 
+    print("=" * 60)
+    print("[DEBUG] /chat 前端入参:", _dbg({
+        "stream": request.stream,
+        "temperature": request.temperature,
+        "max_tokens": request.max_tokens,
+        "thinking": request.thinking,
+        "messages_count": len(request.messages or []),
+        "messages": request.messages,
+    }))
+    print("[DEBUG] /chat 发往上游 payload:", _dbg(payload))
+
     headers = {
         "Authorization": f"Bearer {AI_API_KEY}",
         "Content-Type": "application/json",
@@ -186,16 +208,28 @@ async def chat(raw_request: Request, request: ChatRequest):
 
     content_type = upstream.headers.get("content-type", "application/json")
     is_sse = request.stream or "text/event-stream" in content_type
+    print(f"[DEBUG] /chat 上游响应 status={upstream.status_code} content_type={content_type} sse={is_sse}")
 
     if is_sse:
         # 流式：原样透传字节流，保留 SSE 的空行分隔符
+        sse_parts: list = []
+        sse_bytes = 0
+
         async def stream_gen():
+            nonlocal sse_bytes
             try:
                 async for chunk in upstream.aiter_raw():
+                    sse_bytes += len(chunk)
+                    if len(sse_parts) < 30:
+                        try:
+                            sse_parts.append(chunk.decode("utf-8", errors="replace"))
+                        except Exception:
+                            pass
                     yield chunk
             except httpx.HTTPError as e:
                 print(f"[ERROR] chat stream interrupted: {e!r}")
             finally:
+                print(f"[DEBUG] /chat SSE 完成 bytes={sse_bytes} preview={_dbg(''.join(sse_parts), 1500)}")
                 await upstream.aclose()
                 await client.aclose()
 
@@ -221,6 +255,7 @@ async def chat(raw_request: Request, request: ChatRequest):
                     headers={"Access-Control-Allow-Origin": "*"},
                 )
             data = await upstream.aread()
+            print(f"[DEBUG] /chat 非流式响应 body: {_dbg(data.decode(errors='replace'), 1500)}")
             return Response(
                 content=data,
                 status_code=upstream.status_code,
