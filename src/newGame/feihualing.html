@@ -1,0 +1,2202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>飞花令</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink-night: #0d0f14;
+    --ink-panel: #151a22;
+    --ink-soft: #1c2330;
+    --paper: #f3ebe0;
+    --paper-dim: #e4d9c8;
+    --cinnabar: #c43c2f;
+    --cinnabar-soft: rgba(196, 60, 47, 0.18);
+    --gold: #c9a84c;
+    --gold-soft: rgba(201, 168, 76, 0.16);
+    --jade: #5a9e8f;
+    --haze: #8a8f9a;
+    --haze-dim: #5c6270;
+    --petal: #e8a0b0;
+    --text: #e8e6e1;
+    --danger: #e07060;
+    --radius: 16px;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    min-height: 100%;
+  }
+
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse 120% 80% at 50% -20%, rgba(90, 40, 50, 0.25) 0%, transparent 55%),
+      radial-gradient(ellipse 80% 50% at 80% 100%, rgba(40, 50, 80, 0.35) 0%, transparent 50%),
+      var(--ink-night);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px 14px 56px;
+    overflow-x: hidden;
+  }
+
+  #petalCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ---------- 返回 ---------- */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 10px;
+    padding: 7px 13px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    transition: background 0.2s ease;
+  }
+  .back-btn:active,
+  .back-btn:focus-visible {
+    background: rgba(255, 255, 255, 0.14);
+    outline: none;
+  }
+
+  /* ---------- 首屏 ---------- */
+  .page-header {
+    text-align: center;
+    padding: 10px 0 22px;
+  }
+
+  .seal-ring {
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 14px;
+    border: 2px solid var(--cinnabar);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 40% 35%, rgba(196, 60, 47, 0.2), rgba(13, 15, 20, 0.4));
+    box-shadow: 0 0 0 6px rgba(196, 60, 47, 0.08), 0 0 30px rgba(196, 60, 47, 0.25);
+    animation: sealBreath 3.2s ease-in-out infinite;
+  }
+
+  .seal-ring .char {
+    font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+    text-shadow: 0 0 18px rgba(201, 168, 76, 0.45);
+  }
+
+  @keyframes sealBreath {
+    0%, 100% { box-shadow: 0 0 0 6px rgba(196, 60, 47, 0.08), 0 0 24px rgba(196, 60, 47, 0.2); transform: scale(1); }
+    50% { box-shadow: 0 0 0 8px rgba(196, 60, 47, 0.12), 0 0 36px rgba(196, 60, 47, 0.35); transform: scale(1.03); }
+  }
+
+  .page-header h1 {
+    font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    color: var(--paper);
+    margin-bottom: 8px;
+  }
+
+  .page-header .subtitle {
+    font-size: 13px;
+    color: var(--haze);
+    letter-spacing: 1px;
+    line-height: 1.6;
+  }
+
+  .ornament {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 16px auto 0;
+    max-width: 220px;
+    color: var(--cinnabar);
+  }
+  .ornament::before,
+  .ornament::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(196, 60, 47, 0.6), transparent);
+  }
+  .ornament span {
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .setup-card {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    margin-bottom: 12px;
+    animation: fadeUp 0.4s ease both;
+    backdrop-filter: blur(8px);
+  }
+
+  .field-label {
+    display: block;
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+
+  .char-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .char-chip {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    font-size: 22px;
+    font-weight: 600;
+    padding: 12px 0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .char-chip:hover,
+  .char-chip:focus-visible {
+    border-color: rgba(201, 168, 76, 0.5);
+    outline: none;
+  }
+  .char-chip:active {
+    transform: scale(0.95);
+  }
+  .char-chip.active {
+    background: var(--gold-soft);
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 18px rgba(201, 168, 76, 0.25);
+  }
+
+  .seg-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .seg-btn {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 13px;
+    padding: 10px 4px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  .seg-btn:hover,
+  .seg-btn:focus-visible {
+    border-color: rgba(201, 168, 76, 0.45);
+    outline: none;
+  }
+  .seg-btn.active {
+    background: rgba(196, 60, 47, 0.18);
+    border-color: var(--cinnabar);
+    color: #f0b8a8;
+  }
+
+  .start-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin-top: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    border: none;
+  }
+  .start-btn.primary {
+    background: linear-gradient(135deg, #c43c2f, #a32e24);
+    color: #f8efe4;
+    box-shadow: 0 8px 24px rgba(196, 60, 47, 0.35);
+  }
+  .start-btn.primary:active {
+    transform: scale(0.97);
+    box-shadow: 0 4px 12px rgba(196, 60, 47, 0.3);
+  }
+  .start-btn.primary:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .start-btn.ghost {
+    background: transparent;
+    border: 1.5px solid rgba(201, 168, 76, 0.65);
+    color: var(--gold);
+  }
+  .start-btn.ghost:active {
+    background: rgba(201, 168, 76, 0.12);
+  }
+
+  .rules-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 12.5px;
+    line-height: 1.85;
+    color: rgba(255, 255, 255, 0.52);
+    animation: fadeUp 0.5s ease both;
+  }
+  .rules-card b {
+    color: #d4b56a;
+    font-weight: 600;
+  }
+
+  /* ---------- 对局 ---------- */
+  #screenGame { display: none; }
+
+  .status-bar {
+    position: sticky;
+    top: 8px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    background: rgba(21, 26, 34, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  .ling-seal {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--cinnabar);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(196, 60, 47, 0.15);
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(201, 168, 76, 0.4);
+  }
+  .ling-seal.hot {
+    animation: lingPulse 0.7s ease;
+  }
+  @keyframes lingPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); box-shadow: 0 0 22px rgba(201, 168, 76, 0.55); }
+    100% { transform: scale(1); }
+  }
+
+  .status-mid {
+    flex: 1;
+    min-width: 0;
+  }
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 10px;
+    border: 1px solid transparent;
+  }
+  .chip.combo {
+    color: #e0c070;
+    border-color: rgba(201, 168, 76, 0.45);
+    background: rgba(201, 168, 76, 0.1);
+  }
+  .chip.lives {
+    color: #f0a090;
+    border-color: rgba(196, 60, 47, 0.45);
+    background: rgba(196, 60, 47, 0.12);
+  }
+  .turn-hint {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--haze);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .timer-wrap {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .timer-wrap svg {
+    width: 44px;
+    height: 44px;
+    transform: rotate(-90deg);
+  }
+  .timer-wrap .track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 3;
+  }
+  .timer-wrap .progress {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 113;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.15s linear, stroke 0.3s ease;
+  }
+  .timer-wrap.urgent .progress { stroke: var(--cinnabar); }
+  .timer-num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--paper);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn-restart {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ccc;
+    font-size: 11px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-restart:active,
+  .btn-restart:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+    outline: none;
+  }
+
+  /* 诗笺卡片 */
+  .feed {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .poem-card {
+    position: relative;
+    border-radius: 14px;
+    padding: 14px 16px 12px;
+    animation: cardIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    overflow: hidden;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .poem-card.ai {
+    background:
+      linear-gradient(135deg, rgba(243, 235, 224, 0.96), rgba(228, 217, 200, 0.92));
+    color: #2a241c;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  }
+  .poem-card.user {
+    background:
+      linear-gradient(135deg, rgba(28, 35, 48, 0.95), rgba(22, 28, 38, 0.95));
+    border: 1px solid rgba(201, 168, 76, 0.28);
+    color: var(--text);
+  }
+  .poem-card.system {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.16);
+    color: var(--haze);
+    font-size: 13px;
+  }
+  .poem-card.system.fail {
+    border-color: rgba(224, 112, 96, 0.4);
+    color: #f0a090;
+    background: rgba(196, 60, 47, 0.1);
+  }
+  .poem-card.system.win {
+    border-color: rgba(201, 168, 76, 0.5);
+    color: #e0c070;
+    background: rgba(201, 168, 76, 0.1);
+  }
+  .poem-card.failed {
+    opacity: 0.55;
+    filter: grayscale(0.35);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .who {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .poem-card.ai .who { color: #8a6a3a; }
+  .poem-card.user .who { color: var(--gold); }
+
+  .card-seal {
+    width: 28px;
+    height: 28px;
+    border: 1.5px solid var(--cinnabar);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cinnabar);
+    transform: rotate(-8deg);
+    opacity: 0.85;
+  }
+
+  .poem-line {
+    font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.7;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .poem-card.user .poem-line {
+    color: #f0e6d4;
+  }
+  .ling {
+    color: var(--cinnabar);
+    font-weight: 700;
+    text-shadow: 0 0 12px rgba(196, 60, 47, 0.35);
+  }
+  .poem-card.ai .ling {
+    color: #b83228;
+    text-shadow: 0 0 10px rgba(184, 50, 40, 0.25);
+  }
+
+  .poem-meta {
+    font-size: 12px;
+    line-height: 1.65;
+    opacity: 0.72;
+  }
+  .poem-card.ai .poem-meta { color: #5a4a36; }
+  .poem-card.user .poem-meta { color: var(--haze); }
+
+  .praise {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #7a6238;
+    font-style: italic;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+  .voice-mini {
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #6a5a42;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+  }
+  .voice-mini:active,
+  .voice-mini:focus-visible {
+    background: rgba(0, 0, 0, 0.14);
+    outline: none;
+  }
+
+  .error-hint {
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--danger);
+  }
+
+  .thinking {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    padding: 6px 2px;
+  }
+  .thinking i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: bounce 1s ease-in-out infinite;
+  }
+  .thinking i:nth-child(2) { animation-delay: 0.15s; }
+  .thinking i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ---------- 输入 ---------- */
+  .input-panel {
+    background: rgba(21, 26, 34, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 12px;
+    backdrop-filter: blur(10px);
+    position: sticky;
+    bottom: 8px;
+    z-index: 9;
+    box-shadow: var(--shadow);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+  .input-row input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 12px 13px;
+    color: #fff;
+    font-size: 16px;
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    letter-spacing: 1.5px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-row input:focus {
+    border-color: rgba(201, 168, 76, 0.65);
+  }
+  .input-row input::placeholder {
+    color: rgba(255, 255, 255, 0.32);
+    font-family: 'Noto Sans SC', sans-serif;
+    letter-spacing: normal;
+    font-size: 13px;
+  }
+  .input-row input:disabled {
+    opacity: 0.4;
+  }
+
+  .send-btn {
+    width: 52px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #c43c2f, #a32e24);
+    border: none;
+    color: #f8efe4;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: 'Noto Serif SC', serif;
+    letter-spacing: 0;
+    transition: transform 0.15s, opacity 0.2s;
+  }
+  .send-btn:active {
+    transform: scale(0.95);
+  }
+  .send-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .send-btn:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+
+  .tool-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .tool-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .tool-btn:active,
+  .tool-btn:focus-visible {
+    background: rgba(255, 255, 255, 0.12);
+    outline: none;
+  }
+  .tool-btn:disabled {
+    opacity: 0.35;
+  }
+
+  /* ---------- Toast / Overlay ---------- */
+  .toast {
+    position: fixed;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(0, 0, 0, 0.88);
+    color: #fff;
+    padding: 12px 22px;
+    border-radius: 24px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+    max-width: 88vw;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(8, 10, 14, 0.72);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .overlay.show { display: flex; }
+
+  .poem-modal-card {
+    width: 100%;
+    max-width: 400px;
+    max-height: 82vh;
+    overflow: auto;
+    background: linear-gradient(160deg, #f7f0e4, #ebe0cc);
+    color: #2a241c;
+    border-radius: 18px;
+    border: 1px solid rgba(196, 60, 47, 0.35);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+    padding: 22px 20px 18px;
+    animation: cardIn 0.35s ease both;
+    position: relative;
+  }
+  .poem-modal-card .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 50%;
+    color: #6a5a42;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .poem-modal-card .modal-close:focus-visible {
+    outline: 2px solid var(--cinnabar);
+  }
+  .poem-modal-card .modal-eyebrow {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #8a6a3a;
+    margin-bottom: 6px;
+  }
+  .poem-modal-card .modal-title {
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #5a4a36;
+    margin-bottom: 12px;
+    padding-right: 36px;
+  }
+  .poem-modal-card .modal-body {
+    font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
+    font-size: 18px;
+    line-height: 2;
+    letter-spacing: 2px;
+    white-space: pre-wrap;
+    color: #2a241c;
+  }
+  .poem-modal-card .modal-body .ling {
+    color: #b83228;
+    font-weight: 700;
+  }
+  .poem-modal-card .modal-foot {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed rgba(90, 74, 54, 0.25);
+    font-size: 12px;
+    color: #7a6a52;
+    line-height: 1.6;
+  }
+
+  .view-full {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+    margin-right: 6px;
+  }
+  .poem-card.ai .view-full {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #6a5a42;
+  }
+  .view-full:active,
+  .view-full:focus-visible {
+    outline: none;
+    filter: brightness(1.15);
+  }
+  .view-full:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .result-card {
+    width: 100%;
+    max-width: 360px;
+    background: linear-gradient(160deg, #1e2430, #151a22);
+    border: 1px solid rgba(201, 168, 76, 0.35);
+    border-radius: 20px;
+    padding: 28px 22px;
+    text-align: center;
+    animation: cardIn 0.4s ease both;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  .result-card .icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+  }
+  .result-card h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 24px;
+    color: var(--gold);
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .result-card p {
+    font-size: 13.5px;
+    color: var(--haze);
+    line-height: 1.7;
+    margin-bottom: 18px;
+  }
+  .result-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    #petalCanvas { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="petalCanvas" aria-hidden="true"></canvas>
+
+<div class="container">
+  <a href="index.html" class="back-btn" id="backBtn">← 游戏合集</a>
+
+  <!-- 首屏 -->
+  <div id="screenSetup">
+    <div class="page-header">
+      <div class="seal-ring"><span class="char" id="previewChar">花</span></div>
+      <h1>飞花令</h1>
+      <p class="subtitle">与 AI 轮流吟出含令字的诗句<br>吟不出者，罚一杯</p>
+      <div class="ornament"><span>诗 酒 趁 年 华</span></div>
+    </div>
+
+    <div class="setup-card">
+      <label class="field-label">令字 · 每句都须含此字</label>
+      <div class="char-grid" id="charGrid"></div>
+    </div>
+
+    <div class="setup-card">
+      <label class="field-label">难度</label>
+      <div class="seg-row" id="diffRow">
+        <button class="seg-btn active" data-val="初学">初学</button>
+        <button class="seg-btn" data-val="雅士">雅士</button>
+        <button class="seg-btn" data-val="大家">大家</button>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <label class="field-label">回合限时</label>
+      <div class="seg-row" id="timeRow">
+        <button class="seg-btn" data-val="15">15 秒</button>
+        <button class="seg-btn active" data-val="30">30 秒</button>
+        <button class="seg-btn" data-val="0">不限</button>
+      </div>
+    </div>
+
+    <button class="start-btn primary" id="btnStart">开 始 对 饮</button>
+
+    <div class="rules-card" style="margin-top:12px">
+      <b>怎么玩：</b>选定令字后，与 AI 轮流吟一句含该字的古诗词句。
+      本地校验含字与重复，AI 判真伪、对句并给出处。
+      <b>三条命</b>：超时或明显不合令扣一命；AI 吟不出则你胜。
+      也可点「求教」让 AI 给一句提示（限 2 次）。
+    </div>
+  </div>
+
+  <!-- 对局 -->
+  <div id="screenGame">
+    <div class="status-bar">
+      <div class="ling-seal" id="lingSeal">花</div>
+      <div class="status-mid">
+        <div class="status-line">
+          <span id="roundText">第 0 句</span>
+          <span class="chip combo" id="comboChip">连句 ×0</span>
+          <span class="chip lives" id="livesChip">命 ●●●</span>
+        </div>
+        <div class="turn-hint" id="turnHint">轮到你了，吟一句含「花」的诗</div>
+      </div>
+      <div class="timer-wrap" id="timerWrap">
+        <svg viewBox="0 0 44 44" aria-hidden="true">
+          <circle class="track" cx="22" cy="22" r="18"></circle>
+          <circle class="progress" id="timerProgress" cx="22" cy="22" r="18"></circle>
+        </svg>
+        <div class="timer-num" id="timerNum">—</div>
+      </div>
+      <button class="btn-restart" id="btnRestart">重开</button>
+    </div>
+
+    <div class="feed" id="feed"></div>
+
+    <div class="input-panel">
+      <div class="input-row">
+        <input type="text" id="poemInput" placeholder="吟一句含「花」的诗…" maxlength="40" autocomplete="off">
+        <button class="send-btn" id="sendBtn" title="吟出">吟</button>
+      </div>
+      <div class="tool-row">
+        <button class="tool-btn" id="btnHint">💡 求教 <span id="hintLeft">2</span></button>
+        <button class="tool-btn" id="btnSave">💾 存战绩</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="poemOverlay">
+  <div class="poem-modal-card" role="dialog" aria-modal="true" aria-labelledby="poemModalTitle">
+    <button class="modal-close" id="poemModalClose" aria-label="关闭">✕</button>
+    <div class="modal-eyebrow" id="poemModalEyebrow">全诗</div>
+    <div class="modal-title" id="poemModalTitle"></div>
+    <div class="modal-body" id="poemModalBody"></div>
+    <div class="modal-foot" id="poemModalFoot"></div>
+  </div>
+</div>
+
+<div class="overlay" id="resultOverlay">
+  <div class="result-card">
+    <div class="icon" id="resultIcon">🌸</div>
+    <h2 id="resultTitle">胜</h2>
+    <p id="resultDesc"></p>
+    <div class="result-actions">
+      <button class="start-btn primary" id="btnAgain">再来一局</button>
+      <button class="start-btn ghost" id="btnBackSetup">返回设置</button>
+    </div>
+  </div>
+</div>
+
+<audio id="ttsAudio"></audio>
+<div class="toast" id="toast"></div>
+
+<script src="../../ai-models.js"></script>
+<script src="../ai-config.js"></script>
+<script src="../ai-history.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  //  飞花令：玩家与 AI 轮流吟出含令字的古诗词句
+  // ============================================================
+
+  var LING_CHARS = ['花', '月', '春', '风', '雪', '人', '山', '水', '夜', '雨', '云', '酒'];
+
+  var SYSTEM_PROMPT = [
+    '你是飞花令擂主，精通古典诗词。玩家与你轮流吟出含指定「令字」的诗句。',
+    '【硬性格式】只输出一行，必须含下列标记之一，不要前后闲聊：',
+    '【开局】完整诗句 · 出处（作者《篇名》）· 一句赏析 · 全诗：【完整诗文，句间用。或/分隔】· 轮到你了！',
+    '【妙句】一句简短夸奖 · 你句出处：作者《篇名》 · 你句全诗：【玩家那句所属完整诗文】· 【对句】完整诗句 · 出处 · 一句赏析 · 全诗：【你的完整诗文】· 轮到你了！',
+    '【驳回】原因 · 提示：【含令字的示例诗句】· 提示出处：作者《篇名》 · 提示全诗：【完整诗文】',
+    '【认输】实在吟不出，认输祝贺玩家。',
+    '【出句铁律】',
+    '1. 诗句必须真实存在（唐诗宋词元曲古文名句均可），必须包含令字。',
+    '2. 本局不得重复已出现过的诗句（玩家与你都不得重复）。',
+    '3. 诗句须完整可独立成句，一般 5～16 字；可含标点。',
+    '4. 「全诗」「你句全诗」「提示全诗」必须用【】包住该篇完整诗文，不能只写出处。',
+    '5. 不确定是否真实存在时，换更常见的名句，禁止编造。',
+    '6. 例：令字「花」→ 「花间一壶酒」全诗可写【花间一壶酒。独酌无相亲。举杯邀明月。对影成三人。】；令字「月」→ 「床前明月光」全诗【床前明月光。疑是地上霜。举头望明月。低头思故乡。】。'
+  ].join('\n');
+
+  var OPEN_RE = /【开局】([\s\S]+?)(?:轮到你了|$)/;
+  var TAKE_RE = /【对句】([\s\S]+?)(?:轮到你了|$)/;
+  var REJECT_HINT_RE = /提示：\s*【?\s*([^】]+?)\s*】?/;
+  var MARK_RE = /【(开局|妙句|对句|驳回|认输)】/g;
+
+  function extractBracketPoem(text, label) {
+    if (!text) return '';
+    var re = new RegExp(label + '[:：]\\s*【([^】]+)】');
+    var m = String(text).match(re);
+    return m ? m[1].trim() : '';
+  }
+
+  function extractSource(text, label) {
+    if (!text) return '';
+    var re = new RegExp(label + '[:：]\\s*([^·【】]+)');
+    var m = String(text).match(re);
+    return m ? m[1].trim() : '';
+  }
+
+  // 「诗句 · 出处 · 赏析」拆开；并从全文抽出全诗
+  function splitPoemMeta(body) {
+    var raw = String(body || '').trim();
+    var full = extractBracketPoem(raw, '全诗');
+    // 去掉全诗字段，避免污染 meta
+    var stripped = raw.replace(/全诗[:：]\s*【[^】]+】\s*/g, '').trim();
+    var parts = stripped.split(/\s*[·・‧∙]\s*|\s*\|\s*/).map(function (s) { return s.trim(); }).filter(Boolean);
+    var poem = '', meta = '';
+    if (parts.length >= 2) {
+      poem = parts[0];
+      meta = parts.slice(1).join(' · ');
+    } else {
+      var m = stripped.match(/^([^，。！？、]{4,24})[，。！？、]\s*([\s\S]+)$/);
+      if (m) {
+        poem = m[1].trim();
+        meta = m[2].trim();
+      } else {
+        poem = stripped || raw;
+        meta = '';
+      }
+    }
+    return { poem: poem, meta: meta, full: full };
+  }
+
+  function formatFullPoemDisplay(s) {
+    var t = String(s || '').trim();
+    if (!t) return '';
+    // 常见分隔：/ ｜ | 或句末标点
+    if (/[\/｜|]/.test(t)) {
+      return t.split(/[\/｜|]/).map(function (x) { return x.trim(); }).filter(Boolean).join('\n');
+    }
+    return t.replace(/([。！？；])/g, '$1\n').replace(/\n+/g, '\n').trim();
+  }
+
+  // ---------- DOM ----------
+  function $(id) { return document.getElementById(id); }
+
+  // ---------- 状态 ----------
+  var lingChar = '花';
+  var difficulty = '初学';
+  var timeLimit = 30;
+  var chatMessages = [];
+  var usedLines = {};
+  var rounds = 0;
+  var combo = 0;
+  var lives = 3;
+  var hintsLeft = 2;
+  var gameOver = false;
+  var isGenerating = false;
+  var currentAbort = null;
+  var genToken = 0;
+  var chatLog = [];
+  var currentAudioUrl = '';
+  var aiFaultRetries = 0;
+  var formatRetries = 0;
+  var lastPlayerLine = '';
+  var timerId = null;
+  var timeLeft = 0;
+  var playerTurn = false;
+  var pendingHint = false;
+  var lastUserCard = null;
+
+  // ---------- 工具 ----------
+  function showToast(msg) {
+    var toast = $('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () { toast.classList.remove('show'); }, 2200);
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function cleanLine(s) {
+    return String(s || '')
+      .replace(/[，。！？、；：""''（）《》〈〉…—\s·・‧‧]/g, '')
+      .trim();
+  }
+
+  function lineCore(s) {
+    return cleanLine(s);
+  }
+
+  function isValidPoemShape(s) {
+    var core = lineCore(s);
+    if (core.length < 4 || core.length > 24) return false;
+    if (!/^[\u4e00-\u9fa5]+$/.test(core)) return false;
+    return true;
+  }
+
+  function containsLing(s) {
+    return String(s || '').indexOf(lingChar) !== -1;
+  }
+
+  function markUsed(line) {
+    usedLines[lineCore(line)] = true;
+  }
+
+  function isUsed(line) {
+    return !!usedLines[lineCore(line)];
+  }
+
+  function usedBrief() {
+    var keys = Object.keys(usedLines);
+    if (!keys.length) return '（暂无）';
+    var recent = keys.slice(-12);
+    return recent.join('、') + (keys.length > 12 ? '…' : '');
+  }
+
+  function highlightLing(escaped) {
+    // 在已 escape 的文本里高亮令字（令字本身无 HTML 特殊字符）
+    var parts = String(escaped).split(lingChar);
+    if (parts.length === 1) return escaped;
+    return parts.join('<span class="ling">' + lingChar + '</span>');
+  }
+
+  function formatAiText(escaped) {
+    var s = escaped;
+    MARK_RE.lastIndex = 0;
+    s = s.replace(MARK_RE, '<span style="color:#c43c2f;font-weight:700">【$1】</span>');
+    s = highlightLing(s);
+    return s;
+  }
+
+  function makeSystemMessage() {
+    return { role: 'system', content: SYSTEM_PROMPT };
+  }
+
+  function getRequestMessages() {
+    var recent = chatMessages.slice(-17);
+    if (recent.length && recent[0].role === 'system') return recent;
+    var rest = recent.filter(function (m) { return m.role !== 'system'; });
+    return [makeSystemMessage()].concat(rest.slice(0, 16));
+  }
+
+  // ---------- 花瓣粒子 ----------
+  function initPetals() {
+    var canvas = $('petalCanvas');
+    if (!canvas) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var ctx = canvas.getContext('2d');
+    var petals = [];
+    var w = 0, h = 0, raf = 0;
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+
+    function spawn(n) {
+      for (var i = 0; i < n; i++) {
+        petals.push({
+          x: Math.random() * w,
+          y: Math.random() * h - h,
+          size: 4 + Math.random() * 8,
+          vy: 0.4 + Math.random() * 0.9,
+          vx: -0.3 + Math.random() * 0.6,
+          rot: Math.random() * Math.PI * 2,
+          vr: (-0.02 + Math.random() * 0.04),
+          o: 0.25 + Math.random() * 0.45,
+          hue: Math.random() > 0.55 ? '#e8a0b0' : '#f0d0c8'
+        });
+      }
+    }
+
+    function drawPetal(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = p.o;
+      ctx.fillStyle = p.hue;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.size * 0.55, p.size, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function tick() {
+      ctx.clearRect(0, 0, w, h);
+      for (var i = 0; i < petals.length; i++) {
+        var p = petals[i];
+        p.x += p.vx + Math.sin(p.y * 0.01) * 0.15;
+        p.y += p.vy;
+        p.rot += p.vr;
+        if (p.y > h + 20) {
+          p.y = -20;
+          p.x = Math.random() * w;
+        }
+        if (p.x < -20) p.x = w + 20;
+        if (p.x > w + 20) p.x = -20;
+        drawPetal(p);
+      }
+      raf = requestAnimationFrame(tick);
+    }
+
+    resize();
+    spawn(Math.min(28, Math.floor(w / 18)));
+    window.addEventListener('resize', function () {
+      resize();
+    });
+    tick();
+
+    // 暴露：胜利时追加一阵
+    window.__petalBurst = function () {
+      spawn(24);
+      setTimeout(function () {
+        if (petals.length > 80) petals.splice(0, petals.length - 80);
+      }, 100);
+    };
+  }
+
+  // ---------- 计时器 ----------
+  function stopTimer() {
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  }
+
+  function updateTimerUI() {
+    var wrap = $('timerWrap');
+    var num = $('timerNum');
+    var prog = $('timerProgress');
+    if (timeLimit <= 0) {
+      wrap.classList.remove('urgent');
+      num.textContent = '∞';
+      prog.style.strokeDashoffset = '0';
+      return;
+    }
+    num.textContent = String(timeLeft);
+    var ratio = timeLimit > 0 ? (timeLeft / timeLimit) : 1;
+    var offset = 113 * (1 - Math.max(0, Math.min(1, ratio)));
+    prog.style.strokeDashoffset = String(offset);
+    wrap.classList.toggle('urgent', timeLeft <= 8);
+  }
+
+  function startTimer() {
+    stopTimer();
+    if (!playerTurn || gameOver) return;
+    if (timeLimit <= 0) {
+      timeLeft = 0;
+      updateTimerUI();
+      return;
+    }
+    timeLeft = timeLimit;
+    updateTimerUI();
+    timerId = setInterval(function () {
+      if (!playerTurn || gameOver || isGenerating) {
+        stopTimer();
+        return;
+      }
+      timeLeft--;
+      updateTimerUI();
+      if (timeLeft <= 0) {
+        stopTimer();
+        onTimeout();
+      }
+    }, 1000);
+  }
+
+  // ---------- 状态栏 ----------
+  function updateStatus(thinking) {
+    $('roundText').textContent = (thinking ? '思考中' : ('第 ' + rounds + ' 句'));
+    $('comboChip').textContent = '连句 ×' + combo;
+    $('livesChip').textContent = '命 ' + '●'.repeat(Math.max(0, lives)) + '○'.repeat(Math.max(0, 3 - lives));
+    $('lingSeal').textContent = lingChar;
+    $('hintLeft').textContent = String(hintsLeft);
+    $('btnHint').disabled = hintsLeft <= 0 || gameOver || isGenerating;
+
+    var hint = $('turnHint');
+    if (thinking) {
+      hint.textContent = 'AI 正在搜肠刮肚…';
+    } else if (gameOver) {
+      hint.textContent = '本局已结束';
+    } else if (playerTurn) {
+      hint.textContent = '轮到你了，吟一句含「' + lingChar + '」的诗';
+    } else {
+      hint.textContent = '等待 AI 应句…';
+    }
+  }
+
+  function setInputEnabled(on) {
+    $('poemInput').disabled = !on;
+    $('sendBtn').disabled = !on;
+  }
+
+  function focusInput() {
+    if (gameOver || !playerTurn) return;
+    var input = $('poemInput');
+    if (!input || input.disabled) return;
+    try { input.focus({ preventScroll: false }); } catch (e) { input.focus(); }
+    setTimeout(function () {
+      if (!gameOver && playerTurn && !input.disabled) {
+        try { input.focus({ preventScroll: false }); } catch (e) { input.focus(); }
+      }
+    }, 80);
+  }
+
+  function pulseLing() {
+    var el = $('lingSeal');
+    el.classList.remove('hot');
+    void el.offsetWidth;
+    el.classList.add('hot');
+  }
+
+  function scrollToBottom() {
+    window.requestAnimationFrame(function () {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+  }
+
+  // ---------- 卡片渲染 ----------
+  function addSystemCard(text, type) {
+    var card = document.createElement('div');
+    card.className = 'poem-card system' + (type ? ' ' + type : '');
+    card.textContent = text;
+    $('feed').appendChild(card);
+    scrollToBottom();
+    return card;
+  }
+
+  function addThinkingCard() {
+    var card = document.createElement('div');
+    card.className = 'poem-card ai';
+    card.innerHTML = '<div class="card-top"><span class="who">AI 擂主</span></div>'
+      + '<div class="thinking"><i></i><i></i><i></i></div>';
+    $('feed').appendChild(card);
+    scrollToBottom();
+    return card;
+  }
+
+  function attachViewFull(card, data) {
+    // data: { line, source, full, side }
+    if (!card) return;
+    var foot = card.querySelector('.card-footer');
+    if (!foot) {
+      foot = document.createElement('div');
+      foot.className = 'card-footer';
+      card.appendChild(foot);
+    }
+    var old = foot.querySelector('.view-full');
+    if (old) old.remove();
+    var btn = document.createElement('button');
+    btn.className = 'view-full';
+    btn.type = 'button';
+    if (data && data.full) {
+      btn.textContent = '📜 查看全诗';
+      btn.onclick = function () { openPoemModal(data); };
+    } else {
+      btn.textContent = '📜 暂无全诗';
+      btn.disabled = true;
+      btn.onclick = function () { showToast('这句还没识别出完整诗文'); };
+    }
+    foot.insertBefore(btn, foot.firstChild);
+    card.__poemFull = data || null;
+  }
+
+  function openPoemModal(data) {
+    if (!data || !data.full) {
+      showToast('暂无完整诗文');
+      return;
+    }
+    var eyebrow = data.side === 'user' ? '你吟之句 · 全诗' : 'AI 擂主 · 全诗';
+    $('poemModalEyebrow').textContent = eyebrow;
+    $('poemModalTitle').textContent = (data.line ? data.line + (data.source ? ' · ' + data.source : '') : (data.source || '全诗'));
+    var body = formatFullPoemDisplay(data.full);
+    $('poemModalBody').innerHTML = highlightLing(escapeHtml(body));
+    $('poemModalFoot').textContent = data.source
+      ? ('出处：' + data.source + '　·　点击诗句外空白或 ✕ 关闭')
+      : '点击 ✕ 关闭';
+    $('poemOverlay').classList.add('show');
+  }
+
+  function closePoemModal() {
+    $('poemOverlay').classList.remove('show');
+  }
+
+  function buildPoemCard(opts) {
+    // opts: { who, poem, meta, praise, voiceText, fullPoem, source, side }
+    var card = document.createElement('div');
+    card.className = 'poem-card ' + (opts.side === 'user' ? 'user' : 'ai');
+
+    var top = document.createElement('div');
+    top.className = 'card-top';
+    var who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = opts.who;
+    var seal = document.createElement('div');
+    seal.className = 'card-seal';
+    seal.textContent = opts.side === 'user' ? '客' : '主';
+    top.appendChild(who);
+    top.appendChild(seal);
+    card.appendChild(top);
+
+    var line = document.createElement('div');
+    line.className = 'poem-line';
+    line.innerHTML = highlightLing(escapeHtml(opts.poem));
+    card.appendChild(line);
+
+    if (opts.meta) {
+      var meta = document.createElement('div');
+      meta.className = 'poem-meta';
+      meta.textContent = opts.meta;
+      card.appendChild(meta);
+    }
+    if (opts.praise) {
+      var pr = document.createElement('div');
+      pr.className = 'praise';
+      pr.textContent = opts.praise;
+      card.appendChild(pr);
+    }
+
+    var foot = document.createElement('div');
+    foot.className = 'card-footer';
+
+    if (opts.fullPoem) {
+      var viewBtn = document.createElement('button');
+      viewBtn.className = 'view-full';
+      viewBtn.type = 'button';
+      viewBtn.textContent = '📜 查看全诗';
+      viewBtn.onclick = function () {
+        openPoemModal({
+          line: opts.poem,
+          source: opts.source || '',
+          full: opts.fullPoem,
+          side: opts.side
+        });
+      };
+      foot.appendChild(viewBtn);
+    }
+
+    if (opts.voiceText) {
+      var btn = document.createElement('button');
+      btn.className = 'voice-mini';
+      btn.textContent = '🔊 朗读';
+      btn.onclick = function () { speakText(btn, opts.voiceText); };
+      foot.appendChild(btn);
+    }
+
+    if (foot.childNodes.length) card.appendChild(foot);
+
+    $('feed').appendChild(card);
+    scrollToBottom();
+    return card;
+  }
+
+  function addUserCard(poem) {
+    var card = buildPoemCard({
+      side: 'user',
+      who: '客 · 你',
+      poem: poem,
+      voiceText: poem
+    });
+    lastUserCard = card;
+    return card;
+  }
+
+  function renderAiFull(text, viewCard) {
+    // AI 偶尔在一段话里反复改口，取最后一段【开局】/【对句】
+    var src = String(text || '');
+    var iOpen = src.lastIndexOf('【开局】');
+    var iTake = src.lastIndexOf('【对句】');
+    var open = null;
+    var take = null;
+    if (iOpen !== -1) open = src.slice(iOpen).match(OPEN_RE);
+    if (iTake !== -1) take = src.slice(iTake).match(TAKE_RE);
+    if (open) {
+      var partsO = splitPoemMeta(open[1]);
+      var srcO = '';
+      if (partsO.meta) {
+        var srcMatch = partsO.meta.match(/([^·]+《[^》]+》|[^·]+)/);
+        srcO = srcMatch ? srcMatch[1].trim() : partsO.meta;
+      }
+      viewCard.innerHTML = '';
+      var rebuilt = buildPoemCard({
+        side: 'ai',
+        who: 'AI 擂主',
+        poem: partsO.poem,
+        meta: partsO.meta,
+        fullPoem: partsO.full,
+        source: srcO,
+        voiceText: partsO.poem + (partsO.meta ? '。' + partsO.meta : '')
+      });
+      viewCard.parentNode && viewCard.parentNode.removeChild(viewCard);
+      return { poem: partsO.poem, card: rebuilt, fullText: text, full: partsO.full, source: srcO };
+    }
+    if (take) {
+      var praiseMatch = text.match(/【妙句】\s*([^·【]+)/);
+      var partsT = splitPoemMeta(take[1]);
+      var srcT = '';
+      if (partsT.meta) {
+        var srcMatchT = partsT.meta.match(/([^·]+《[^》]+》|[^·]+)/);
+        srcT = srcMatchT ? srcMatchT[1].trim() : partsT.meta;
+      }
+      viewCard.innerHTML = '';
+      var rebuilt2 = buildPoemCard({
+        side: 'ai',
+        who: 'AI 擂主',
+        poem: partsT.poem,
+        meta: partsT.meta,
+        praise: praiseMatch ? praiseMatch[1].trim() : '',
+        fullPoem: partsT.full,
+        source: srcT,
+        voiceText: partsT.poem + (partsT.meta ? '。' + partsT.meta : '')
+      });
+      viewCard.parentNode && viewCard.parentNode.removeChild(viewCard);
+      return { poem: partsT.poem, card: rebuilt2, fullText: text, full: partsT.full, source: srcT };
+    }
+    viewCard.innerHTML = formatAiText(escapeHtml(text));
+    return { poem: '', card: viewCard, fullText: text, full: '', source: '' };
+  }
+
+  // ---------- AI 流式 ----------
+  async function runRound() {
+    if (isGenerating) return;
+    if (!API_URL) {
+      showToast('请先在代码中配置 API_URL');
+      return;
+    }
+
+    isGenerating = true;
+    var myToken = ++genToken;
+    currentAbort = new AbortController();
+    playerTurn = false;
+    stopTimer();
+    updateStatus(true);
+    setInputEnabled(false);
+
+    var view = addThinkingCard();
+    var fullText = '';
+
+    function handleLine(line) {
+      var trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) return false;
+      var data = trimmed.slice(5).trim();
+      if (data === '[DONE]') return true;
+      try {
+        var json = JSON.parse(data);
+        var content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+        if (content) {
+          fullText += content;
+          view.textContent = fullText;
+          scrollToBottom();
+        }
+      } catch (e) { /* ignore */ }
+      return false;
+    }
+
+    try {
+      var response = await fetch(API_URL, {
+        method: 'POST',
+        headers: API_HEADER,
+        body: JSON.stringify({
+          model: GLM_MODEL,
+          messages: getRequestMessages(),
+          stream: true
+        }),
+        signal: currentAbort.signal
+      });
+      if (!response.ok) throw new Error('API请求失败');
+
+      var reader = response.body.getReader();
+      var decoder = new TextDecoder();
+      var buf = '';
+      var doneFlag = false;
+
+      while (true) {
+        var res = await reader.read();
+        if (res.done) break;
+        buf += decoder.decode(res.value, { stream: true });
+        var lines = buf.split('\n');
+        buf = lines.pop();
+        for (var i = 0; i < lines.length; i++) {
+          if (handleLine(lines[i])) { doneFlag = true; break; }
+        }
+        if (doneFlag) break;
+      }
+      if (buf && !doneFlag) doneFlag = handleLine(buf);
+
+      if (!fullText.trim()) throw new Error('空回复');
+
+      chatMessages.push({ role: 'assistant', content: fullText });
+      var rendered = renderAiFull(fullText, view);
+      var action = applyVerdict(fullText, rendered);
+      scrollToBottom();
+
+      if (action === 'retry') {
+        setTimeout(function () {
+          if (myToken === genToken && !gameOver) runRound();
+        }, 80);
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      console.error('Error:', err);
+      view.textContent = fullText || '（无内容）';
+      var hint = document.createElement('div');
+      hint.className = 'error-hint';
+      hint.textContent = '⚠️ 本轮回复失败，可重发或点「重开」';
+      view.appendChild(hint);
+      showToast('请求失败，请重试');
+    } finally {
+      if (myToken === genToken) {
+        isGenerating = false;
+        currentAbort = null;
+        if (!gameOver && playerTurn) {
+          setInputEnabled(true);
+          startTimer();
+          focusInput();
+        }
+        updateStatus(false);
+        scrollToBottom();
+      }
+    }
+  }
+
+  function appendFaultNote(card, msg) {
+    var note = document.createElement('div');
+    note.className = 'error-hint';
+    note.textContent = msg;
+    card.appendChild(note);
+  }
+
+  function aiLose(card, reason) {
+    gameOver = true;
+    playerTurn = false;
+    stopTimer();
+    setInputEnabled(false);
+    appendFaultNote(card, '⚠️ ' + reason);
+    addSystemCard('AI 连续应句不合规，判负。', 'win');
+    chatLog.push('AI：（连续违规，判负）');
+    endGame(true, 'AI 擂主搜肠刮肚，终究应不上下一句。这杯酒，敬你。');
+  }
+
+  function judgeAiLine(line) {
+    var core = lineCore(line);
+    if (!isValidPoemShape(line)) return '「' + line + '」不像一句完整诗句';
+    if (!containsLing(line)) return '「' + line + '」不含令字「' + lingChar + '」';
+    if (isUsed(line)) return '「' + line + '」本局已出现过';
+    return null;
+  }
+
+  function applyVerdict(text, rendered) {
+    var action = applyVerdictInner(text, rendered);
+    if (action === 'done') {
+      lastPlayerLine = '';
+      formatRetries = 0;
+    }
+    return action;
+  }
+
+  function applyVerdictInner(text, rendered) {
+    var card = rendered.card;
+    var poem = rendered.poem;
+    // 以最后一处标记为准，避免 AI 中途改口时解析错段
+    var idxOpen = text.lastIndexOf('【开局】');
+    var idxTake = text.lastIndexOf('【对句】');
+    var idxReject = text.lastIndexOf('【驳回】');
+    var idxGive = text.lastIndexOf('【认输】');
+    var maxIdx = Math.max(idxOpen, idxTake, idxReject, idxGive);
+
+    // 开局
+    if (idxOpen === maxIdx && idxOpen !== -1) {
+      if (!poem) {
+        return askRetryFormat(card, '请按【开局】完整诗句 · 出处 · 赏析 · 轮到你了！输出');
+      }
+      var faultOpen = judgeAiLine(poem);
+      if (faultOpen) {
+        return handleAiFault(card, poem, faultOpen);
+      }
+      markUsed(poem);
+      chatLog.push('AI 开局：' + poem);
+      if (rendered.full) {
+        attachViewFull(card, {
+          line: poem,
+          source: rendered.source || '',
+          full: rendered.full,
+          side: 'ai'
+        });
+      }
+      enterPlayerTurn('AI 已开局，轮到你吟含「' + lingChar + '」的诗句');
+      return 'done';
+    }
+
+    // 对句
+    if (idxTake === maxIdx && idxTake !== -1) {
+      if (!poem) {
+        return askRetryFormat(card, '请按【妙句】夸奖 · 你句出处/全诗 · 【对句】诗句 · 出处 · 赏析 · 全诗 · 轮到你了！输出');
+      }
+      var faultTake = judgeAiLine(poem);
+      if (faultTake) {
+        return handleAiFault(card, poem, faultTake);
+      }
+      markUsed(poem);
+      rounds++;
+      combo++;
+
+      // 玩家句的出处与全诗
+      var mySource = extractSource(text, '你句出处') || extractSource(text, '出处');
+      var myFull = extractBracketPoem(text, '你句全诗') || extractBracketPoem(text, '玩家全诗');
+      if (lastUserCard && lastPlayerLine) {
+        if (myFull) {
+          attachViewFull(lastUserCard, {
+            line: lastPlayerLine,
+            source: mySource,
+            full: myFull,
+            side: 'user'
+          });
+        } else {
+          attachViewFull(lastUserCard, {
+            line: lastPlayerLine,
+            source: mySource,
+            full: '',
+            side: 'user'
+          });
+        }
+      }
+
+      if (rendered.full) {
+        attachViewFull(card, {
+          line: poem,
+          source: rendered.source || '',
+          full: rendered.full,
+          side: 'ai'
+        });
+      }
+
+      chatLog.push('我：' + lastPlayerLine + (mySource ? '（' + mySource + '）' : ''));
+      chatLog.push('AI：' + poem + (rendered.source ? '（' + rendered.source + '）' : ''));
+      showToast('✅ 妙句！连句 ×' + combo);
+      chatLog.push('我：' + lastPlayerLine);
+      chatLog.push('AI：' + poem);
+      showToast('✅ 妙句！连句 ×' + combo);
+      pulseLing();
+      if (window.__petalBurst && combo > 0 && combo % 3 === 0) window.__petalBurst();
+      // 十句里程碑也算小胜（可选加成），不强制结束，继续对饮
+      enterPlayerTurn('该你了，含「' + lingChar + '」');
+      return 'done';
+    }
+
+    // 驳回 / 求教提示
+    if (idxReject === maxIdx && idxReject !== -1) {
+      var hintM = text.match(REJECT_HINT_RE);
+      var hintText = hintM ? hintM[1].trim() : '';
+      if (hintText && !containsLing(hintText)) {
+        appendFaultNote(card, '⚠️ 提示句似乎不含「' + lingChar + '」');
+        hintText = '';
+      }
+      if (hintText) markUsed(hintText);
+
+      if (pendingHint) {
+        pendingHint = false;
+        var hintFull = extractBracketPoem(text, '提示全诗') || extractBracketPoem(text, '全诗');
+        var hintSrc = extractSource(text, '提示出处') || extractSource(text, '出处');
+        if (hintText) {
+          var hintCard = buildPoemCard({
+            side: 'ai',
+            who: '求教 · 示例',
+            poem: hintText,
+            meta: hintSrc || '',
+            fullPoem: hintFull,
+            source: hintSrc,
+            voiceText: hintText
+          });
+          hintCard.classList.add('system');
+        } else {
+          addSystemCard('暂无可用提示，请自行再想一句。', '');
+        }
+        chatLog.push('求教：' + (hintText || '（无提示）') + (hintFull ? '\n全诗：' + hintFull : ''));
+        showToast(hintText ? '💡 记下这句示例' : '暂时没有提示');
+        enterPlayerTurn('参考示例后，轮到你吟含「' + lingChar + '」的诗');
+        return 'done';
+      }
+
+      combo = 0;
+      rounds++;
+      addSystemCard(
+        hintText
+          ? '「' + (lastPlayerLine || '（空）') + '」未过关。示例：' + hintText
+          : '「' + (lastPlayerLine || '（空）') + '」未过关，请再吟一句。',
+        'fail'
+      );
+      chatLog.push('我：' + lastPlayerLine + '（驳回）');
+      chatLog.push('AI：' + cleanLine(text));
+      showToast('⚠️ 驳回不计连句，扣一条命');
+      loseLife('诗句未过关');
+      if (!gameOver) {
+        enterPlayerTurn('再吟一句含「' + lingChar + '」的诗');
+      }
+      return 'done';
+    }
+
+    // 认输
+    if (idxGive === maxIdx && idxGive !== -1) {
+      gameOver = true;
+      playerTurn = false;
+      stopTimer();
+      setInputEnabled(false);
+      chatLog.push('AI：' + cleanLine(text));
+      addSystemCard('AI 认输。', 'win');
+      endGame(true, '擂主认输。飞花令，你赢了这一局。');
+      return 'done';
+    }
+
+    return askRetryFormat(card);
+  }
+
+  function handleAiFault(card, poem, reason) {
+    if (aiFaultRetries < 2) {
+      aiFaultRetries++;
+      if (card) card.classList.add('failed');
+      appendFaultNote(card, '⚠️ AI 应句不合规：' + reason + '，正在重吟…');
+      var isOpening = !lastPlayerLine;
+      chatMessages.push({
+        role: 'user',
+        content: '纠错：「' + poem + '」不合规（' + reason + '）。' +
+          '令字必须是「' + lingChar + '」，诗句须真实、未出现过。' +
+          '已用过：' + usedBrief() + '。' +
+          (isOpening
+            ? '请只输出一行：【开局】真实诗句 · 出处 · 赏析 · 全诗：【完整诗文】· 轮到你了！'
+            : '请只输出一行：【妙句】夸奖 · 你句出处/全诗 · 【对句】真实诗句 · 出处 · 赏析 · 全诗：【完整诗文】· 轮到你了！') +
+          '（吟不出就【认输】）'
+      });
+      return 'retry';
+    }
+    aiLose(card, reason);
+    return 'done';
+  }
+
+  function askRetryFormat(card, extraHint) {
+    if (formatRetries < 2) {
+      formatRetries++;
+      if (card) card.classList.add('failed');
+      appendFaultNote(card, '⚠️ AI 没按格式回复，正在重来…');
+      var isOp = !lastPlayerLine;
+      chatMessages.push({
+        role: 'user',
+        content: (extraHint || '你没有按约定格式回复。') +
+          ' 令字「' + lingChar + '」。已用过：' + usedBrief() + '。' +
+          (isOp
+            ? '请严格只输出一行：【开局】诗句 · 出处 · 赏析 · 全诗：【完整诗文】· 轮到你了！（或【认输】）'
+            : '请严格只输出一行：【对句】诗句 · 出处 · 赏析 · 全诗：【完整诗文】· 轮到你了！（或【认输】）')
+      });
+      return 'retry';
+    }
+    formatRetries = 0;
+    appendFaultNote(card, '⚠️ 本轮回复异常，可重发你的诗句');
+    showToast('请求失败，请重试');
+    return 'done';
+  }
+
+  function enterPlayerTurn(hintText) {
+    if (gameOver) return;
+    playerTurn = true;
+    aiFaultRetries = 0;
+    formatRetries = 0;
+    setInputEnabled(true);
+    updateStatus(false);
+    if (hintText) $('turnHint').textContent = hintText;
+    $('poemInput').placeholder = '吟一句含「' + lingChar + '」的诗…';
+    startTimer();
+    focusInput();
+  }
+
+  function loseLife(reason) {
+    lives--;
+    updateStatus(false);
+    if (lives <= 0) {
+      gameOver = true;
+      playerTurn = false;
+      stopTimer();
+      setInputEnabled(false);
+      addSystemCard('三条命尽，再罚一杯。', 'fail');
+      endGame(false, reason ? (reason + '。') : '' + '酒力不胜，改日再战。');
+    }
+  }
+
+  function onTimeout() {
+    if (gameOver || !playerTurn) return;
+    showToast('⏰ 时间到，罚酒一杯');
+    addSystemCard('⏰ 超时未吟出，罚一杯。', 'fail');
+    chatLog.push('我：（超时）');
+    loseLife('超时未吟出');
+    if (!gameOver) {
+      // 超时后仍轮到玩家
+      startTimer();
+      focusInput();
+    }
+  }
+
+  // ---------- 玩家提交 ----------
+  function submitPoem() {
+    if (isGenerating) return;
+    if (gameOver) {
+      showToast('本局已结束，请再来一局');
+      return;
+    }
+    if (!playerTurn) {
+      showToast('还没轮到你');
+      return;
+    }
+
+    var input = $('poemInput');
+    var raw = input.value.trim();
+    if (!raw) {
+      showToast('请先吟一句诗');
+      return;
+    }
+    if (!containsLing(raw)) {
+      showToast('❌ 这句不含令字「' + lingChar + '」');
+      return;
+    }
+    if (!isValidPoemShape(raw)) {
+      showToast('❌ 请吟一句较完整的诗句（约 4～24 字）');
+      return;
+    }
+    if (isUsed(raw)) {
+      showToast('「' + lineCore(raw) + '」本局已出现过');
+      return;
+    }
+
+    input.value = '';
+    stopTimer();
+    pendingHint = false;
+    lastPlayerLine = raw;
+    markUsed(raw);
+    addUserCard(raw);
+    chatLog.push('我：' + raw);
+
+    aiFaultRetries = 0;
+    formatRetries = 0;
+
+    chatMessages.push({
+      role: 'user',
+      content: '我吟：' + raw +
+        '。系统已校验含令字「' + lingChar + '」且未重复。' +
+        '请判断是否为真实古诗词句：若不真实请【驳回】并给提示；若成立则必须：' +
+        '1) 用「你句出处」标出作者《篇名》，用「你句全诗：【完整诗文】」给出这句所属全诗；' +
+        '2) 再【对句】你的真实诗句（须含「' + lingChar + '」、不与已用重复），并给出处、赏析与「全诗：【完整诗文】」。' +
+        '已用过：' + usedBrief() + '。吟不出就【认输】。'
+    });
+
+    // 本地无法判真伪时，把回合交给 AI；但在等待前给一个乐观连句预增
+    // （若被驳回会在 applyVerdict 里清零）
+    runRound();
+  }
+
+  function submitHint() {
+    if (gameOver || isGenerating || !playerTurn) return;
+    if (hintsLeft <= 0) {
+      showToast('求教次数已用完');
+      return;
+    }
+    hintsLeft--;
+    updateStatus(false);
+    stopTimer();
+    pendingHint = true;
+
+    chatMessages.push({
+      role: 'user',
+      content: '我暂时想不起，请【驳回】并给出一个含令字「' + lingChar +
+        '」的真实诗句作为提示（格式：【驳回】再想想 · 提示：【真实诗句】· 提示出处：作者《篇名》 · 提示全诗：【完整诗文】）。不要认输。'
+    });
+    runRound();
+  }
+
+  // ---------- TTS ----------
+  async function speakText(btn, text) {
+    if (!text) return;
+    var old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    try {
+      var audioBlob = null;
+      for (var i = 0; i < VOICE_API_URLS.length; i++) {
+        try {
+          var response = await fetch(VOICE_API_URLS[i], {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              input: text,
+              voice: 'zh-CN-XiaomengNeural',
+              speed: 0.9,
+              pitch: 0
+            })
+          });
+          if (response.ok) {
+            audioBlob = await response.blob();
+            break;
+          }
+        } catch (e) { /* next */ }
+      }
+      if (!audioBlob) throw new Error('TTS失败');
+      if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+      currentAudioUrl = URL.createObjectURL(audioBlob);
+      var audio = $('ttsAudio');
+      audio.src = currentAudioUrl;
+      audio.play();
+      showToast('🔊 正在朗读');
+    } catch (e) {
+      console.error(e);
+      showToast('语音生成失败');
+    }
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+
+  // ---------- 结算 ----------
+  function endGame(win, desc) {
+    gameOver = true;
+    playerTurn = false;
+    stopTimer();
+    setInputEnabled(false);
+    updateStatus(false);
+    if (win && window.__petalBurst) window.__petalBurst();
+    $('resultIcon').textContent = win ? '🌸' : '🍶';
+    $('resultTitle').textContent = win ? '飞 花 夺 魁' : '罚 酒 一 杯';
+    $('resultDesc').textContent = desc + '（连句 ' + combo + ' · 已过 ' + rounds + ' 句）';
+    $('resultOverlay').classList.add('show');
+  }
+
+  function saveRecord() {
+    if (!chatLog.length) {
+      showToast('还没有可保存的对局记录');
+      return;
+    }
+    if (!window.aiHistory) {
+      showToast('历史组件未加载');
+      return;
+    }
+    var summary = lingChar + '字令｜' + difficulty + '｜连句' + combo + '｜' + rounds + '句｜命' + lives;
+    aiHistory.save('飞花令', summary, chatLog.filter(Boolean).join('\n\n'), {
+      voice: 'zh-CN-XiaomengNeural',
+      speed: 0.9
+    });
+    showToast('💾 已保存「' + summary + '」');
+  }
+
+  // ---------- 开局 / 重置 ----------
+  function resetState() {
+    chatMessages = [makeSystemMessage()];
+    usedLines = {};
+    rounds = 0;
+    combo = 0;
+    lives = 3;
+    hintsLeft = 2;
+    gameOver = false;
+    isGenerating = false;
+    if (currentAbort) currentAbort.abort();
+    currentAbort = null;
+    genToken++;
+    chatLog = [];
+    aiFaultRetries = 0;
+    formatRetries = 0;
+    lastPlayerLine = '';
+    playerTurn = false;
+    pendingHint = false;
+    lastUserCard = null;
+    stopTimer();
+    closePoemModal();
+    $('feed').innerHTML = '';
+    $('resultOverlay').classList.remove('show');
+    $('poemInput').value = '';
+  }
+
+  function beginGame() {
+    resetState();
+    $('screenSetup').style.display = 'none';
+    $('screenGame').style.display = 'block';
+    window.scrollTo(0, 0);
+
+    updateStatus(false);
+    addSystemCard('令字「' + lingChar + '」· 难度「' + difficulty + '」· 限时 ' +
+      (timeLimit > 0 ? timeLimit + ' 秒' : '不限') + '。酒过三巡，飞花令起。');
+
+    chatMessages.push({
+      role: 'user',
+      content: '请开局。令字「' + lingChar + '」，难度偏好：' + difficulty +
+        '。请输出一行：【开局】完整真实诗句 · 出处（作者《篇名》）· 一句赏析 · 全诗：【完整诗文，句间用。或/分隔】· 轮到你了！'
+    });
+    runRound();
+  }
+
+  function backToSetup() {
+    if (currentAbort) currentAbort.abort();
+    genToken++;
+    isGenerating = false;
+    stopTimer();
+    gameOver = false;
+    playerTurn = false;
+    $('screenGame').style.display = 'none';
+    $('screenSetup').style.display = 'block';
+    $('resultOverlay').classList.remove('show');
+    closePoemModal();
+    $('feed').innerHTML = '';
+    lastUserCard = null;
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- 设置 UI ----------
+  function buildSetup() {
+    var grid = $('charGrid');
+    grid.innerHTML = '';
+    LING_CHARS.forEach(function (ch) {
+      var btn = document.createElement('button');
+      btn.className = 'char-chip' + (ch === lingChar ? ' active' : '');
+      btn.type = 'button';
+      btn.textContent = ch;
+      btn.setAttribute('aria-label', '令字 ' + ch);
+      btn.onclick = function () {
+        lingChar = ch;
+        $('previewChar').textContent = ch;
+        var nodes = grid.querySelectorAll('.char-chip');
+        for (var i = 0; i < nodes.length; i++) nodes[i].classList.remove('active');
+        btn.classList.add('active');
+      };
+      grid.appendChild(btn);
+    });
+
+    function bindSeg(rowId, onPick) {
+      var row = $(rowId);
+      row.addEventListener('click', function (e) {
+        var btn = e.target.closest('.seg-btn');
+        if (!btn) return;
+        var nodes = row.querySelectorAll('.seg-btn');
+        for (var i = 0; i < nodes.length; i++) nodes[i].classList.remove('active');
+        btn.classList.add('active');
+        onPick(btn.getAttribute('data-val'));
+      });
+    }
+
+    bindSeg('diffRow', function (v) { difficulty = v; });
+    bindSeg('timeRow', function (v) { timeLimit = parseInt(v, 10) || 0; });
+  }
+
+  // ---------- 事件 ----------
+  $('btnStart').onclick = beginGame;
+  $('btnRestart').onclick = function () {
+    var inProgress = !gameOver || chatMessages.length > 1;
+    if (inProgress && !confirm('确定要结束当前对局吗？')) return;
+    backToSetup();
+  };
+  $('sendBtn').onclick = submitPoem;
+  $('btnHint').onclick = submitHint;
+  $('btnSave').onclick = saveRecord;
+  $('btnAgain').onclick = function () {
+    $('resultOverlay').classList.remove('show');
+    beginGame();
+  };
+  $('btnBackSetup').onclick = function () {
+    $('resultOverlay').classList.remove('show');
+    backToSetup();
+  };
+  $('poemInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') submitPoem();
+  });
+  $('poemModalClose').onclick = closePoemModal;
+  $('poemOverlay').addEventListener('click', function (e) {
+    if (e.target === $('poemOverlay')) closePoemModal();
+  });
+
+  // ---------- 启动 ----------
+  buildSetup();
+  initPetals();
+})();
+</script>
+</body>
+</html>

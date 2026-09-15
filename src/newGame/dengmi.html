@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>猜灯谜</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink-night: #0b1020;
+    --ink-panel: #141b2e;
+    --ink-soft: #1a2338;
+    --paper: #f6efe2;
+    --lantern: #e85a3c;
+    --lantern-deep: #b83228;
+    --gold: #d4a84b;
+    --gold-soft: rgba(212, 168, 75, 0.16);
+    --amber: #f0a040;
+    --haze: #8b93a7;
+    --text: #ece8df;
+    --danger: #e07060;
+    --jade: #5a9e8f;
+    --radius: 16px;
+    --shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { min-height: 100%; }
+
+  body {
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    background:
+      radial-gradient(ellipse 90% 50% at 50% 0%, rgba(180, 60, 40, 0.18) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 40% at 80% 100%, rgba(40, 50, 100, 0.35) 0%, transparent 50%),
+      var(--ink-night);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px 14px 56px;
+    overflow-x: hidden;
+  }
+
+  #glowCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 13px;
+    margin-bottom: 10px;
+    padding: 7px 13px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+  }
+  .back-btn:active, .back-btn:focus-visible { background: rgba(255, 255, 255, 0.14); outline: none; }
+
+  .page-header { text-align: center; padding: 8px 0 20px; }
+
+  .lantern {
+    width: 78px;
+    height: 96px;
+    margin: 0 auto 14px;
+    position: relative;
+    animation: sway 3.6s ease-in-out infinite;
+  }
+  .lantern .body {
+    width: 70px;
+    height: 70px;
+    margin: 10px auto 0;
+    border-radius: 50% 50% 45% 45%;
+    background: radial-gradient(circle at 35% 30%, #ff8a5c, var(--lantern) 45%, var(--lantern-deep) 100%);
+    box-shadow: 0 0 36px rgba(232, 90, 60, 0.55), inset 0 -10px 20px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .lantern .body::before {
+    content: '';
+    position: absolute;
+    top: -8px; left: 50%;
+    transform: translateX(-50%);
+    width: 28px; height: 10px;
+    background: var(--gold);
+    border-radius: 4px;
+  }
+  .lantern .char {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff6e8;
+    text-shadow: 0 0 12px rgba(255, 220, 150, 0.5);
+  }
+  .lantern .tassel {
+    width: 3px;
+    height: 14px;
+    background: var(--gold);
+    margin: 0 auto;
+    position: relative;
+  }
+  .lantern .tassel::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 12px;
+    transform: translateX(-50%);
+    width: 10px; height: 14px;
+    background: linear-gradient(180deg, var(--gold), #a67c2a);
+    border-radius: 0 0 4px 4px;
+  }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+
+  .page-header h1 {
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 8px;
+    color: var(--paper);
+    margin-bottom: 8px;
+  }
+  .page-header .subtitle {
+    font-size: 13px;
+    color: var(--haze);
+    letter-spacing: 1px;
+    line-height: 1.6;
+  }
+  .ornament {
+    display: flex; align-items: center; gap: 10px;
+    margin: 14px auto 0; max-width: 220px; color: var(--lantern);
+  }
+  .ornament::before, .ornament::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(232, 90, 60, 0.6), transparent);
+  }
+  .ornament span { font-size: 11px; letter-spacing: 2px; }
+
+  .setup-card {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    margin-bottom: 12px;
+    animation: fadeUp 0.4s ease both;
+    backdrop-filter: blur(8px);
+  }
+  .field-label {
+    display: block; font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 10px; letter-spacing: 1px;
+  }
+
+  .seg-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .seg-btn {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 13px; padding: 10px 4px;
+    border-radius: 12px; cursor: pointer;
+    font-family: inherit; transition: all 0.2s ease;
+  }
+  .seg-btn:hover, .seg-btn:focus-visible { border-color: rgba(212, 168, 75, 0.5); outline: none; }
+  .seg-btn.active {
+    background: rgba(232, 90, 60, 0.18);
+    border-color: var(--lantern);
+    color: #f0b8a0;
+  }
+
+  .start-btn {
+    display: block; width: 100%;
+    padding: 15px; margin-top: 14px;
+    font-size: 16px; font-weight: 700; letter-spacing: 4px;
+    border-radius: 14px; cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    border: none;
+  }
+  .start-btn.primary {
+    background: linear-gradient(135deg, #e85a3c, #c43c2f);
+    color: #fff4e8;
+    box-shadow: 0 8px 24px rgba(232, 90, 60, 0.35);
+  }
+  .start-btn.primary:active { transform: scale(0.97); }
+  .start-btn.primary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .start-btn.ghost {
+    background: transparent;
+    border: 1.5px solid rgba(212, 168, 75, 0.65);
+    color: var(--gold);
+  }
+  .start-btn.ghost:active { background: rgba(212, 168, 75, 0.12); }
+
+  .rules-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 12.5px; line-height: 1.85;
+    color: rgba(255, 255, 255, 0.52);
+    animation: fadeUp 0.5s ease both;
+  }
+  .rules-card b { color: #d4b56a; font-weight: 600; }
+
+  #screenGame { display: none; }
+
+  .status-bar {
+    position: sticky; top: 8px; z-index: 10;
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; margin-bottom: 12px;
+    background: rgba(20, 27, 46, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px; box-shadow: var(--shadow);
+  }
+
+  .score-seal {
+    width: 46px; height: 46px; flex-shrink: 0;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ff8a5c, var(--lantern) 55%, var(--lantern-deep));
+    box-shadow: 0 0 18px rgba(232, 90, 60, 0.4);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-seal .n {
+    font-size: 16px; font-weight: 700; color: #fff6e8; line-height: 1;
+  }
+  .score-seal .t { font-size: 9px; color: rgba(255, 246, 232, 0.75); margin-top: 2px; }
+  .score-seal.hot { animation: pulseSeal 0.6s ease; }
+  @keyframes pulseSeal {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.15); box-shadow: 0 0 28px rgba(240, 160, 64, 0.7); }
+    100% { transform: scale(1); }
+  }
+
+  .status-mid { flex: 1; min-width: 0; }
+  .status-line {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px; font-weight: 600; white-space: nowrap;
+  }
+  .chip {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; font-size: 11px; font-weight: 500;
+    border-radius: 10px; border: 1px solid transparent;
+  }
+  .chip.combo {
+    color: #e0c070;
+    border-color: rgba(212, 168, 75, 0.45);
+    background: rgba(212, 168, 75, 0.1);
+  }
+  .chip.lives {
+    color: #f0a090;
+    border-color: rgba(232, 90, 60, 0.45);
+    background: rgba(232, 90, 60, 0.12);
+  }
+  .turn-hint {
+    margin-top: 3px; font-size: 11px;
+    color: var(--haze); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .timer-wrap { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
+  .timer-wrap svg { width: 44px; height: 44px; transform: rotate(-90deg); }
+  .timer-wrap .track { fill: none; stroke: rgba(255, 255, 255, 0.08); stroke-width: 3; }
+  .timer-wrap .progress {
+    fill: none; stroke: var(--gold); stroke-width: 3;
+    stroke-linecap: round; stroke-dasharray: 113; stroke-dashoffset: 0;
+    transition: stroke-dashoffset 0.15s linear, stroke 0.3s ease;
+  }
+  .timer-wrap.urgent .progress { stroke: var(--lantern); }
+  .timer-num {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--paper);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn-restart {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ccc; font-size: 11px;
+    padding: 7px 10px; border-radius: 10px;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-restart:active, .btn-restart:focus-visible {
+    background: rgba(255, 255, 255, 0.12); outline: none;
+  }
+
+  .feed { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+
+  .riddle-card {
+    border-radius: 14px; padding: 16px 16px 14px;
+    animation: cardIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    overflow: hidden; position: relative;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .riddle-card.riddle {
+    background: linear-gradient(160deg, #2a1f18, #1c1612);
+    border: 1px solid rgba(232, 90, 60, 0.35);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), inset 0 0 40px rgba(232, 90, 60, 0.06);
+  }
+  .riddle-card.riddle::before {
+    content: '';
+    position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 40px; height: 3px;
+    background: var(--gold);
+    border-radius: 0 0 3px 3px;
+  }
+  .riddle-card.answer {
+    background: linear-gradient(135deg, rgba(246, 239, 226, 0.96), rgba(230, 218, 196, 0.92));
+    color: #2a241c;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  }
+  .riddle-card.user {
+    background: linear-gradient(135deg, rgba(26, 35, 56, 0.95), rgba(20, 27, 42, 0.95));
+    border: 1px solid rgba(212, 168, 75, 0.3);
+  }
+  .riddle-card.system {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.16);
+    color: var(--haze); font-size: 13px;
+  }
+  .riddle-card.system.win {
+    border-color: rgba(212, 168, 75, 0.5);
+    color: #e0c070;
+    background: rgba(212, 168, 75, 0.1);
+  }
+  .riddle-card.system.fail {
+    border-color: rgba(224, 112, 96, 0.4);
+    color: #f0a090;
+    background: rgba(232, 90, 60, 0.1);
+  }
+
+  .card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .who { font-size: 11px; letter-spacing: 2px; }
+  .riddle-card.riddle .who { color: #e0a070; }
+  .riddle-card.answer .who { color: #8a6a3a; }
+  .riddle-card.user .who { color: var(--gold); }
+
+  .card-seal {
+    width: 28px; height: 28px;
+    border: 1.5px solid var(--lantern);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Noto Serif SC', serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--lantern); opacity: 0.9;
+  }
+
+  .riddle-text {
+    font-family: 'Noto Serif SC', 'Songti SC', serif;
+    font-size: 20px; font-weight: 600;
+    line-height: 1.75; letter-spacing: 2px;
+    color: #f5e6d0; margin-bottom: 8px;
+  }
+  .riddle-meta { font-size: 12.5px; color: #c09070; letter-spacing: 1px; }
+  .riddle-card.answer .riddle-text { color: #2a241c; font-size: 18px; }
+  .riddle-card.answer .riddle-meta { color: #6a5a42; }
+
+  .verdict {
+    display: inline-block;
+    margin-bottom: 6px;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 12px; font-weight: 700;
+  }
+  .verdict.ok {
+    background: rgba(90, 158, 143, 0.2);
+    color: #7bc4b4;
+    border: 1px solid rgba(90, 158, 143, 0.45);
+  }
+  .verdict.no {
+    background: rgba(232, 90, 60, 0.15);
+    color: #f0a090;
+    border: 1px solid rgba(232, 90, 60, 0.4);
+  }
+  .verdict.hint {
+    background: rgba(212, 168, 75, 0.15);
+    color: #e0c070;
+    border: 1px solid rgba(212, 168, 75, 0.4);
+  }
+
+  .praise { margin-top: 4px; font-size: 13px; color: #7a6238; font-style: italic; }
+
+  .card-footer { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
+  .voice-mini, .view-full {
+    background: rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #6a5a42; font-size: 11px;
+    padding: 4px 10px; border-radius: 12px;
+    cursor: pointer; font-family: inherit;
+  }
+  .riddle-card.user .voice-mini, .riddle-card.riddle .voice-mini {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.72);
+  }
+  .voice-mini:active, .voice-mini:focus-visible { filter: brightness(1.15); outline: none; }
+
+  .thinking {
+    display: inline-flex; gap: 5px; align-items: center;
+    padding: 6px 2px;
+  }
+  .thinking i {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--amber);
+    animation: bounce 1s ease-in-out infinite;
+  }
+  .thinking i:nth-child(2) { animation-delay: 0.15s; }
+  .thinking i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    50% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  .input-panel {
+    background: rgba(20, 27, 46, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px; padding: 12px;
+    backdrop-filter: blur(10px);
+    position: sticky; bottom: 8px; z-index: 9;
+    box-shadow: var(--shadow);
+  }
+  .input-row { display: flex; gap: 8px; }
+  .input-row input {
+    flex: 1; min-width: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px; padding: 12px 13px;
+    color: #fff; font-size: 16px;
+    font-family: 'Noto Serif SC', serif;
+    letter-spacing: 1.5px; outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-row input:focus { border-color: rgba(212, 168, 75, 0.65); }
+  .input-row input::placeholder {
+    color: rgba(255, 255, 255, 0.32);
+    font-family: 'Noto Sans SC', sans-serif;
+    letter-spacing: normal; font-size: 13px;
+  }
+  .input-row input:disabled { opacity: 0.4; }
+
+  .send-btn {
+    width: 52px; flex-shrink: 0;
+    background: linear-gradient(135deg, #e85a3c, #c43c2f);
+    border: none; color: #fff4e8;
+    border-radius: 12px; font-size: 16px;
+    cursor: pointer; font-family: 'Noto Serif SC', serif;
+    transition: transform 0.15s, opacity 0.2s;
+  }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .send-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .tool-row { display: flex; gap: 8px; margin-top: 8px; }
+  .tool-btn {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px; padding: 8px;
+    border-radius: 10px; cursor: pointer; font-family: inherit;
+  }
+  .tool-btn:active, .tool-btn:focus-visible {
+    background: rgba(255, 255, 255, 0.12); outline: none;
+  }
+  .tool-btn:disabled { opacity: 0.35; }
+
+  .toast {
+    position: fixed; bottom: 36px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: rgba(0, 0, 0, 0.88); color: #fff;
+    padding: 12px 22px; border-radius: 24px;
+    font-size: 14px; opacity: 0;
+    transition: all 0.3s ease; z-index: 100;
+    max-width: 88vw; text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(8, 10, 18, 0.72);
+    backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .overlay.show { display: flex; }
+
+  .result-card {
+    width: 100%; max-width: 360px;
+    background: linear-gradient(160deg, #1e2430, #151a22);
+    border: 1px solid rgba(212, 168, 75, 0.35);
+    border-radius: 20px; padding: 28px 22px;
+    text-align: center;
+    animation: cardIn 0.4s ease both;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  }
+  .result-card .icon { font-size: 40px; margin-bottom: 10px; }
+  .result-card h2 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 24px; color: var(--gold);
+    letter-spacing: 3px; margin-bottom: 8px;
+  }
+  .result-card p {
+    font-size: 13.5px; color: var(--haze);
+    line-height: 1.7; margin-bottom: 18px;
+  }
+  .result-actions { display: flex; flex-direction: column; gap: 10px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    #glowCanvas { display: none; }
+  }
+</style>
+</head>
+<body>
+<canvas id="glowCanvas" aria-hidden="true"></canvas>
+
+<div class="container">
+  <a href="index.html" class="back-btn">← 游戏合集</a>
+
+  <div id="screenSetup">
+    <div class="page-header">
+      <div class="lantern">
+        <div class="body"><span class="char">谜</span></div>
+        <div class="tassel"></div>
+      </div>
+      <h1>猜灯谜</h1>
+      <p class="subtitle">元宵灯市，AI 出谜，你来揭底<br>灯下三思，一语中的</p>
+      <div class="ornament"><span>火 树 银 花</span></div>
+    </div>
+
+    <div class="setup-card">
+      <label class="field-label">谜种</label>
+      <div class="seg-row" id="kindRow">
+        <button class="seg-btn active" data-val="综合">综合</button>
+        <button class="seg-btn" data-val="字谜">字谜</button>
+        <button class="seg-btn" data-val="成语谜">成语谜</button>
+      </div>
+      <div class="seg-row" id="kindRow2" style="margin-top:8px">
+        <button class="seg-btn" data-val="物谜">物谜</button>
+        <button class="seg-btn" data-val="人名地名">人名地名</button>
+        <button class="seg-btn" data-val="诗词典故">诗词典故</button>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <label class="field-label">难度</label>
+      <div class="seg-row" id="diffRow">
+        <button class="seg-btn active" data-val="入门">入门</button>
+        <button class="seg-btn" data-val="进阶">进阶</button>
+        <button class="seg-btn" data-val="高手">高手</button>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <label class="field-label">每题限时</label>
+      <div class="seg-row" id="timeRow">
+        <button class="seg-btn" data-val="20">20 秒</button>
+        <button class="seg-btn active" data-val="40">40 秒</button>
+        <button class="seg-btn" data-val="0">不限</button>
+      </div>
+    </div>
+
+    <button class="start-btn primary" id="btnStart">点 灯 开 谜</button>
+
+    <div class="rules-card" style="margin-top:12px">
+      <b>怎么玩：</b>AI 挂出谜面，你猜谜底。首猜即中得 2 分，要提示后再中得 1 分。
+      猜错可再试；点「揭晓」或超时扣一盏灯芯（共 3 盏）。
+      <b>限 2 次求提示</b>，灯芯尽则本局结束。
+    </div>
+  </div>
+
+  <div id="screenGame">
+    <div class="status-bar">
+      <div class="score-seal" id="scoreSeal">
+        <span class="n" id="scoreNum">0</span>
+        <span class="t">分</span>
+      </div>
+      <div class="status-mid">
+        <div class="status-line">
+          <span id="roundText">第 0 题</span>
+          <span class="chip combo" id="comboChip">连中 ×0</span>
+          <span class="chip lives" id="livesChip">灯 ●●●</span>
+        </div>
+        <div class="turn-hint" id="turnHint">谜主正在想题…</div>
+      </div>
+      <div class="timer-wrap" id="timerWrap">
+        <svg viewBox="0 0 44 44" aria-hidden="true">
+          <circle class="track" cx="22" cy="22" r="18"></circle>
+          <circle class="progress" id="timerProgress" cx="22" cy="22" r="18"></circle>
+        </svg>
+        <div class="timer-num" id="timerNum">—</div>
+      </div>
+      <button class="btn-restart" id="btnRestart">收灯</button>
+    </div>
+
+    <div class="feed" id="feed"></div>
+
+    <div class="input-panel">
+      <div class="input-row">
+        <input type="text" id="guessInput" placeholder="输入你的谜底…" maxlength="24" autocomplete="off">
+        <button class="send-btn" id="sendBtn" title="作答">猜</button>
+      </div>
+      <div class="tool-row">
+        <button class="tool-btn" id="btnHint">🕯️ 求提示 <span id="hintLeft">2</span></button>
+        <button class="tool-btn" id="btnReveal">🏮 揭晓答案</button>
+        <button class="tool-btn" id="btnSave">💾 存战绩</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="resultOverlay">
+  <div class="result-card">
+    <div class="icon" id="resultIcon">🏮</div>
+    <h2 id="resultTitle">灯 市 尽 兴</h2>
+    <p id="resultDesc"></p>
+    <div class="result-actions">
+      <button class="start-btn primary" id="btnAgain">再来一局</button>
+      <button class="start-btn ghost" id="btnBackSetup">返回设置</button>
+    </div>
+  </div>
+</div>
+
+<audio id="ttsAudio"></audio>
+<div class="toast" id="toast"></div>
+
+<script src="../../ai-models.js"></script>
+<script src="../ai-config.js"></script>
+<script src="../ai-history.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ============================================================
+  //  猜灯谜：AI 出谜，玩家揭底
+  // ============================================================
+
+  var SYSTEM_PROMPT = [
+    '你是元宵灯市的谜主，精通传统灯谜（会意、离合、别解、象形等）。',
+    '【硬性格式】只输出一行，必须含下列标记之一，不要闲聊：',
+    '【出题】谜面 · 谜目（例如：打一字 / 打一成语 / 打一物 / 打一人名）',
+    '【妙中】一句夸奖 · 答案：X · 解析：简短扣合说明 · 【出题】下一谜面 · 谜目',
+    '【未中】不对或很接近 · 线索：一条不剧透的提示 · 等你再猜',
+    '【求提示】提示内容（可指向扣合手法或字形特征，不要直接给答案）',
+    '【揭晓】答案：X · 解析：简短扣合说明 · 【出题】下一谜面 · 谜目',
+    '【出谜铁律】',
+    '1. 谜面必须自创或改编为完整通顺的一句，真实可猜，禁止网络烂大街到一眼假的残句。',
+    '2. 谜底唯一、常见；解析必须说明如何扣合（会意/拆字/别解等）。',
+    '3. 本局谜面与谜底都不得与已出过的重复。',
+    '4. 难度：入门偏会意直白；进阶可离合/别解；高手偏巧，但仍须有据。',
+    '5. 例：入门「早不说晚不说」打一字 → 许；「一块变九块」打一成语 → 四分五裂。'
+  ].join('\n');
+
+  var OPEN_RE = /【出题】([\s\S]+?)(?:$|\n)/;
+  var NEXT_RE = /【出题】([\s\S]+)$/;
+  var MARK_RE = /【(出题|妙中|未中|求提示|揭晓)】/g;
+
+  function $(id) { return document.getElementById(id); }
+
+  var kind = '综合';
+  var difficulty = '入门';
+  var timeLimit = 40;
+  var chatMessages = [];
+  var usedRiddles = {};
+  var rounds = 0;
+  var score = 0;
+  var combo = 0;
+  var lives = 3;
+  var hintsLeft = 2;
+  var hintsUsedThis = 0;
+  var wrongTries = 0;
+  var gameOver = false;
+  var isGenerating = false;
+  var currentAbort = null;
+  var genToken = 0;
+  var chatLog = [];
+  var currentAudioUrl = '';
+  var formatRetries = 0;
+  var currentRiddle = '';
+  var currentMu = '';
+  var awaitingAnswer = false;
+  var pendingReveal = false;
+  var pendingHint = false;
+  var firstTry = true;
+  var timerId = null;
+  var timeLeft = 0;
+
+  // ---------- 工具 ----------
+  function showToast(msg) {
+    var toast = $('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () { toast.classList.remove('show'); }, 2200);
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function clean(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
+
+  function normAnswer(s) {
+    return String(s || '')
+      .replace(/[\s，。！？、；：""''（）《》【】·・]/g, '')
+      .trim();
+  }
+
+  function markRiddle(r) {
+    var key = clean(r).replace(/\s/g, '');
+    if (key) usedRiddles[key] = true;
+  }
+
+  function isUsedRiddle(r) {
+    return !!usedRiddles[clean(r).replace(/\s/g, '')];
+  }
+
+  function usedBrief() {
+    var keys = Object.keys(usedRiddles);
+    if (!keys.length) return '（暂无）';
+    return keys.slice(-8).join('；') + (keys.length > 8 ? '…' : '');
+  }
+
+  function makeSystemMessage() { return { role: 'system', content: SYSTEM_PROMPT }; }
+
+  function getRequestMessages() {
+    var recent = chatMessages.slice(-17);
+    if (recent.length && recent[0].role === 'system') return recent;
+    var rest = recent.filter(function (m) { return m.role !== 'system'; });
+    return [makeSystemMessage()].concat(rest.slice(0, 16));
+  }
+
+  // ---------- 灯光粒子 ----------
+  function initGlow() {
+    var canvas = $('glowCanvas');
+    if (!canvas) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var ctx = canvas.getContext('2d');
+    var orbs = [];
+    var w = 0, h = 0;
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+
+    function spawn(n) {
+      for (var i = 0; i < n; i++) {
+        orbs.push({
+          x: Math.random() * w,
+          y: h + Math.random() * h,
+          r: 2 + Math.random() * 5,
+          vy: -(0.25 + Math.random() * 0.7),
+          vx: -0.15 + Math.random() * 0.3,
+          o: 0.15 + Math.random() * 0.35,
+          hue: Math.random() > 0.4 ? 'rgba(240,160,64,' : 'rgba(232,90,60,'
+        });
+      }
+    }
+
+    function tick() {
+      ctx.clearRect(0, 0, w, h);
+      for (var i = 0; i < orbs.length; i++) {
+        var p = orbs[i];
+        p.x += p.vx + Math.sin(p.y * 0.008) * 0.12;
+        p.y += p.vy;
+        if (p.y < -20) {
+          p.y = h + 20;
+          p.x = Math.random() * w;
+        }
+        var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
+        g.addColorStop(0, p.hue + p.o + ')');
+        g.addColorStop(1, p.hue + '0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(tick);
+    }
+
+    resize();
+    spawn(Math.min(22, Math.floor(w / 22)));
+    window.addEventListener('resize', resize);
+    tick();
+  }
+
+  // ---------- 计时 ----------
+  function stopTimer() {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+  }
+
+  function updateTimerUI() {
+    var wrap = $('timerWrap');
+    var num = $('timerNum');
+    var prog = $('timerProgress');
+    if (timeLimit <= 0) {
+      wrap.classList.remove('urgent');
+      num.textContent = '∞';
+      prog.style.strokeDashoffset = '0';
+      return;
+    }
+    num.textContent = String(timeLeft);
+    var ratio = timeLimit > 0 ? (timeLeft / timeLimit) : 1;
+    prog.style.strokeDashoffset = String(113 * (1 - Math.max(0, Math.min(1, ratio))));
+    wrap.classList.toggle('urgent', timeLeft <= 8);
+  }
+
+  function startTimer() {
+    stopTimer();
+    if (!awaitingAnswer || gameOver) return;
+    if (timeLimit <= 0) { timeLeft = 0; updateTimerUI(); return; }
+    timeLeft = timeLimit;
+    updateTimerUI();
+    timerId = setInterval(function () {
+      if (!awaitingAnswer || gameOver || isGenerating) { stopTimer(); return; }
+      timeLeft--;
+      updateTimerUI();
+      if (timeLeft <= 0) {
+        stopTimer();
+        onTimeout();
+      }
+    }, 1000);
+  }
+
+  // ---------- 状态 ----------
+  function updateStatus(thinking) {
+    $('scoreNum').textContent = String(score);
+    $('roundText').textContent = thinking ? '出谜中' : ('第 ' + rounds + ' 题');
+    $('comboChip').textContent = '连中 ×' + combo;
+    $('livesChip').textContent = '灯 ' + '●'.repeat(Math.max(0, lives)) + '○'.repeat(Math.max(0, 3 - lives));
+    $('hintLeft').textContent = String(hintsLeft);
+    $('btnHint').disabled = hintsLeft <= 0 || gameOver || isGenerating || !awaitingAnswer || pendingHint;
+    $('btnReveal').disabled = gameOver || isGenerating || !awaitingAnswer || pendingReveal;
+
+    var hint = $('turnHint');
+    if (thinking) hint.textContent = '谜主正在想题…';
+    else if (gameOver) hint.textContent = '本局已结束';
+    else if (awaitingAnswer) hint.textContent = '猜猜看：' + (currentRiddle || '');
+    else hint.textContent = '等待谜主…';
+  }
+
+  function setInputEnabled(on) {
+    $('guessInput').disabled = !on;
+    $('sendBtn').disabled = !on;
+  }
+
+  function focusInput() {
+    if (gameOver || !awaitingAnswer) return;
+    var input = $('guessInput');
+    if (!input || input.disabled) return;
+    try { input.focus({ preventScroll: false }); } catch (e) { input.focus(); }
+    setTimeout(function () {
+      if (!gameOver && awaitingAnswer && !input.disabled) {
+        try { input.focus({ preventScroll: false }); } catch (e) { input.focus(); }
+      }
+    }, 80);
+  }
+
+  function pulseScore() {
+    var el = $('scoreSeal');
+    el.classList.remove('hot');
+    void el.offsetWidth;
+    el.classList.add('hot');
+  }
+
+  function scrollToBottom() {
+    window.requestAnimationFrame(function () {
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+  }
+
+  // ---------- 卡片 ----------
+  function addSystemCard(text, type) {
+    var card = document.createElement('div');
+    card.className = 'riddle-card system' + (type ? ' ' + type : '');
+    card.textContent = text;
+    $('feed').appendChild(card);
+    scrollToBottom();
+    return card;
+  }
+
+  function addThinkingCard() {
+    var card = document.createElement('div');
+    card.className = 'riddle-card riddle';
+    card.innerHTML = '<div class="card-top"><span class="who">谜主</span></div>'
+      + '<div class="thinking"><i></i><i></i><i></i></div>';
+    $('feed').appendChild(card);
+    scrollToBottom();
+    return card;
+  }
+
+  function addRiddleCard(riddle, mu) {
+    var card = document.createElement('div');
+    card.className = 'riddle-card riddle';
+    var top = document.createElement('div');
+    top.className = 'card-top';
+    var who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = '谜面 · 第 ' + rounds + ' 题';
+    var seal = document.createElement('div');
+    seal.className = 'card-seal';
+    seal.textContent = '谜';
+    top.appendChild(who);
+    top.appendChild(seal);
+    card.appendChild(top);
+
+    var text = document.createElement('div');
+    text.className = 'riddle-text';
+    text.textContent = riddle;
+    card.appendChild(text);
+
+    if (mu) {
+      var meta = document.createElement('div');
+      meta.className = 'riddle-meta';
+      meta.textContent = mu;
+      card.appendChild(meta);
+    }
+
+    var foot = document.createElement('div');
+    foot.className = 'card-footer';
+    var btn = document.createElement('button');
+    btn.className = 'voice-mini';
+    btn.textContent = '🔊 读谜面';
+    btn.onclick = function () { speakText(btn, riddle + (mu ? '，' + mu : '')); };
+    foot.appendChild(btn);
+    card.appendChild(foot);
+
+    $('feed').appendChild(card);
+    scrollToBottom();
+    return card;
+  }
+
+  function addUserCard(guess) {
+    var card = document.createElement('div');
+    card.className = 'riddle-card user';
+    var top = document.createElement('div');
+    top.className = 'card-top';
+    var who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = '客 · 你';
+    var seal = document.createElement('div');
+    seal.className = 'card-seal';
+    seal.textContent = '猜';
+    top.appendChild(who);
+    top.appendChild(seal);
+    card.appendChild(top);
+
+    var text = document.createElement('div');
+    text.className = 'riddle-text';
+    text.style.fontSize = '18px';
+    text.textContent = guess;
+    card.appendChild(text);
+    $('feed').appendChild(card);
+    scrollToBottom();
+    return card;
+  }
+
+  function addAnswerCard(opts) {
+    var card = document.createElement('div');
+    card.className = 'riddle-card answer';
+    var top = document.createElement('div');
+    top.className = 'card-top';
+    var who = document.createElement('span');
+    who.className = 'who';
+    who.textContent = opts.who || '谜主 · 揭底';
+    var seal = document.createElement('div');
+    seal.className = 'card-seal';
+    seal.textContent = '底';
+    top.appendChild(who);
+    top.appendChild(seal);
+    card.appendChild(top);
+
+    if (opts.verdict) {
+      var v = document.createElement('span');
+      v.className = 'verdict ' + (opts.verdictType || 'ok');
+      v.textContent = opts.verdict;
+      card.appendChild(v);
+    }
+
+    if (opts.answer) {
+      var a = document.createElement('div');
+      a.className = 'riddle-text';
+      a.innerHTML = '谜底：<b>' + escapeHtml(opts.answer) + '</b>';
+      card.appendChild(a);
+    }
+    if (opts.parse) {
+      var p = document.createElement('div');
+      p.className = 'riddle-meta';
+      p.textContent = opts.parse;
+      card.appendChild(p);
+    }
+    if (opts.praise) {
+      var pr = document.createElement('div');
+      pr.className = 'praise';
+      pr.textContent = opts.praise;
+      card.appendChild(pr);
+    }
+
+    if (opts.answer) {
+      var foot = document.createElement('div');
+      foot.className = 'card-footer';
+      var btn = document.createElement('button');
+      btn.className = 'voice-mini';
+      btn.textContent = '🔊 朗读';
+      btn.onclick = function () {
+        speakText(btn, '谜底是' + opts.answer + '。' + (opts.parse || ''));
+      };
+      foot.appendChild(btn);
+      card.appendChild(foot);
+    }
+
+    $('feed').appendChild(card);
+    scrollToBottom();
+    return card;
+  }
+
+  // ---------- 解析 AI 输出 ----------
+  function pickLast(text, marker) {
+    var i = String(text || '').lastIndexOf(marker);
+    return i === -1 ? '' : text.slice(i);
+  }
+
+  function parseRiddleBody(body) {
+    // 「谜面 · 谜目」
+    var raw = clean(body);
+    var parts = raw.split(/\s*[·・‧∙]\s*|\s*\|\s*/).map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length >= 2) {
+      var mu = parts.slice(1).join(' · ');
+      var face = parts[0].replace(/^谜面[:：]\s*/, '');
+      return { riddle: face, mu: mu };
+    }
+    var m = raw.match(/^(.+?)\s*[，,]\s*(打一.+)$/);
+    if (m) return { riddle: m[1].trim(), mu: m[2].trim() };
+    return { riddle: raw.replace(/^谜面[:：]\s*/, ''), mu: '' };
+  }
+
+  function extractAnswer(text) {
+    var m = String(text || '').match(/答案[:：]\s*([^·，。；\n]+)/);
+    return m ? m[1].trim() : '';
+  }
+
+  function extractParse(text) {
+    var m = String(text || '').match(/解析[:：]\s*([^·【\n]+)/);
+    return m ? m[1].trim() : '';
+  }
+
+  function extractPraise(text) {
+    var m = String(text || '').match(/【妙中】\s*([^·]+)/);
+    return m ? m[1].trim() : '';
+  }
+
+  function extractHint(text) {
+    // 线索：... 或 【求提示】...
+    var m = String(text || '').match(/线索[:：]\s*([^·【\n]+)/);
+    if (m) return m[1].trim();
+    var m2 = String(text || '').match(/【求提示】\s*([^·【\n]+)/);
+    return m2 ? m2[1].trim() : '';
+  }
+
+  function extractNextRiddle(text) {
+    var tail = pickLast(text, '【出题】');
+    if (!tail) return null;
+    var body = tail.replace('【出题】', '');
+    // 截断到行尾或下一个标记
+    body = body.split(/【/)[0];
+    return parseRiddleBody(body);
+  }
+
+  // ---------- AI 流式 ----------
+  async function runRound() {
+    if (isGenerating) return;
+    if (!API_URL) {
+      showToast('请先在代码中配置 API_URL');
+      return;
+    }
+
+    isGenerating = true;
+    var myToken = ++genToken;
+    currentAbort = new AbortController();
+    awaitingAnswer = false;
+    stopTimer();
+    updateStatus(true);
+    setInputEnabled(false);
+
+    var view = addThinkingCard();
+    var fullText = '';
+
+    function handleLine(line) {
+      var trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) return false;
+      var data = trimmed.slice(5).trim();
+      if (data === '[DONE]') return true;
+      try {
+        var json = JSON.parse(data);
+        var content = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+        if (content) {
+          fullText += content;
+          view.textContent = fullText;
+          scrollToBottom();
+        }
+      } catch (e) { /* ignore */ }
+      return false;
+    }
+
+    try {
+      var response = await fetch(API_URL, {
+        method: 'POST',
+        headers: API_HEADER,
+        body: JSON.stringify({
+          model: GLM_MODEL,
+          messages: getRequestMessages(),
+          stream: true
+        }),
+        signal: currentAbort.signal
+      });
+      if (!response.ok) throw new Error('API请求失败');
+
+      var reader = response.body.getReader();
+      var decoder = new TextDecoder();
+      var buf = '';
+      var doneFlag = false;
+      while (true) {
+        var res = await reader.read();
+        if (res.done) break;
+        buf += decoder.decode(res.value, { stream: true });
+        var lines = buf.split('\n');
+        buf = lines.pop();
+        for (var i = 0; i < lines.length; i++) {
+          if (handleLine(lines[i])) { doneFlag = true; break; }
+        }
+        if (doneFlag) break;
+      }
+      if (buf && !doneFlag) doneFlag = handleLine(buf);
+      if (!fullText.trim()) throw new Error('空回复');
+
+      view.remove();
+      chatMessages.push({ role: 'assistant', content: fullText });
+      var action = applyVerdict(fullText);
+      scrollToBottom();
+
+      if (action === 'retry') {
+        setTimeout(function () {
+          if (myToken === genToken && !gameOver) runRound();
+        }, 80);
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+      console.error('Error:', err);
+      view.textContent = fullText || '（无内容）';
+      var hint = document.createElement('div');
+      hint.className = 'error-hint';
+      hint.style.cssText = 'margin-top:8px;font-size:12.5px;color:#e07060';
+      hint.textContent = '⚠️ 本轮回复失败，可重发或收灯';
+      view.appendChild(hint);
+      showToast('请求失败，请重试');
+      // 失败时若已有谜面，恢复作答
+      if (currentRiddle) {
+        awaitingAnswer = true;
+        setInputEnabled(true);
+        startTimer();
+      }
+    } finally {
+      if (myToken === genToken) {
+        isGenerating = false;
+        currentAbort = null;
+        if (!gameOver && awaitingAnswer) {
+          setInputEnabled(true);
+          startTimer();
+          focusInput();
+        }
+        updateStatus(false);
+      }
+    }
+  }
+
+  function askRetryFormat(extra) {
+    if (formatRetries < 2) {
+      formatRetries++;
+      chatMessages.push({
+        role: 'user',
+        content: (extra || '你没有按约定格式回复。') +
+          ' 请严格只输出一行带【出题】/【妙中】/【未中】/【求提示】/【揭晓】标记的回复。' +
+          '已出过：' + usedBrief()
+      });
+      return 'retry';
+    }
+    formatRetries = 0;
+    showToast('请求失败，请重试');
+    return 'done';
+  }
+
+  function enterAnswerTurn(face, mu) {
+    currentRiddle = face;
+    currentMu = mu;
+    wrongTries = 0;
+    hintsUsedThis = 0;
+    firstTry = true;
+    pendingHint = false;
+    pendingReveal = false;
+    awaitingAnswer = true;
+    formatRetries = 0;
+    addRiddleCard(face, mu);
+    chatLog.push('第' + rounds + '题：' + face + (mu ? '（' + mu + '）' : ''));
+    setInputEnabled(true);
+    updateStatus(false);
+    startTimer();
+    focusInput();
+  }
+
+  function applyVerdict(text) {
+    var action = applyVerdictInner(text);
+    if (action === 'done') formatRetries = 0;
+    return action;
+  }
+
+  function applyVerdictInner(text) {
+    var hasOpen = text.indexOf('【出题】') !== -1;
+    var hasHit = text.indexOf('【妙中】') !== -1;
+    var hasMiss = text.indexOf('【未中】') !== -1;
+    var hasHint = text.indexOf('【求提示】') !== -1;
+    var hasReveal = text.indexOf('【揭晓】') !== -1;
+
+    // 妙中
+    if (hasHit && hasOpen) {
+      var ans = extractAnswer(text);
+      var parse = extractParse(text);
+      var praise = extractPraise(text);
+      if (!ans) return askRetryFormat('【妙中】必须写「答案：X」与「解析：…」，并接【出题】下一题');
+
+      combo++;
+      var gain = firstTry ? 2 : 1;
+      score += gain;
+      rounds++;
+      pulseScore();
+
+      addAnswerCard({
+        verdict: '✔ 妙中 · +' + gain + ' 分',
+        verdictType: 'ok',
+        answer: ans,
+        parse: parse,
+        praise: praise
+      });
+      chatLog.push('谜底：' + ans + '｜' + parse + '｜+' + gain);
+      showToast('🎯 猜中了！+' + gain + ' 分，连中 ×' + combo);
+
+      var next = extractNextRiddle(text);
+      if (!next || !next.riddle) return askRetryFormat('【妙中】后面必须接【出题】下一题谜面 · 谜目');
+      if (isUsedRiddle(next.riddle)) {
+        chatMessages.push({
+          role: 'user',
+          content: '「' + next.riddle + '」已出过，请换一题。只输出一行：【出题】新谜面 · 谜目'
+        });
+        return 'retry';
+      }
+      markRiddle(next.riddle);
+      pendingReveal = false;
+      pendingHint = false;
+      enterAnswerTurn(next.riddle, next.mu);
+      return 'done';
+    }
+
+    // 单独【出题】（开局或纠错后）
+    if (hasOpen && !hasHit && !hasReveal && !hasMiss && !hasHint) {
+      var openBody = pickLast(text, '【出题】').replace('【出题】', '').split(/【/)[0];
+      var open = parseRiddleBody(openBody);
+      if (!open.riddle) return askRetryFormat('请按【出题】谜面 · 谜目输出');
+      if (isUsedRiddle(open.riddle)) {
+        chatMessages.push({
+          role: 'user',
+          content: '「' + open.riddle + '」已出过。请换一题，只输出：【出题】新谜面 · 谜目'
+        });
+        return 'retry';
+      }
+      rounds = Math.max(rounds, 1);
+      // 开局时 rounds 在 begin 里已 +1
+      markRiddle(open.riddle);
+      enterAnswerTurn(open.riddle, open.mu);
+      return 'done';
+    }
+
+    // 未中：只给线索，不结束本题
+    if (hasMiss) {
+      var clue = extractHint(text);
+      addSystemCard(clue ? ('线索：' + clue) : '不对，再想想。', '');
+      chatLog.push('未中线索：' + clue);
+      wrongTries++;
+      combo = 0;
+      firstTry = false;
+      awaitingAnswer = true;
+      setInputEnabled(true);
+      updateStatus(false);
+      startTimer();
+      focusInput();
+      showToast('还不对，看看线索再猜');
+      return 'done';
+    }
+
+    // 求提示
+    if (hasHint) {
+      var h = extractHint(text) || clean(text.replace(/【求提示】/, ''));
+      addSystemCard('提示：' + h, '');
+      chatLog.push('提示：' + h);
+      pendingHint = false;
+      firstTry = false;
+      awaitingAnswer = true;
+      setInputEnabled(true);
+      updateStatus(false);
+      startTimer();
+      focusInput();
+      return 'done';
+    }
+
+    // 揭晓
+    if (hasReveal) {
+      var rAns = extractAnswer(text);
+      var rParse = extractParse(text);
+      var rNext = extractNextRiddle(text);
+      addAnswerCard({
+        verdict: '🏮 已揭晓',
+        verdictType: 'no',
+        answer: rAns || '（未给出）',
+        parse: rParse
+      });
+      chatLog.push('揭晓：' + rAns + '｜' + rParse);
+      loseWick('本题揭晓');
+
+      if (gameOver) return 'done';
+      if (!rNext || !rNext.riddle) {
+        // 自动要下一题
+        chatMessages.push({
+          role: 'user',
+          content: '请继续出下一题，只输出一行：【出题】谜面 · 谜目'
+        });
+        return 'retry';
+      }
+      if (isUsedRiddle(rNext.riddle)) {
+        chatMessages.push({
+          role: 'user',
+          content: '「' + rNext.riddle + '」已出过，请换一题。只输出：【出题】新谜面 · 谜目'
+        });
+        return 'retry';
+      }
+      markRiddle(rNext.riddle);
+      enterAnswerTurn(rNext.riddle, rNext.mu);
+      return 'done';
+    }
+
+    return askRetryFormat();
+  }
+
+  function loseWick(reason) {
+    lives--;
+    updateStatus(false);
+    if (lives <= 0) {
+      gameOver = true;
+      awaitingAnswer = false;
+      stopTimer();
+      setInputEnabled(false);
+      addSystemCard('灯芯尽了。', 'fail');
+      endGame(false, (reason ? reason + '。' : '') + '灯市夜深，改日再猜。');
+    }
+  }
+
+  function onTimeout() {
+    if (gameOver || !awaitingAnswer || isGenerating) return;
+    showToast('⏰ 思索超时，揭晓本题');
+    pendingReveal = true;
+    awaitingAnswer = false;
+    stopTimer();
+    chatMessages.push({
+      role: 'user',
+      content: '本题我超时放弃，请【揭晓】答案：X · 解析：… · 【出题】下一题。'
+    });
+    runRound();
+  }
+
+  // ---------- 玩家操作 ----------
+  function submitGuess() {
+    if (isGenerating) return;
+    if (gameOver) { showToast('本局已结束，请再来一局'); return; }
+    if (!awaitingAnswer) { showToast('还没轮到你作答'); return; }
+
+    var input = $('guessInput');
+    var raw = input.value.trim();
+    if (!raw) { showToast('请输入谜底'); return; }
+    if (normAnswer(raw).length > 16) { showToast('谜底通常不会这么长'); return; }
+
+    input.value = '';
+    stopTimer();
+    pendingHint = false;
+    pendingReveal = false;
+    awaitingAnswer = false;
+    setInputEnabled(false);
+
+    addUserCard(raw);
+    chatLog.push('我猜：' + raw);
+
+    chatMessages.push({
+      role: 'user',
+      content: '我猜：' + raw + '。请判定是否为本题谜底：' +
+        '若是，输出【妙中】夸奖 · 答案：正确谜底 · 解析：扣合说明 · 【出题】新谜面 · 谜目；' +
+        '若否，只输出【未中】一句 · 线索：不剧透提示（不要揭晓答案）。' +
+        '已出过：' + usedBrief()
+    });
+    runRound();
+  }
+
+  function requestHint() {
+    if (gameOver || isGenerating || !awaitingAnswer) return;
+    if (hintsLeft <= 0) { showToast('提示次数已用完'); return; }
+    hintsLeft--;
+    updateStatus(false);
+    stopTimer();
+    pendingHint = true;
+    awaitingAnswer = false;
+    setInputEnabled(false);
+    chatMessages.push({
+      role: 'user',
+      content: '请给一条提示（不要直接给答案）。只输出一行：【求提示】提示内容'
+    });
+    runRound();
+  }
+
+  function requestReveal() {
+    if (gameOver || isGenerating || !awaitingAnswer) return;
+    stopTimer();
+    pendingReveal = true;
+    awaitingAnswer = false;
+    setInputEnabled(false);
+    chatMessages.push({
+      role: 'user',
+      content: '我不猜了，请【揭晓】答案：X · 解析：扣合说明 · 【出题】下一题谜面 · 谜目'
+    });
+    runRound();
+  }
+
+  // ---------- TTS ----------
+  async function speakText(btn, text) {
+    if (!text) return;
+    var old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    try {
+      var audioBlob = null;
+      for (var i = 0; i < VOICE_API_URLS.length; i++) {
+        try {
+          var response = await fetch(VOICE_API_URLS[i], {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              input: text,
+              voice: 'zh-CN-XiaomengNeural',
+              speed: 0.95,
+              pitch: 0
+            })
+          });
+          if (response.ok) { audioBlob = await response.blob(); break; }
+        } catch (e) { /* next */ }
+      }
+      if (!audioBlob) throw new Error('TTS失败');
+      if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+      currentAudioUrl = URL.createObjectURL(audioBlob);
+      var audio = $('ttsAudio');
+      audio.src = currentAudioUrl;
+      audio.play();
+      showToast('🔊 正在朗读');
+    } catch (e) {
+      console.error(e);
+      showToast('语音生成失败');
+    }
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+
+  // ---------- 结算 / 存档 ----------
+  function endGame(win, desc) {
+    gameOver = true;
+    awaitingAnswer = false;
+    stopTimer();
+    setInputEnabled(false);
+    updateStatus(false);
+    $('resultIcon').textContent = win ? '🏮' : '🕯️';
+    $('resultTitle').textContent = win ? '灯 市 夺 魁' : '灯 尽 人 散';
+    $('resultDesc').textContent = desc + '（得分 ' + score + ' · 已猜 ' + rounds + ' 题）';
+    $('resultOverlay').classList.add('show');
+  }
+
+  function saveRecord() {
+    if (!chatLog.length) { showToast('还没有可保存的对局记录'); return; }
+    if (!window.aiHistory) { showToast('历史组件未加载'); return; }
+    var summary = kind + '｜' + difficulty + '｜得分' + score + '｜' + rounds + '题｜灯' + lives;
+    aiHistory.save('猜灯谜', summary, chatLog.filter(Boolean).join('\n\n'), {
+      voice: 'zh-CN-XiaomengNeural',
+      speed: 0.95
+    });
+    showToast('💾 已保存「' + summary + '」');
+  }
+
+  function resetState() {
+    chatMessages = [makeSystemMessage()];
+    usedRiddles = {};
+    rounds = 0;
+    score = 0;
+    combo = 0;
+    lives = 3;
+    hintsLeft = 2;
+    hintsUsedThis = 0;
+    wrongTries = 0;
+    gameOver = false;
+    isGenerating = false;
+    if (currentAbort) currentAbort.abort();
+    currentAbort = null;
+    genToken++;
+    chatLog = [];
+    formatRetries = 0;
+    currentRiddle = '';
+    currentMu = '';
+    awaitingAnswer = false;
+    pendingReveal = false;
+    pendingHint = false;
+    firstTry = true;
+    stopTimer();
+    $('feed').innerHTML = '';
+    $('resultOverlay').classList.remove('show');
+    $('guessInput').value = '';
+  }
+
+  function beginGame() {
+    resetState();
+    $('screenSetup').style.display = 'none';
+    $('screenGame').style.display = 'block';
+    window.scrollTo(0, 0);
+    rounds = 1;
+    updateStatus(false);
+    addSystemCard('谜种「' + kind + '」· 难度「' + difficulty + '」· 限时 ' +
+      (timeLimit > 0 ? timeLimit + ' 秒' : '不限') + '。花灯已上，开谜。');
+
+    chatMessages.push({
+      role: 'user',
+      content: '请出第一题。谜种偏好：' + kind + '，难度：' + difficulty +
+        '。只输出一行：【出题】谜面 · 谜目'
+    });
+    runRound();
+  }
+
+  function backToSetup() {
+    if (currentAbort) currentAbort.abort();
+    genToken++;
+    isGenerating = false;
+    stopTimer();
+    gameOver = false;
+    awaitingAnswer = false;
+    $('screenGame').style.display = 'none';
+    $('screenSetup').style.display = 'block';
+    $('resultOverlay').classList.remove('show');
+    $('feed').innerHTML = '';
+    currentRiddle = '';
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- 设置 ----------
+  function buildSetup() {
+    function bindSeg(rowId, onPick, multiGroup) {
+      var row = $(rowId);
+      row.addEventListener('click', function (e) {
+        var btn = e.target.closest('.seg-btn');
+        if (!btn) return;
+        var rows = multiGroup
+          ? [$(multiGroup[0]), $(multiGroup[1])]
+          : [row];
+        rows.forEach(function (r) {
+          if (!r) return;
+          var nodes = r.querySelectorAll('.seg-btn');
+          for (var i = 0; i < nodes.length; i++) nodes[i].classList.remove('active');
+        });
+        btn.classList.add('active');
+        onPick(btn.getAttribute('data-val'));
+      });
+    }
+
+    bindSeg('kindRow', function (v) { kind = v; }, ['kindRow', 'kindRow2']);
+    bindSeg('kindRow2', function (v) { kind = v; }, ['kindRow', 'kindRow2']);
+    bindSeg('diffRow', function (v) { difficulty = v; });
+    bindSeg('timeRow', function (v) { timeLimit = parseInt(v, 10) || 0; });
+  }
+
+  // ---------- 事件 ----------
+  $('btnStart').onclick = beginGame;
+  $('btnRestart').onclick = function () {
+    var inProgress = !gameOver || chatMessages.length > 1;
+    if (inProgress && !confirm('确定要收灯结束当前对局吗？')) return;
+    backToSetup();
+  };
+  $('sendBtn').onclick = submitGuess;
+  $('btnHint').onclick = requestHint;
+  $('btnReveal').onclick = requestReveal;
+  $('btnSave').onclick = saveRecord;
+  $('btnAgain').onclick = function () {
+    $('resultOverlay').classList.remove('show');
+    beginGame();
+  };
+  $('btnBackSetup').onclick = function () {
+    $('resultOverlay').classList.remove('show');
+    backToSetup();
+  };
+  $('guessInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') submitGuess();
+  });
+
+  buildSetup();
+  initGlow();
+})();
+</script>
+</body>
+</html>

@@ -567,6 +567,38 @@
     background: linear-gradient(135deg, #ffd93d, #ff9800);
     color: #1e1e2e;
     font-size: 18px;
+    animation: popIn 0.28s ease both, winBadgeShake 0.55s ease 0.15s 2;
+    box-shadow: 0 0 20px rgba(255,152,0,0.55);
+  }
+  @keyframes winBadgeShake {
+    0%, 100% { transform: rotate(0) scale(1); }
+    25% { transform: rotate(-6deg) scale(1.08); }
+    75% { transform: rotate(6deg) scale(1.08); }
+  }
+
+  /* 全屏金光一闪 */
+  .win-flash {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: radial-gradient(circle at 50% 40%, rgba(255,217,61,0.45), rgba(255,152,0,0.08) 55%, transparent 70%);
+    animation: winFlash 0.65s ease-out forwards;
+  }
+  @keyframes winFlash {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* 字母格庆祝弹跳 */
+  .slot.celebrate {
+    animation: slotCelebrate 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  @keyframes slotCelebrate {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.22) translateY(-10px); box-shadow: 0 0 18px rgba(255,217,61,0.8); }
+    100% { transform: scale(1) translateY(0); }
   }
   .answer-note {
     margin-top: 4px;
@@ -608,6 +640,16 @@
     background: linear-gradient(145deg, rgba(255,152,0,0.15), rgba(78,205,196,0.1));
     border: 1px solid rgba(255,152,0,0.35);
     animation: fadeUp 0.35s ease both;
+  }
+  .result-card.win {
+    background: linear-gradient(145deg, rgba(255,217,61,0.28), rgba(255,152,0,0.18));
+    border-color: rgba(255,217,61,0.7);
+    box-shadow: 0 0 28px rgba(255,152,0,0.35);
+    animation: fadeUp 0.35s ease both, winCardPulse 0.7s ease 0.2s 2;
+  }
+  @keyframes winCardPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); box-shadow: 0 0 40px rgba(255,217,61,0.55); }
   }
   .result-card.lose {
     background: linear-gradient(145deg, rgba(255,107,107,0.12), rgba(255,152,0,0.08));
@@ -765,7 +807,14 @@
     height: 12px;
     z-index: 90;
     pointer-events: none;
+    border-radius: 2px;
     animation: confettiFall 2.2s linear forwards;
+  }
+  .confetti.spark {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px currentColor;
   }
   @keyframes confettiFall {
     to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
@@ -1117,7 +1166,7 @@ function addSysBubble(text) {
 
 function addResultCard(win) {
   var card = document.createElement('div');
-  card.className = 'result-card' + (win ? '' : ' lose');
+  card.className = 'result-card' + (win ? ' win' : ' lose');
   var stats = '类别：' + currentCategory
     + ' · 提问 ' + askCount + ' 次'
     + ' · 猜词 ' + guessCount + ' 次';
@@ -1134,24 +1183,52 @@ function addResultCard(win) {
   $('toHomeBtn').onclick = function () { backToStart(false); };
   scrollToBottom();
 
-  if (win) launchConfetti();
+  if (win) playWinEffects();
   saveGameRecord(win);
+}
+
+function playWinEffects() {
+  // 震动（不支持则静默忽略）
+  try {
+    if (navigator.vibrate) navigator.vibrate([120, 60, 120, 60, 220]);
+  } catch (e) {}
+
+  // 全屏金光
+  var flash = document.createElement('div');
+  flash.className = 'win-flash';
+  document.body.appendChild(flash);
+  setTimeout(function () { flash.remove(); }, 700);
+
+  // 字母格逐个弹跳
+  var slots = $('wordSlots').querySelectorAll('.slot');
+  for (var i = 0; i < slots.length; i++) {
+    (function (el, idx) {
+      setTimeout(function () {
+        el.classList.add('celebrate');
+        setTimeout(function () { el.classList.remove('celebrate'); }, 600);
+      }, 80 * idx);
+    })(slots[i], i);
+  }
+
+  launchConfetti();
 }
 
 function launchConfetti() {
   var colors = ['#ff9800', '#ffd93d', '#4ecdc4', '#ff6b6b', '#54a0ff'];
-  for (var i = 0; i < 28; i++) {
+  for (var i = 0; i < 40; i++) {
     (function (i) {
       setTimeout(function () {
         var el = document.createElement('div');
-        el.className = 'confetti';
+        var spark = i % 3 === 0;
+        el.className = 'confetti' + (spark ? ' spark' : '');
         el.style.left = (Math.random() * 100) + 'vw';
         el.style.background = colors[i % colors.length];
-        el.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
+        el.style.color = colors[i % colors.length];
+        el.style.animationDuration = (1.4 + Math.random() * 1.4) + 's';
         el.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
         document.body.appendChild(el);
-        setTimeout(function () { el.remove(); }, 3000);
-      }, i * 40);
+        setTimeout(function () { el.remove(); }, 3200);
+      }, i * 30);
     })(i);
   }
 }
@@ -1420,13 +1497,13 @@ async function generateSecret() {
   }
 
   try {
-    var raw = await callAI(messages, { stream: false, thinking: true });
+    var raw = await callAI(messages, { stream: false, thinking: false });
     var parsed = parseSecretJSON(raw);
     if (!parsed) {
       raw = await callAI(messages.concat([
         { role: 'assistant', content: raw },
         { role: 'user', content: '请只输出一行 JSON，格式：{"word":"...","category":"...","intro":"..."}' }
-      ]), { stream: false, thinking: true });
+      ]), { stream: false, thinking: false });
       parsed = parseSecretJSON(raw);
     }
     if (!parsed) throw new Error('无法解析词语');
