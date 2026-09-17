@@ -23,10 +23,83 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 从环境变量读取密钥
-AI_API_URL = os.getenv("AI_API_URL", "https://api.agnes-ai.cn/v1/chat/completions")
-AI_API_KEY = os.getenv("AI_API_KEY", "")
-AI_MODEL = os.getenv("AI_MODEL", "agnes-3.0-flash")
+# ============================================================
+#  AI 通道配置（写在代码里，切换模型不用改 Render 环境变量）
+#
+#  【唯一切换点】改 ACTIVE_PROVIDER 后 git 提交并重新部署：
+#      'deepseek' | 'agnes' | 'glm'
+#
+#  【Key 只放在 Render Environment】（不要写进代码）：
+#      DEEPSEEK_API_KEY / AGNES_API_KEY / GLM_API_KEY
+#      或 AI_API_KEYS={"deepseek":"sk-...","agnes":"sk-..."}
+#      兼容旧的 AI_API_KEY（只挂在当前 ACTIVE_PROVIDER 上）
+#
+#  前端只 POST /chat，忽略请求里的 model/provider。
+# ============================================================
+
+# ★★★ 只需要改这一行 ★★★
+ACTIVE_PROVIDER = "deepseek"
+
+AI_PROVIDERS = {
+    "deepseek": {
+        "url": "https://api.deepseek.com/chat/completions",
+        "model": "deepseek-flash",
+    },
+    "agnes": {
+        "url": "https://api.agnes-ai.cn/v1/chat/completions",
+        "model": "agnes-3.0-flash",
+    },
+    "glm": {
+        "url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+        "model": "glm-4.7-flash",
+    },
+}
+
+
+def _load_api_keys() -> dict:
+    import json as _json
+
+    keys: dict = {}
+    raw = os.getenv("AI_API_KEYS", "").strip()
+    if raw:
+        try:
+            data = _json.loads(raw)
+            if isinstance(data, dict):
+                for k, v in data.items():
+                    if v:
+                        keys[str(k).strip().lower()] = str(v).strip()
+        except Exception:
+            print("[WARN] AI_API_KEYS 不是合法 JSON，已忽略")
+    for name in AI_PROVIDERS:
+        val = os.getenv(f"{name.upper()}_API_KEY", "").strip()
+        if val:
+            keys[name] = val
+    legacy = os.getenv("AI_API_KEY", "").strip()
+    if legacy and ACTIVE_PROVIDER not in keys:
+        keys[ACTIVE_PROVIDER] = legacy
+    return keys
+
+
+AI_PROVIDER = ACTIVE_PROVIDER.strip().lower()
+if AI_PROVIDER not in AI_PROVIDERS:
+    print(f"[WARN] 未知 ACTIVE_PROVIDER={AI_PROVIDER}，回退 deepseek")
+    AI_PROVIDER = "deepseek"
+
+AI_API_KEYS = _load_api_keys()
+_preset = AI_PROVIDERS[AI_PROVIDER]
+AI_API_URL = _preset["url"]
+AI_MODEL = _preset["model"]
+AI_API_KEY = AI_API_KEYS.get(AI_PROVIDER, "")
+
+
+def resolve_ai_target() -> dict:
+    """通道写在代码里；Key 只从环境变量读。"""
+    return {
+        "provider": AI_PROVIDER,
+        "url": AI_PROVIDERS[AI_PROVIDER]["url"],
+        "model": AI_PROVIDERS[AI_PROVIDER]["model"],
+        "api_key": AI_API_KEYS.get(AI_PROVIDER, ""),
+    }
 UUHB_API_KEY = os.getenv("UUHB_API_KEY", "")
 LOTTERY_TOKEN = os.getenv("LOTTERY_TOKEN", "")
 
@@ -140,6 +213,9 @@ class ChatRequest(BaseModel):
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
     thinking: Optional[dict] = None  # 支持完整的 thinking 对象
+    # 以下字段仅兼容旧前端，服务端会忽略
+    provider: Optional[str] = None
+    model: Optional[str] = None
 
 def _dbg(obj, limit: int = 2000) -> str:
     """调试日志用：JSON 序列化并截断，避免刷屏。"""
@@ -154,16 +230,27 @@ def _dbg(obj, limit: int = 2000) -> str:
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "service": "wnzc-api-proxy"}
+    return {
+        "status": "ok",
+        "service": "wnzc-api-proxy",
+        "provider": AI_PROVIDER,
+        "model": AI_MODEL,
+        "configured_providers": sorted(AI_API_KEYS.keys()),
+    }
 
 @app.post("/chat")
 async def chat(raw_request: Request, request: ChatRequest):
     guard_protected(raw_request)
-    if not AI_API_KEY:
-        raise HTTPException(status_code=500, detail="AI_API_KEY not configured")
+    # 通道/模型/Key 全部服务端决定；忽略 request.provider / request.model
+    ai = resolve_ai_target()
+    if not ai["api_key"]:
+        raise HTTPException(
+            status_code=500,
+            detail=f"服务端未配置 {ai['provider']} 的 API Key（请设置 AI_API_KEYS 或 {ai['provider'].upper()}_API_KEY）",
+        )
 
     payload = {
-        "model": AI_MODEL,
+        "model": ai["model"],
         "messages": request.messages,
         "stream": request.stream
     }
@@ -173,7 +260,7 @@ async def chat(raw_request: Request, request: ChatRequest):
     if request.max_tokens is not None:
         payload["max_tokens"] = request.max_tokens
     # Agnes 用 chat_template_kwargs，DeepSeek 用 thinking.type
-    payload.update(normalize_thinking(request.thinking, AI_MODEL))
+    payload.update(normalize_thinking(request.thinking, ai["model"]))
 
     print("=" * 60)
     print("[DEBUG] /chat 前端入参:", _dbg({
@@ -181,13 +268,16 @@ async def chat(raw_request: Request, request: ChatRequest):
         "temperature": request.temperature,
         "max_tokens": request.max_tokens,
         "thinking": request.thinking,
+        "provider_hint": request.provider,
+        "model_hint": request.model,
+        "resolved": {"provider": ai["provider"], "model": ai["model"]},
         "messages_count": len(request.messages or []),
         "messages": request.messages,
     }))
     print("[DEBUG] /chat 发往上游 payload:", _dbg(payload))
 
     headers = {
-        "Authorization": f"Bearer {AI_API_KEY}",
+        "Authorization": f"Bearer {ai['api_key']}",
         "Content-Type": "application/json",
         "Accept": "text/event-stream" if request.stream else "application/json",
     }
@@ -199,7 +289,7 @@ async def chat(raw_request: Request, request: ChatRequest):
     # 改为手动管理生命周期：在生成器的 finally 中关闭。
     client = httpx.AsyncClient(timeout=timeout)
     try:
-        req = client.build_request("POST", AI_API_URL, json=payload, headers=headers)
+        req = client.build_request("POST", ai["url"], json=payload, headers=headers)
         upstream = await client.send(req, stream=True)
     except httpx.HTTPError as e:
         await client.aclose()

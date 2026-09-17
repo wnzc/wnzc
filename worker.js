@@ -5,9 +5,10 @@
 //  一律存放在 Cloudflare Worker 的环境变量（加密 Secrets）中。
 //
 //  需要在 Cloudflare 控制台（或 wrangler secret put）配置：
-//    AI_API_URL   AI 服务商接口地址，如 https://open.bigmodel.cn/api/paas/v4/chat/completions
+//    AI_PROVIDER  快速切换：deepseek | agnes | glm（默认 deepseek）
 //    AI_API_KEY   AI 服务商 API Key（必须是重发后的新 key，旧的已随 git 历史泄露）
-//    AI_MODEL     模型名，如 agnes-3.0-flash
+//    AI_API_URL   可选，覆盖预设上游地址
+//    AI_MODEL     可选，覆盖预设模型名（如 deepseek-flash / deepseek-chat）
 //    UUHB_API_KEY 运势/答案之书等 uuhb.cn 系列的 ak_xxxx
 //    LOTTERY_TOKEN 彩票接口 token（可选，不配则 /lottery 返回 503）
 //
@@ -158,11 +159,67 @@ function requireEnv(env, names, request) {
   return null;
 }
 
+// ============================================================
+//  AI 通道配置（写在代码里；Key 只放 Secrets）
+//  切换模型改 ACTIVE_PROVIDER 后部署即可，不用改环境变量。
+// ============================================================
+
+// ★★★ 只需要改这一行 ★★★
+const ACTIVE_PROVIDER = 'deepseek';
+
+const AI_PROVIDERS = {
+  deepseek: {
+    url: 'https://api.deepseek.com/chat/completions',
+    model: 'deepseek-flash',
+  },
+  agnes: {
+    url: 'https://api.agnes-ai.cn/v1/chat/completions',
+    model: 'agnes-3.0-flash',
+  },
+  glm: {
+    url: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    model: 'glm-4.7-flash',
+  },
+};
+
+function loadApiKeys(env) {
+  const keys = {};
+  const raw = String(env.AI_API_KEYS || '').trim();
+  if (raw) {
+    try {
+      const data = JSON.parse(raw);
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        for (const [k, v] of Object.entries(data)) {
+          if (v) keys[String(k).trim().toLowerCase()] = String(v).trim();
+        }
+      }
+    } catch (e) {
+      console.warn('AI_API_KEYS 不是合法 JSON，已忽略');
+    }
+  }
+  for (const name of Object.keys(AI_PROVIDERS)) {
+    const val = String(env[name.toUpperCase() + '_API_KEY'] || '').trim();
+    if (val) keys[name] = val;
+  }
+  const legacy = String(env.AI_API_KEY || '').trim();
+  if (legacy && !keys[ACTIVE_PROVIDER]) keys[ACTIVE_PROVIDER] = legacy;
+  return keys;
+}
+
+function resolveAiTarget(env) {
+  const name = AI_PROVIDERS[ACTIVE_PROVIDER] ? ACTIVE_PROVIDER : 'deepseek';
+  const preset = AI_PROVIDERS[name];
+  const keys = loadApiKeys(env);
+  return {
+    provider: name,
+    url: preset.url,
+    model: preset.model,
+    apiKey: keys[name] || '',
+  };
+}
+
 // ==================== 统一 AI 对话代理 ====================
 async function handleChat(request, env, { forceNonStream = false } = {}) {
-  const missing = requireEnv(env, ['AI_API_URL', 'AI_API_KEY', 'AI_MODEL'], request);
-  if (missing) return missing;
-
   let body;
   try {
     body = await request.json();
@@ -170,21 +227,30 @@ async function handleChat(request, env, { forceNonStream = false } = {}) {
     return json({ error: '请求体不是合法 JSON' }, 400, request);
   }
 
-  // model 一律以服务端配置为准，防止前端伪造参数刷别的模型
+  // 通道/模型/Key 全部服务端决定；忽略 body.model / body.provider
+  const ai = resolveAiTarget(env);
+  if (!ai.apiKey) {
+    return json(
+      { error: `服务端未配置 ${ai.provider} 的 API Key（请设置 AI_PROVIDER_CATALOG 或 ${ai.provider.toUpperCase()}_API_KEY）` },
+      500,
+      request,
+    );
+  }
+
   const payload = {
-    model: env.AI_MODEL,
+    model: ai.model,
     messages: Array.isArray(body.messages) ? body.messages : [],
     stream: forceNonStream ? false : body.stream === true,
   };
   if (body.temperature !== undefined) payload.temperature = body.temperature;
   if (body.max_tokens !== undefined) payload.max_tokens = Math.min(Number(body.max_tokens) || 0, 65536) || undefined;
-  Object.assign(payload, normalizeThinking(body.thinking, env.AI_MODEL));
+  Object.assign(payload, normalizeThinking(body.thinking, ai.model));
 
-  const upstream = await fetch(env.AI_API_URL, {
+  const upstream = await fetch(ai.url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.AI_API_KEY}`,
+      'Authorization': `Bearer ${ai.apiKey}`,
     },
     body: JSON.stringify(payload),
   });

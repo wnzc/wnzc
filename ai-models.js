@@ -1,33 +1,21 @@
 // ============================================================
-//  AI 模型统一配置（唯一维护点）
-//  【默认模型开关】只需修改 ACTIVE_MODEL 这一个字段即可全局更换模型！
-//  可选值：'agnes'（glm / deepseek 已暂时注释，需要时再打开）
-//  更换服务商 / 密钥 / 模型名，只改本文件即可，前后端同时生效。
-//  前端页面与 proxy-server.js 均引用本文件，勿在此写 export / import。
+//  AI 代理地址（前端只请求这里）
 //
-//  ⚠️ 安全说明：apiKey 必须从环境变量获取，严禁硬编码！
-//  通过自建代理服务器转发请求，密钥存储在服务器环境变量中。
-//  注意：线上真正生效的模型名以服务端 AI_MODEL 为准（server/app.py / Worker Secrets）。
+//  切换服务商/模型：改 server/app.py 里的 ACTIVE_PROVIDER 与 AI_PROVIDERS，
+//  然后 git 提交并重新部署 Render。Environment 只配 Key（DEEPSEEK_API_KEY 等）。
+//
+//  前端统一 POST PROXY_URL，body 用 messages / stream 即可。
+//
+//  ⚠️ apiKey 严禁写在前端。
 // ============================================================
 
 const AI_MODELS = {
-  ACTIVE_MODEL: 'agnes',
+  // 自建对话代理（一般不用动）
+  PROXY_URL: 'https://wnzc-proxy.onrender.com/chat',
 
-  // ---------- 智谱 GLM 大模型（暂时停用） ----------
-  // glm: {
-  //   apiUrl: 'https://wnzc-proxy.onrender.com/chat',
-  //   model: 'glm-4.7-flash'
-  // },
-
-  // ---------- DeepSeek 大模型（暂时停用） ----------
-  // deepseek: {
-  //   apiUrl: 'https://wnzc-proxy.onrender.com/chat',
-  //   model: 'deepseek-v4-flash'
-  // },
-
-  // ---------- Agnes 大模型 ----------
-  agnes: {
-    apiUrl: 'https://wnzc-proxy.onrender.com/chat',
-    model: 'agnes-3.0-flash'
-  }
+  // 兼容旧页面读取：model 字段已无实际作用，服务端自行决定
+  ACTIVE_MODEL: 'server',
+  deepseek: { apiUrl: 'https://wnzc-proxy.onrender.com/chat', model: '' },
+  agnes: { apiUrl: 'https://wnzc-proxy.onrender.com/chat', model: '' },
+  glm: { apiUrl: 'https://wnzc-proxy.onrender.com/chat', model: '' }
 };

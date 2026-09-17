@@ -1,7 +1,7 @@
 // ============================================================
 //  AI 统一配置中心
-//  所有 AI 相关的 URL / model / Authorization 都集中管理。
-//  如需修改模型配置（glm / deepseek / agnes），请同步更新根目录 ai-models.js。
+//  前端只请求自建代理；服务商 / 模型 / Key 全部由服务端环境变量决定。
+//  切换模型改服务端 AI_PROVIDER（或 AI_PROVIDER_CATALOG），前端无需改动。
 //  页面通过 <script src="../ai-models.js"></script> + <script src="ai-config.js"></script> 引入。
 //
 //  ⚠️ 安全说明：所有第三方密钥必须从环境变量获取，严禁硬编码！
@@ -30,16 +30,14 @@ const AI_CONFIG = {
     }
 };
 
-// 当前激活的模型配置（由 ai-models.js 的 AI_MODELS 提供）
-const ACTIVE_CONFIG = AI_MODELS[AI_MODELS.ACTIVE_MODEL];
-
 // ---------- 兼容旧变量名（业务页面可直接使用以下常量，无需改动） ----------
-const API_URL = ACTIVE_CONFIG.apiUrl;
+const API_URL = (AI_MODELS && AI_MODELS.PROXY_URL) || 'https://wnzc-proxy.onrender.com/chat';
 const API_HEADER = {
     'Content-Type': 'application/json'
     // Authorization 由服务端注入；X-TS / X-SIG 由下方 fetch 包装自动附加
 };
-const GLM_MODEL = ACTIVE_CONFIG.model;
+// 已废弃：模型由服务端选择。保留常量仅为兼容旧页面 body.model 字段。
+const GLM_MODEL = '';
 const VOICE_API_URLS = AI_CONFIG.tts.voiceApiUrls;
 
 // ============================================================
