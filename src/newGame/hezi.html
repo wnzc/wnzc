@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>字谜 - 汉字益智游戏</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#1a1a2e; --bg2:#16213e; --bg3:#0f0f23;
+  --yellow:#FFD93D; --red:#FF6B6B; --cyan:#4ECDC4;
+  --card:rgba(255,255,255,0.05); --border:rgba(255,255,255,0.12);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;min-height:100vh;touch-action:manipulation;
+  font-family:'Noto Sans SC',system-ui,sans-serif;color:#fff;
+  background:linear-gradient(135deg,var(--bg1) 0%,var(--bg2) 50%,var(--bg3) 100%);
+  display:flex;justify-content:center;
+}
+.wrap{width:100%;max-width:430px;padding:12px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.topbar a{color:var(--cyan);text-decoration:none;font-size:14px}
+.topbar .today{font-size:12px;color:rgba(255,255,255,.55)}
+.title{font-size:20px;font-weight:700;color:var(--yellow);letter-spacing:4px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:16px;margin-bottom:12px}
+.badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;
+  background:rgba(78,205,196,.18);color:var(--cyan);margin-left:6px}
+.btn{border:none;border-radius:10px;padding:10px 18px;font-size:15px;font-family:inherit;
+  color:#1a1a2e;font-weight:700;background:linear-gradient(135deg,var(--yellow),#ffb83d);
+  transition:transform .15s,box-shadow .15s;cursor:pointer}
+.btn:active{transform:scale(.97);box-shadow:0 0 12px rgba(255,217,61,.5)}
+.btn.ghost{background:var(--card);color:#fff;border:1px solid var(--border);font-weight:400}
+.modal{position:fixed;inset:0;background:rgba(10,10,20,.6);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;z-index:50}
+.modal-box{background:rgba(30,30,55,.92);border:1px solid var(--cyan);border-radius:16px;
+  padding:24px;max-width:340px;width:88%;text-align:center}
+.devout{font:12px/1.6 monospace;color:#7CFC00;background:#000;padding:8px;
+  border-radius:8px;white-space:pre-wrap;margin-top:12px}
+#screen{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a href="index.html">← 游戏合集</a>
+    <div class="title">字谜</div>
+    <div class="today" id="todayCount">今日新字 +0</div>
+  </div>
+  <div id="home">
+    <div class="card">
+      <div style="font-size:14px;color:rgba(255,255,255,.8)">
+        汉字拼拼拼：选结构、摆字根、成字过关<br>
+        <span style="color:rgba(255,255,255,.45);font-size:12px">合体 · 拆体 · 换根</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" id="btnStart">开始游戏</button>
+        <button class="btn ghost" id="btnDaily">每日一关</button>
+        <button class="btn ghost" id="btnMap">关卡地图</button>
+      </div>
+    </div>
+  </div>
+  <div id="screen"></div>
+  <div id="devOut" class="devout" style="display:none"></div>
+</div>
+<script id="hezi-logic">
+/* data-logic：纯函数区，Node 可测（tests/hezi.test.js 会读取本块）
+   约定：本块内所有导出挂在 const HZ = {} 上；块内禁止访问 document/window 之外的 DOM
+*/
+const HZ = {};
+</script>
+<script id="hezi-ui">
+/* ui */
+(function(){
+  const $ = (s)=>document.querySelector(s);
+  const devOut = $('#devOut');
+  function heziRunChecks(fns){
+    if(location.search.includes('dev=1')){
+      devOut.style.display='block'; devOut.textContent='';
+      let fail=0;
+      for(const [name,fn] of fns){
+        try{ fn(); devOut.textContent+=name+'  PASS\n'; }
+        catch(e){ fail++; devOut.textContent+=name+'  FAIL  '+e.message+'\n'; }
+      }
+      devOut.textContent+='\n' + (fail?fail+' FAILED':'ALL PASS');
+    }
+    return fns;
+  }
+  window.heziRunChecks = heziRunChecks;
+})();
+</script>
+</body>
+</html>
