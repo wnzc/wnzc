@@ -740,6 +740,159 @@ async def idiom_chain(raw_request: Request, request: IdiomRequest):
         _next_pinyin(prev),
     )
 
+
+# ============================================================
+#  AI 猜词 API
+#
+#  POST /guess
+#  入参 JSON：
+#    {
+#      "generate": true,          // true=生成谜底词；false=判定用户提问/猜词
+#      "text": "是水果吗？",       // 用户输入（generate=false 时必填）
+#      "word": "苹果"             // 正确的词/谜底（generate=false 时必填）
+#    }
+#
+#  出参 JSON（固定格式）：
+#    {
+#      "code": 1,                 // 1=成功，0=参数错误/AI失败
+#      "msg": "成功",
+#      "data": {
+#        "action": "generate",    // generate=生成词 | judge=判定
+#        "word": "苹果",           // 生成的词 / 判定时回显谜底
+#        "category": "食物",       // 词的类别提示（生成时有值，便于出题）
+#        "answer": "是",           // 判定结论：是 | 否 | 不确定（生成时为空串）
+#        "text": "是水果吗？"      // 判定时回显用户输入（生成时为空串）
+#      }
+#    }
+#
+#  判定约定（generate=false）：
+#    - 用户输入是问题（是否类）→ 判断该问题对谜底是否成立
+#    - 用户输入是猜词 → 判断是否与谜底为同一事物
+#    - answer 只允许：是 / 否 / 不确定
+# ============================================================
+
+# 生成失败时的兜底谜底：(词, 类别)
+_FALLBACK_GUESS_WORDS = [
+    ("苹果", "食物"),
+    ("太阳", "自然"),
+    ("大象", "动物"),
+    ("汽车", "交通"),
+    ("电脑", "科技"),
+    ("雨伞", "生活用品"),
+    ("钢琴", "乐器"),
+    ("长城", "地点"),
+]
+
+_GUESS_ANSWERS = {"是", "否", "不确定"}
+
+
+class GuessRequest(BaseModel):
+    generate: bool = False
+    text: Optional[str] = None
+    word: Optional[str] = None
+
+
+def _guess_response(action: str, word: str = "", category: str = "",
+                    answer: str = "", text: str = "",
+                    code: int = 1, msg: str = "成功") -> JSONResponse:
+    return JSONResponse(
+        content={
+            "code": code,
+            "msg": msg,
+            "data": {
+                "action": action,
+                "word": word or "",
+                "category": category or "",
+                "answer": answer or "",
+                "text": text or "",
+            },
+        },
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
+
+
+def _normalize_guess_answer(raw) -> str:
+    """把 AI 回答收敛为 是 / 否 / 不确定。"""
+    s = str(raw or "").strip()
+    if s in _GUESS_ANSWERS:
+        return s
+    if not s:
+        return "不确定"
+    if s.startswith("不确定") or any(k in s for k in ("无法确定", "不好说", "难说")):
+        return "不确定"
+    if s.startswith("是") or s in ("对", "正确", "是的", "yes", "y", "true"):
+        return "是"
+    if s.startswith("否") or s.startswith("不") or s in ("不对", "错误", "no", "n", "false"):
+        return "否"
+    return "不确定"
+
+
+@app.post("/guess")
+async def guess_word(raw_request: Request, request: GuessRequest):
+    """AI 猜词：开局生成谜底 / 判定用户问题或猜词（只回 是/否/不确定）。"""
+    guard_protected(raw_request)
+
+    # ---------- 生成谜底词 ----------
+    if request.generate:
+        system = (
+            "你是猜词游戏出题人。只输出一行 JSON，不要任何其它文字。\n"
+            "生成一个常见的、适合用是否类问题来猜的中文词（1~4 字，名词为主，如水果、动物、物品、地点）。\n"
+            "要求：词要正常、常见、无歧义，不要生僻词、品牌、人名、敏感内容。\n"
+            "category 填大类，如：食物 / 动物 / 自然 / 交通 / 科技 / 生活用品 / 乐器 / 地点 / 运动 等。\n"
+            '格式：{"word":"词语","category":"类别"}'
+        )
+        user = "请生成一个用于猜词游戏的谜底词。"
+        try:
+            data = await _ai_json(system, user, temperature=0.8)
+        except HTTPException:
+            data = {}
+        word = str(data.get("word") or "").strip()
+        category = str(data.get("category") or "").strip()
+        if word and 1 <= len(word) <= 8 and not any(c.isspace() for c in word):
+            return _guess_response("generate", word=word, category=category)
+        # AI 失败 → 兜底词，保证游戏能开
+        import random
+        fb_word, fb_cat = random.choice(_FALLBACK_GUESS_WORDS)
+        return _guess_response(
+            "generate", word=fb_word, category=fb_cat,
+            code=1, msg="成功（本地兜底出题）",
+        )
+
+    # ---------- 判定：问题 / 猜词 ----------
+    text = (request.text or "").strip()
+    word = (request.word or "").strip()
+    if not text or not word:
+        return _guess_response(
+            "judge", word=word, text=text, answer="不确定",
+            code=0, msg="参数错误",
+        )
+
+    system = (
+        "你是猜词游戏裁判。只输出一行 JSON，不要任何其它文字。\n"
+        "已知谜底词，判断用户输入（可能是问题，也可能是猜词）应如何回答。\n"
+        "规则：\n"
+        "1. 若用户是在提问（是否类/是什么类），判断该问题对谜底是否成立。\n"
+        "2. 若用户是在猜词，判断是否与谜底是同一事物（同物异名算「是」，明显不同算「否」）。\n"
+        "3. 信息不足、问题本身无法判断、或边界模糊时，回答「不确定」。\n"
+        "answer 只能是：是、否、不确定。\n"
+        '格式：{"answer":"是"} 或 {"answer":"否"} 或 {"answer":"不确定"}'
+    )
+    user_msg = f"谜底词：{word}\n用户输入：{text}\n请判断 answer。"
+    try:
+        data = await _ai_json(system, user_msg, temperature=0.1)
+    except HTTPException:
+        data = {}
+
+    if not data or "answer" not in data:
+        return _guess_response(
+            "judge", word=word, text=text, answer="不确定",
+            code=0, msg="AI 判定失败",
+        )
+
+    answer = _normalize_guess_answer(data.get("answer"))
+    return _guess_response("judge", word=word, text=text, answer=answer)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
