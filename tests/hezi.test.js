@@ -72,12 +72,21 @@ t('selfCheck: 结构码/槽数/唯一键', () => {
   seed();
   HZ.selfCheck(); // 合法 → 不抛
   HZ.DICT.push({ch:'坏', comp:['木'], struct:'LR', tier:1, hints:['x'], rare:false, bio:'x'}); // 槽数不符
-  assert(() => { HZ.selfCheck(); }, 'should throw on slot mismatch');
+  let threw = false;
+  try { HZ.selfCheck(); } catch (e) { threw = true; }
+  assert(threw, 'selfCheck must throw on slot mismatch');
+  HZ.DICT.pop();
 });
 
-t('selfCheck: 键冲突必须多解登记', () => {
+t('selfCheck: 同键多解允许 / 重复字拒绝', () => {
   seed();
+  HZ.DICT.push({ch:'杢', comp:['木','寸'], struct:'LR', tier:1, hints:['x'], rare:false, bio:'x'}); // 与村同键 → 多解族，合法
   HZ.selfCheck();
+  HZ.DICT.push({ch:'村', comp:['木','寸'], struct:'LR', tier:1, hints:['x'], rare:false, bio:'x'}); // 重复 ch
+  let threw = false;
+  try { HZ.selfCheck(); } catch (e) { threw = true; }
+  assert(threw, 'duplicate ch must throw');
+  HZ.DICT.length = 4; // 还原 seed
 });
 
 module.exports = { t, assert, assertEq, HZ: sandbox.HZ, sandbox, finish(){
