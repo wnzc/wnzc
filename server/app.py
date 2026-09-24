@@ -761,7 +761,9 @@ async def idiom_chain(raw_request: Request, request: IdiomRequest):
 #        "word": "苹果",           // 生成的词 / 判定时回显谜底
 #        "category": "食物",       // 词的类别提示（生成时有值，便于出题）
 #        "answer": "是",           // 判定结论：是 | 否 | 不确定（生成时为空串）
-#        "text": "是水果吗？"      // 判定时回显用户输入（生成时为空串）
+#        "text": "是水果吗？",     // 判定时回显用户输入（生成时为空串）
+#        "correct": false,        // 是否猜对谜底（text 与 word 一致）
+#        "win": false             // 是否获胜（与 correct 同值，便于前端直接读）
 #      }
 #    }
 #
@@ -794,7 +796,9 @@ class GuessRequest(BaseModel):
 
 def _guess_response(action: str, word: str = "", category: str = "",
                     answer: str = "", text: str = "",
+                    correct: bool = False,
                     code: int = 1, msg: str = "成功") -> JSONResponse:
+    hit = bool(correct)
     return JSONResponse(
         content={
             "code": code,
@@ -805,10 +809,20 @@ def _guess_response(action: str, word: str = "", category: str = "",
                 "category": category or "",
                 "answer": answer or "",
                 "text": text or "",
+                "correct": hit,
+                "win": hit,
             },
         },
         headers={"Access-Control-Allow-Origin": "*"},
     )
+
+
+def _is_word_hit(text: str, word: str) -> bool:
+    """用户是否猜对谜底：text 与 word 一致（忽略空白与常见标点）。"""
+    import re as _re
+    t = _re.sub(r"[\s。！？!?～~、，,．.]", "", text or "")
+    w = _re.sub(r"[\s]", "", word or "")
+    return bool(w) and t == w
 
 
 def _normalize_guess_answer(raw) -> str:
@@ -849,12 +863,12 @@ async def guess_word(raw_request: Request, request: GuessRequest):
         word = str(data.get("word") or "").strip()
         category = str(data.get("category") or "").strip()
         if word and 1 <= len(word) <= 8 and not any(c.isspace() for c in word):
-            return _guess_response("generate", word=word, category=category)
+            return _guess_response("generate", word=word, category=category, correct=False)
         # AI 失败 → 兜底词，保证游戏能开
         import random
         fb_word, fb_cat = random.choice(_FALLBACK_GUESS_WORDS)
         return _guess_response(
-            "generate", word=fb_word, category=fb_cat,
+            "generate", word=fb_word, category=fb_cat, correct=False,
             code=1, msg="成功（本地兜底出题）",
         )
 
@@ -863,7 +877,7 @@ async def guess_word(raw_request: Request, request: GuessRequest):
     word = (request.word or "").strip()
     if not text or not word:
         return _guess_response(
-            "judge", word=word, text=text, answer="不确定",
+            "judge", word=word, text=text, answer="不确定", correct=False,
             code=0, msg="参数错误",
         )
 
@@ -885,12 +899,13 @@ async def guess_word(raw_request: Request, request: GuessRequest):
 
     if not data or "answer" not in data:
         return _guess_response(
-            "judge", word=word, text=text, answer="不确定",
+            "judge", word=word, text=text, answer="不确定", correct=False,
             code=0, msg="AI 判定失败",
         )
 
     answer = _normalize_guess_answer(data.get("answer"))
-    return _guess_response("judge", word=word, text=text, answer=answer)
+    correct = _is_word_hit(text, word)
+    return _guess_response("judge", word=word, text=text, answer=answer, correct=correct)
 
 
 if __name__ == "__main__":
