@@ -70,6 +70,74 @@ body{
    约定：本块内所有导出挂在 const HZ = {} 上；块内禁止访问 document/window 之外的 DOM
 */
 const HZ = {};
+HZ.STRUCTS = {
+  LR:  ['左','右'],
+  TB:  ['上','下'],
+  LMR: ['左','中','右'],
+  TMB: ['上','中','下'],
+  PIN: ['上','下左','下右'],
+  '田二': ['左上','右上','左下','右下'],
+  '器形': ['上','下左','下中','下右'],
+};
+HZ.DICT = [];
+HZ.LEVELS = null;   // Task 6 填充
+HZ.MAP = null;      // Task 6 填充
+
+HZ.idx = function(){
+  const ix = new Map();
+  for (const e of HZ.DICT) {
+    const k = e.struct + '|' + e.comp.join('');
+    if (!ix.has(k)) ix.set(k, []);
+    ix.get(k).push(e.ch);
+  }
+  return ix;
+};
+
+HZ.verifyAnswer = function(assembly, level){
+  const ix = HZ.idx();
+  const k = assembly.struct + '|' + assembly.comp.join('');
+  const fam = ix.get(k);
+  if (!fam) {
+    const any = HZ.DICT.find(e => e.struct === assembly.struct &&
+      e.comp.length === assembly.comp.length &&
+      JSON.stringify([...e.comp].sort()) === JSON.stringify([...assembly.comp].sort()));
+    return any
+      ? { ok:false, kind:'taste', ch: any.ch, msg:'写的是「' + any.ch + '」，词里要的是别的字，重摆' }
+      : { ok:false, kind:'nosuch', msg:'无此字，重摆' };
+  }
+  if (level.chs.some(c => fam.includes(c))) {
+    const main = fam.includes(level.main) ? level.main : fam[0];
+    const entry = HZ.DICT.find(e => e.ch === main);
+    return { ok:true, ch: main, bio: entry ? entry.bio : '', main };
+  }
+  return { ok:false, kind:'nosuch', msg:'无此字，重摆' };
+};
+
+HZ.scoreOf = function({fails, hints, rare}){
+  const base = Math.max(10, 100 - 10*hints - 5*fails);
+  return rare ? base*2 : base;
+};
+
+HZ.selfCheck = function(){
+  const seen = {};
+  for (const e of HZ.DICT) {
+    if (!HZ.STRUCTS[e.struct]) throw new Error('bad struct ' + e.struct + ' @ ' + e.ch);
+    if (HZ.STRUCTS[e.struct].length !== e.comp.length)
+      throw new Error('slot mismatch: ' + e.ch + ' comp=' + e.comp.length + ' struct=' + e.struct);
+    if (!Array.isArray(e.hints) || e.hints.length === 0)
+      throw new Error('no hints: ' + e.ch);
+    if (typeof e.bio !== 'string' || !e.bio) throw new Error('no bio: ' + e.ch);
+    const key = e.ch;
+    if (e.vf !== undefined && e.vf !== true) throw new Error('unverified entry: ' + key);
+    if (seen[key]) throw new Error('dup ch: ' + key);
+    seen[key] = true;
+  }
+  const ix = HZ.idx();
+  for (const [k, fam] of ix) {
+    const chs = new Set(fam);
+    if (fam.length > 1 && chs.size === 1) throw new Error('same-key family must differ: ' + k);
+  }
+};
 </script>
 <script id="hezi-ui">
 /* ui */
